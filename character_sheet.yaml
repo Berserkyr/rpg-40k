@@ -1,0 +1,23 @@
+name: Karimus
+role: Technicien vox
+origin: Niveau usine 712, Ruche Kharad-Rho
+objective: Escorter sa famille vers les ascenseurs blindes ou perir en les protegeant.
+attributes:
+  sang_froid: 3
+  ingeniosite: 4
+  solidarite: 3
+  robustesse: 2
+  foi: 2
+  discretion: 3
+resources:
+  rations: 3
+  acces_vox: 2
+  contacts: 2
+  munitions: 1
+tracks:
+  blessures: Indemne
+  stress: 0
+  corruption: 0
+notes:
+  - Les doubles 1 ou 6 sur 2d6 doivent etre narres en detail.
+  - La famille de Karimus compte trois personnes; chaque scene peut mettre l'une d'elles en danger.

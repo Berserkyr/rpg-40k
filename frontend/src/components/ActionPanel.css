@@ -1,0 +1,46 @@
+.action-panel {
+  border-top: 1px solid #1a3a1a;
+  background: #050505;
+  padding: 0.55rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.action-group, .travel-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.action-panel button {
+  background: #0a1a0a;
+  border: 1px solid #1a3a1a;
+  color: #00aa44;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  padding: 0.32rem 0.55rem;
+  cursor: pointer;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-panel button:hover:not(:disabled) {
+  background: #00aa44;
+  color: #050505;
+}
+
+.action-panel button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.travel-label, .travel-empty {
+  color: #556655;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+}

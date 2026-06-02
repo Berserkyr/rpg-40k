@@ -1,0 +1,50 @@
+.input-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: #050505;
+  border-top: 1px solid #1a3a1a;
+}
+
+.input-prompt {
+  color: #00ff41;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 1rem;
+  user-select: none;
+}
+
+.input-field {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #1a3a1a;
+  color: #ffa500;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.4rem;
+  outline: none;
+  caret-color: #00ff41;
+}
+
+.input-field::placeholder { color: #2a3a2a; }
+.input-field:disabled { opacity: 0.4; }
+
+.input-btn {
+  background: #0a1a0a;
+  border: 1px solid #1a3a1a;
+  color: #00aa44;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.input-btn:hover:not(:disabled) {
+  background: #00aa44;
+  color: #0a0a0a;
+}
+
+.input-btn:disabled { opacity: 0.3; cursor: not-allowed; }

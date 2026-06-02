@@ -1,0 +1,38 @@
+.terminal-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: #1a3a1a #0a0a0a;
+}
+
+.terminal-line {
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.line-gm { color: #c8ffc8; }
+.line-player { color: #ffa500; }
+.line-system { color: #556655; font-style: italic; }
+.line-danger { color: #ff3333; }
+.line-loot { color: #ffd700; }
+
+.prompt { opacity: 0.5; user-select: none; }
+.gm-prompt { color: #00aa44; }
+
+.cursor {
+  animation: blink 0.8s step-end infinite;
+  color: #00ff41;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}

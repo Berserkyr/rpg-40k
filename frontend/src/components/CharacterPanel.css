@@ -1,0 +1,85 @@
+.panel {
+  background: #050505;
+  border: 1px solid #1a3a1a;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 0.8rem;
+}
+
+.panel-title {
+  color: #00aa44;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  border-bottom: 1px solid #1a3a1a;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
+.panel-empty {
+  color: #334433;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.char-name {
+  color: #00ff41;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.char-sub {
+  color: #556655;
+  font-size: 0.7rem;
+  margin-bottom: 0.4rem;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.stat-label {
+  color: #556655;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  min-width: 80px;
+}
+
+.stat-val {
+  color: #c8ffc8;
+  margin-left: auto;
+}
+
+.stat-val.amber { color: #ffa500; }
+
+.bar-track {
+  flex: 1;
+  height: 6px;
+  background: #1a1a1a;
+  border: 1px solid #1a3a1a;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.char-traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+
+.trait-tag {
+  background: #0a1a0a;
+  border: 1px solid #1a3a1a;
+  color: #556655;
+  font-size: 0.6rem;
+  padding: 0.1rem 0.4rem;
+  letter-spacing: 0.05em;
+}

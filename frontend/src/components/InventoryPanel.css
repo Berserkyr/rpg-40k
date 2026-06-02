@@ -1,0 +1,45 @@
+.inventory-panel .small-title {
+  margin-top: 0.5rem;
+  font-size: 0.62rem;
+}
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-height: 170px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #1a3a1a #0a0a0a;
+}
+
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-left: 2px solid #1a3a1a;
+  padding: 0.18rem 0.35rem;
+  color: #c8ffc8;
+  font-size: 0.68rem;
+}
+
+.item-equipped {
+  border-color: #ffa500;
+  background: rgba(255, 165, 0, 0.05);
+}
+
+.item-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-type, .rarity {
+  color: #556655;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rarity-rare, .rarity-exotique, .rarity-relique { color: #ffa500; }

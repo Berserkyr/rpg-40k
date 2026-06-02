@@ -1,0 +1,32 @@
+.quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 180px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #1a3a1a #0a0a0a;
+}
+
+.quest-item {
+  border-left: 2px solid #1a3a1a;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+}
+
+.quest-active-item { border-color: #00aa44; }
+.quest-done-item { border-color: #2a3a2a; opacity: 0.6; }
+
+.quest-name { color: #c8ffc8; margin-bottom: 0.1rem; }
+.quest-desc { color: #556655; font-size: 0.65rem; margin-bottom: 0.2rem; }
+
+.quest-status-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  padding: 0.1rem 0.4rem;
+  letter-spacing: 0.1em;
+}
+
+.quest-active { color: #00ff41; background: #0a1a0a; }
+.quest-done { color: #556655; }
+.quest-failed { color: #ff3333; }
