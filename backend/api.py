@@ -323,6 +323,16 @@ class SpawnRequest(BaseModel):
 # Routes
 # ---------------------------------------------------------------------------
 
+@app.get("/api/health")
+def health_check():
+    """Retourne l'etat de sante minimal de l'API."""
+    return {
+        "status": "ok",
+        "service": "survivant-de-ruche-api",
+        "version": app.version,
+    }
+
+
 @app.get("/api/state")
 def get_state():
     """Retourne l'etat complet de la session."""

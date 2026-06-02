@@ -110,15 +110,15 @@ Processus :
 | 0.6 | Stabilisation | Correction Vite, CORS, scripts lancement |
 | 0.7 | Jouabilité | Actions, combat UI, inventaire UI, fallback MJ local |
 | 0.8 | Dossier RNCP | Documentation cadrage, conception, pilotage, maintenance |
+| 0.9 | Qualité API | Healthcheck `/api/health`, tests API FastAPI, labels ARIA principaux |
 
 ## 7. Recommandations d’amélioration
 
 | Amélioration | Gain | Effort |
 |---|---|---:|
-| Tests API complets | Réduction régressions | Moyen |
+| Tests API complémentaires | Réduction régressions | Moyen |
 | Tests frontend | Fiabilité UI | Moyen |
 | CI GitHub Actions | Qualité continue | Faible |
-| Healthcheck backend | Supervision simple | Faible |
 | Export/import sauvegarde | Sécurité données | Moyen |
 | Déploiement cloud | Démo accessible | Moyen |
 | Authentification | Multi-utilisateur | Fort |
@@ -159,6 +159,7 @@ Un utilisateur indique : « quand j’ouvre le navigateur, je vois la page Vite 
 
 L’application est considérée opérationnelle si :
 
+- `GET /api/health` répond avec un statut `ok`.
 - `GET /api/state` répond avec un état valide.
 - Le frontend s’ouvre sur l’écran du jeu.
 - La scène d’ouverture démarre.

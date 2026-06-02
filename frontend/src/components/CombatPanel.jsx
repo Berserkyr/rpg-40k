@@ -36,10 +36,10 @@ export default function CombatPanel({ combat, onCombatAction, disabled }) {
         })}
       </div>
 
-      <div className="combat-actions">
-        <button onClick={() => onCombatAction('attack')} disabled={disabled}>ATTAQUER</button>
-        <button onClick={() => onCombatAction('defend')} disabled={disabled}>DÉFENDRE</button>
-        <button onClick={() => onCombatAction('flee')} disabled={disabled}>FUIR</button>
+      <div className="combat-actions" role="group" aria-label="Actions de combat">
+        <button onClick={() => onCombatAction('attack')} disabled={disabled} aria-label="Attaquer l'ennemi ciblé">ATTAQUER</button>
+        <button onClick={() => onCombatAction('defend')} disabled={disabled} aria-label="Se défendre pendant ce tour">DÉFENDRE</button>
+        <button onClick={() => onCombatAction('flee')} disabled={disabled} aria-label="Tenter de fuir le combat">FUIR</button>
       </div>
     </div>
   );

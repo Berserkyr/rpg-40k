@@ -130,7 +130,7 @@ export default function App() {
             <div className="start-screen">
               <pre className="skull-art">{INTRO_ART}</pre>
               <p className="start-subtitle">RUCHES DE KHARAD-RHO · INVASION TYRANIDE · SURVIE SOLO</p>
-              <button className="start-btn" onClick={handleStart} disabled={disabled}>
+              <button className="start-btn" onClick={handleStart} disabled={disabled} aria-label="Initialiser la connexion et démarrer la partie">
                 [ INITIALISER LA CONNEXION ]
               </button>
               <p className="start-hint">Mode MJ local activé si aucune clé OpenAI n’est configurée.</p>

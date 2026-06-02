@@ -55,6 +55,7 @@ Fonctionnalités actuellement disponibles :
 
 | Endpoint | Rôle |
 |---|---|
+| `GET /api/health` | Retourne l’état de santé minimal de l’API |
 | `GET /api/state` | Retourne l’état complet de la session |
 | `POST /api/start` | Lance la scène d’ouverture en SSE |
 | `POST /api/chat` | Envoie une action libre au MJ |
@@ -119,6 +120,7 @@ Tests existants :
 - [tests/test_dice.py](../../tests/test_dice.py)
 - [tests/test_entities.py](../../tests/test_entities.py)
 - [tests/test_state.py](../../tests/test_state.py)
+- [tests/test_api.py](../../tests/test_api.py)
 
 Commande :
 
@@ -129,7 +131,6 @@ pytest
 Tests à ajouter :
 
 - Tests de `Inventory.from_dict()`.
-- Tests des endpoints FastAPI.
 - Tests du fallback MJ local.
 - Tests frontend avec React Testing Library.
 - Tests end-to-end Playwright.
