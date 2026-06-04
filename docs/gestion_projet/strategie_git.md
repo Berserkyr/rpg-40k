@@ -39,7 +39,8 @@ Deux définitions de pipeline sont disponibles :
 Les pipelines vérifient :
 
 1. tests backend `pytest` ;
-2. build frontend `npm run build` ;
-3. tests end-to-end Playwright.
+2. tests unitaires frontend `npm test` ;
+3. build frontend `npm run build` ;
+4. tests end-to-end Playwright.
 
 Ces pipelines servent de preuve de non-régression et de qualité continue.

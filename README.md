@@ -31,6 +31,7 @@ Un dossier de preuves a été ajouté pour relier le projet à la grille **Exper
 | BDD | En place | SQLite via [backend/database.py](backend/database.py) |
 | Multi-utilisateur | En place | En-tête `X-User-Id` + champ joueur dans l’UI |
 | Pipeline | En place | [CI GitHub Actions](.github/workflows/ci.yml) + [GitLab CI](.gitlab-ci.yml) |
+| Tests unitaires frontend | En place | Vitest + React Testing Library dans [frontend/src/components/__tests__](frontend/src/components/__tests__) |
 | Tests end-to-end | En place | Playwright dans [frontend/e2e/game.spec.js](frontend/e2e/game.spec.js) |
 | Kanban | En place | [docs/gestion_projet/kanban.md](docs/gestion_projet/kanban.md) |
 | Git tag / multibranche | Prévu dans Git | [docs/gestion_projet/strategie_git.md](docs/gestion_projet/strategie_git.md) |
@@ -96,6 +97,15 @@ pytest
 ```
 
 Les tests couvrent la creation de fiches et la distribution des jets 2d6.
+
+## Tests unitaires frontend
+
+```powershell
+cd frontend
+npm test
+```
+
+Les tests unitaires frontend utilisent Vitest, jsdom et React Testing Library.
 
 ## Tests end-to-end
 
