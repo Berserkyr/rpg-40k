@@ -27,12 +27,19 @@
 | `v1.0.0-rncp` | Version de présentation RNCP |
 | `v1.0.1` | Correctif après validation |
 
-## Pipeline CI
+## Pipelines CI
 
-La pipeline GitHub Actions vérifie :
+Deux définitions de pipeline sont disponibles :
+
+| Plateforme | Fichier | Rôle |
+|---|---|---|
+| GitHub Actions | [.github/workflows/ci.yml](../../.github/workflows/ci.yml) | CI utilisée par le dépôt GitHub actuel |
+| GitLab CI | [.gitlab-ci.yml](../../.gitlab-ci.yml) | CI prête si le projet est importé sur GitLab |
+
+Les pipelines vérifient :
 
 1. tests backend `pytest` ;
 2. build frontend `npm run build` ;
 3. tests end-to-end Playwright.
 
-Cette pipeline sert de preuve de non-régression et de qualité continue.
+Ces pipelines servent de preuve de non-régression et de qualité continue.
