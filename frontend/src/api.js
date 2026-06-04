@@ -1,4 +1,22 @@
 const BASE = 'http://localhost:8000/api';
+const USER_KEY = 'rpg40k.userId';
+
+export function getCurrentUserId() {
+  return localStorage.getItem(USER_KEY) || 'default';
+}
+
+export function setCurrentUserId(userId) {
+  const normalized = (userId || 'default').trim() || 'default';
+  localStorage.setItem(USER_KEY, normalized);
+  return normalized;
+}
+
+function apiHeaders(extra = {}) {
+  return {
+    'X-User-Id': getCurrentUserId(),
+    ...extra,
+  };
+}
 
 async function parseResponse(response) {
   const text = await response.text();
@@ -15,14 +33,23 @@ async function parseResponse(response) {
 }
 
 export async function getState() {
-  const r = await fetch(`${BASE}/state`);
+  const r = await fetch(`${BASE}/state`, { headers: apiHeaders() });
+  return parseResponse(r);
+}
+
+export async function createUser(userId, displayName = userId) {
+  const r = await fetch(`${BASE}/users`, {
+    method: 'POST',
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ user_id: userId, display_name: displayName }),
+  });
   return parseResponse(r);
 }
 
 export async function postAction(path, body = {}) {
   const r = await fetch(`${BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
   });
   return parseResponse(r);
@@ -35,7 +62,7 @@ export function streamSSE(path, body, onToken, onDone, onError) {
     try {
       const response = await fetch(`${BASE}${path}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(body),
       });
 

@@ -20,6 +20,20 @@ Un dossier de preuves a été ajouté pour relier le projet à la grille **Exper
 - [Plan de recette](docs/rncp/05_plan_de_recette.md)
 - [Support de soutenance](docs/rncp/06_support_soutenance.md)
 - [Checklist jury](docs/rncp/07_checklist_jury.md)
+- [Architecture BDD et multi-utilisateur](docs/architecture_bdd_multiutilisateur.md)
+- [Kanban projet](docs/gestion_projet/kanban.md)
+- [Stratégie Git, branches, tags et pipeline](docs/gestion_projet/strategie_git.md)
+
+## État des attendus complémentaires
+
+| Attendu | Statut | Preuve |
+|---|---|---|
+| BDD | En place | SQLite via [backend/database.py](backend/database.py) |
+| Multi-utilisateur | En place | En-tête `X-User-Id` + champ joueur dans l’UI |
+| Pipeline | En place | [CI GitHub Actions](.github/workflows/ci.yml) |
+| Tests end-to-end | En place | Playwright dans [frontend/e2e/game.spec.js](frontend/e2e/game.spec.js) |
+| Kanban | En place | [docs/gestion_projet/kanban.md](docs/gestion_projet/kanban.md) |
+| Git tag / multibranche | Prévu dans Git | [docs/gestion_projet/strategie_git.md](docs/gestion_projet/strategie_git.md) |
 
 ## Plan d'implementation
 
@@ -82,6 +96,18 @@ pytest
 ```
 
 Les tests couvrent la creation de fiches et la distribution des jets 2d6.
+
+## Tests end-to-end
+
+Les tests navigateur utilisent Playwright.
+
+```powershell
+cd frontend
+npm run e2e:install
+npm run e2e
+```
+
+Ils nécessitent que le backend FastAPI soit lancé sur `127.0.0.1:8000` et le frontend Vite sur `127.0.0.1:5173`.
 
 ## Structure
 

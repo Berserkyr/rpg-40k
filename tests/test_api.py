@@ -6,6 +6,7 @@ import backend.api as api
 def _client_with_temp_save(tmp_path, monkeypatch):
     monkeypatch.setattr(api, "SAVE_DIR", tmp_path)
     api._session = None
+    api._sessions.clear()
     return TestClient(api.app)
 
 
@@ -17,6 +18,17 @@ def test_health_endpoint():
     data = response.json()
     assert data["status"] == "ok"
     assert data["service"] == "survivant-de-ruche-api"
+    assert "database" in data
+
+
+def test_create_user_endpoint_registers_player():
+    client = TestClient(api.app)
+    response = client.post("/api/users", json={"user_id": "Joueur Test", "display_name": "Joueur Test"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["user"]["id"] == "joueur-test"
+    assert data["user"]["display_name"] == "Joueur Test"
 
 
 def test_state_endpoint_returns_character(tmp_path, monkeypatch):
@@ -26,8 +38,20 @@ def test_state_endpoint_returns_character(tmp_path, monkeypatch):
     assert response.status_code == 200
     data = response.json()
     assert data["character"]["name"] == "Karimus"
+    assert data["user"]["id"] == "default"
     assert "current_zone" in data
     assert "inventory" in data
+
+
+def test_state_endpoint_isolates_users(tmp_path, monkeypatch):
+    client = _client_with_temp_save(tmp_path, monkeypatch)
+
+    alpha = client.get("/api/state", headers={"X-User-Id": "Alpha"}).json()
+    beta = client.get("/api/state", headers={"X-User-Id": "Beta"}).json()
+
+    assert alpha["user"]["id"] == "alpha"
+    assert beta["user"]["id"] == "beta"
+    assert alpha["user"]["id"] != beta["user"]["id"]
 
 
 def test_roll_endpoint_returns_2d6_total():

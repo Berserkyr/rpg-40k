@@ -130,6 +130,29 @@ body::after {
   text-align: center;
 }
 
+.player-id-label {
+  color: var(--amber);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+}
+
+.player-id-input {
+  width: min(360px, 90vw);
+  background: #020502;
+  border: 1px solid var(--border);
+  color: var(--green);
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  letter-spacing: 0.08em;
+  padding: 0.7rem 1rem;
+  text-align: center;
+}
+
+.player-id-input:focus {
+  border-color: var(--green);
+  outline: none;
+  box-shadow: 0 0 10px rgba(0,255,65,0.2);
+}
+
 .start-btn {
   background: transparent;
   border: 1px solid var(--green-dim);

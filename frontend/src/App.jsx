@@ -8,7 +8,7 @@ import InventoryPanel from './components/InventoryPanel';
 import CombatPanel from './components/CombatPanel';
 import ActionPanel from './components/ActionPanel';
 import { useSSEChat } from './hooks/useSSEChat';
-import { getState, postAction } from './api';
+import { createUser, getCurrentUserId, getState, postAction, setCurrentUserId } from './api';
 import './App.css';
 
 const INTRO_ART = String.raw`
@@ -23,6 +23,7 @@ export default function App() {
   const [gameState, setGameState] = useState(null);
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [playerId, setPlayerId] = useState(getCurrentUserId());
   const { lines, streaming, send, addLine, clear } = useSSEChat();
 
   const refreshState = useCallback(async () => {
@@ -48,10 +49,13 @@ export default function App() {
     }
   }, [addLine]);
 
-  const handleStart = () => {
+  const handleStart = async () => {
+    const activeUser = setCurrentUserId(playerId);
+    await createUser(activeUser, activeUser);
+    await refreshState();
     setStarted(true);
     clear();
-    addLine('CONNEXION AU RÉSEAU OBSCURANT... INITIALISÉE', 'system');
+    addLine(`CONNEXION AU RÉSEAU OBSCURANT... UTILISATEUR ${activeUser.toUpperCase()}`, 'system');
     send('/start', {}, (state) => setGameState(state));
   };
 
@@ -130,6 +134,16 @@ export default function App() {
             <div className="start-screen">
               <pre className="skull-art">{INTRO_ART}</pre>
               <p className="start-subtitle">RUCHES DE KHARAD-RHO · INVASION TYRANIDE · SURVIE SOLO</p>
+              <label className="player-id-label" htmlFor="player-id">IDENTIFIANT JOUEUR</label>
+              <input
+                id="player-id"
+                className="player-id-input"
+                value={playerId}
+                onChange={(event) => setPlayerId(event.target.value)}
+                placeholder="default"
+                disabled={disabled}
+                aria-label="Identifiant du joueur pour la sauvegarde multi-utilisateur"
+              />
               <button className="start-btn" onClick={handleStart} disabled={disabled} aria-label="Initialiser la connexion et démarrer la partie">
                 [ INITIALISER LA CONNEXION ]
               </button>

@@ -11,11 +11,13 @@ from pathlib import Path
 from typing import AsyncIterator, Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
+
+from backend.database import DATABASE_PATH, ensure_user, init_db, list_users, normalize_user_id, record_event
 
 load_dotenv()
 
@@ -50,6 +52,7 @@ from src.persistence import GameWorld, create_new_game_world, format_world_statu
 # App
 # ---------------------------------------------------------------------------
 app = FastAPI(title="Survivant de Ruche API", version="1.0.0", debug=True)
+init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,7 +63,7 @@ app.add_middleware(
 )
 
 # ---------------------------------------------------------------------------
-# Session unique (pour l'instant une seule partie a la fois)
+# Sessions utilisateurs en memoire, avec sauvegardes isolees par utilisateur
 # ---------------------------------------------------------------------------
 BASE_DIR = Path(__file__).parent.parent
 SAVE_DIR = BASE_DIR / "saves"
@@ -72,8 +75,9 @@ CAMPAIGN = "campagne1"
 class Session:
     """Etat de session charge en memoire."""
 
-    def __init__(self) -> None:
-        save_dir = SAVE_DIR / CAMPAIGN
+    def __init__(self, user_id: str = "default") -> None:
+        self.user_id = normalize_user_id(user_id)
+        save_dir = _save_dir_for_user(self.user_id)
         save_dir.mkdir(parents=True, exist_ok=True)
 
         self.character = CharacterState.from_file(CHARACTER_FILE)
@@ -127,6 +131,7 @@ class Session:
         """Sérialise tout l'etat visible par l'UI."""
         zone = self.world_map.get_current_zone()
         return {
+            "user": {"id": self.user_id},
             "character": self.character.to_dict(),
             "progression": self.progression.to_dict(),
             "inventory": self.inventory.to_dict(),
@@ -187,15 +192,35 @@ def _combat_state(combat: Optional[CombatState]) -> Optional[dict]:
     }
 
 
-# Session singleton
+# Sessions en memoire
 _session: Optional[Session] = None
+_sessions: dict[str, Session] = {}
 
 
-def get_session() -> Session:
+def _save_dir_for_user(user_id: str) -> Path:
+    """Retourne le dossier de sauvegarde d'un utilisateur."""
+    safe_user = normalize_user_id(user_id)
+    if safe_user == "default":
+        return SAVE_DIR / CAMPAIGN
+    return SAVE_DIR / "users" / safe_user / CAMPAIGN
+
+
+def current_user_id(x_user_id: Optional[str] = Header(default=None, alias="X-User-Id")) -> str:
+    """Lit l'utilisateur courant depuis l'en-tete HTTP."""
+    return normalize_user_id(x_user_id)
+
+
+def get_session(user_id: str = "default") -> Session:
     global _session
-    if _session is None:
-        _session = Session()
-    return _session
+    safe_user = normalize_user_id(user_id)
+    ensure_user(safe_user)
+    if safe_user == "default":
+        if _session is None:
+            _session = Session(safe_user)
+        return _session
+    if safe_user not in _sessions:
+        _sessions[safe_user] = Session(safe_user)
+    return _sessions[safe_user]
 
 
 # ---------------------------------------------------------------------------
@@ -319,6 +344,11 @@ class SpawnRequest(BaseModel):
     level: str = "standard"
 
 
+class UserRequest(BaseModel):
+    user_id: str
+    display_name: str | None = None
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -330,19 +360,33 @@ def health_check():
         "status": "ok",
         "service": "survivant-de-ruche-api",
         "version": app.version,
+        "database": str(DATABASE_PATH),
     }
 
 
+@app.get("/api/users")
+def users():
+    """Liste les utilisateurs connus dans la BDD SQLite."""
+    return {"users": list_users()}
+
+
+@app.post("/api/users")
+def create_user(req: UserRequest):
+    """Cree ou met a jour un utilisateur jouable."""
+    user = ensure_user(req.user_id, req.display_name)
+    return {"user": user}
+
+
 @app.get("/api/state")
-def get_state():
+def get_state(user_id: str = Depends(current_user_id)):
     """Retourne l'etat complet de la session."""
-    return get_session().full_state()
+    return get_session(user_id).full_state()
 
 
 @app.post("/api/start")
-async def start_game():
+async def start_game(user_id: str = Depends(current_user_id)):
     """Demarre une nouvelle scene d'ouverture (SSE streaming)."""
-    session = get_session()
+    session = get_session(user_id)
 
     opening_prompt = "Lance la scene d'ouverture. Karimus se reveille dans le chaos de l'invasion tyranide."
 
@@ -356,9 +400,9 @@ async def start_game():
 
 
 @app.post("/api/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, user_id: str = Depends(current_user_id)):
     """Envoie un message au MJ et streame la reponse."""
-    session = get_session()
+    session = get_session(user_id)
     session.messages.append({"role": "user", "content": req.message})
     return EventSourceResponse(_gm_stream(session, req.message))
 
@@ -405,9 +449,9 @@ def spawn_entity(req: SpawnRequest):
 
 
 @app.post("/api/combat/start")
-def start_combat(req: SpawnRequest):
+def start_combat(req: SpawnRequest, user_id: str = Depends(current_user_id)):
     """Demarre un combat."""
-    session = get_session()
+    session = get_session(user_id)
     faction_map = {"tyranide": Faction.TYRANID, "culte": Faction.GENESTEALER_CULT}
     level_map = {"sbire": ThreatLevel.MINION, "standard": ThreatLevel.STANDARD,
                  "elite": ThreatLevel.ELITE, "boss": ThreatLevel.BOSS}
@@ -422,10 +466,10 @@ def start_combat(req: SpawnRequest):
 
 
 @app.post("/api/combat/action")
-def combat_action(req: CommandRequest):
+def combat_action(req: CommandRequest, user_id: str = Depends(current_user_id)):
     """Execute une action de combat (attack/defend/flee)."""
     import random
-    session = get_session()
+    session = get_session(user_id)
     if not session.combat or not session.combat.is_active:
         raise HTTPException(status_code=400, detail="Pas de combat actif")
 
@@ -491,9 +535,9 @@ def combat_action(req: CommandRequest):
 
 
 @app.post("/api/travel")
-def travel(req: TravelRequest):
+def travel(req: TravelRequest, user_id: str = Depends(current_user_id)):
     """Deplacement vers une zone."""
-    session = get_session()
+    session = get_session(user_id)
     success, msg, event = session.world_map.travel_to(
         req.zone_id, session.world.global_state.current_scene
     )
@@ -510,9 +554,9 @@ def travel(req: TravelRequest):
 
 
 @app.post("/api/loot")
-def loot(req: CommandRequest):
+def loot(req: CommandRequest, user_id: str = Depends(current_user_id)):
     """Genere du butin et l'ajoute a l'inventaire."""
-    session = get_session()
+    session = get_session(user_id)
     level = req.args[0] if req.args else "standard"
     if level.isdigit():
         level = {"1": "sbire", "2": "standard", "3": "standard", "4": "elite", "5": "boss"}.get(level, "standard")
@@ -528,9 +572,9 @@ def loot(req: CommandRequest):
 
 
 @app.post("/api/learn")
-def learn_skill(req: CommandRequest):
+def learn_skill(req: CommandRequest, user_id: str = Depends(current_user_id)):
     """Apprend une competence."""
-    session = get_session()
+    session = get_session(user_id)
     if not req.args:
         avail = get_available_skills(session.progression)
         return {"available": [{"id": s.id, "name": s.name, "cost": s.xp_cost} for s in avail]}
@@ -545,15 +589,19 @@ def learn_skill(req: CommandRequest):
 
 
 @app.post("/api/save")
-def save():
+def save(user_id: str = Depends(current_user_id)):
     """Sauvegarde manuelle."""
-    get_session().save()
+    get_session(user_id).save()
     return {"message": "Sauvegarde effectuee"}
 
 
 @app.post("/api/reset")
-def reset():
+def reset(user_id: str = Depends(current_user_id)):
     """Reinitialise la session (nouvelle partie)."""
     global _session
-    _session = None
+    safe_user = normalize_user_id(user_id)
+    if safe_user == "default":
+        _session = None
+    else:
+        _sessions.pop(safe_user, None)
     return {"message": "Session reinitia lisee"}
