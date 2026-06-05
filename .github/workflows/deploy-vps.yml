@@ -1,0 +1,83 @@
+name: Deploy VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branche à déployer"
+        required: true
+        default: "main"
+      bind_address:
+        description: "Adresse d'écoute Docker Compose"
+        required: true
+        default: "0.0.0.0"
+      http_port:
+        description: "Port public dédié"
+        required: true
+        default: "8081"
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Validate secrets
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          test -n "$VPS_HOST" || (echo "Secret VPS_HOST manquant" && exit 1)
+          test -n "$VPS_USER" || (echo "Secret VPS_USER manquant" && exit 1)
+          test -n "$VPS_SSH_KEY" || (echo "Secret VPS_SSH_KEY manquant" && exit 1)
+
+      - name: Configure SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          ssh-keyscan -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy application
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+          APP_DIR: ${{ vars.APP_DIR || '/opt/rpg-40k' }}
+          REPO_URL: https://github.com/${{ github.repository }}.git
+          BRANCH: ${{ inputs.branch }}
+          RPG40K_BIND_ADDRESS: ${{ inputs.bind_address }}
+          RPG40K_HTTP_PORT: ${{ inputs.http_port }}
+        run: |
+          ssh -i ~/.ssh/vps_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' REPO_URL='$REPO_URL' BRANCH='$BRANCH' RPG40K_BIND_ADDRESS='$RPG40K_BIND_ADDRESS' RPG40K_HTTP_PORT='$RPG40K_HTTP_PORT' bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          if [ ! -d "$APP_DIR/.git" ]; then
+            mkdir -p "$APP_DIR"
+            git clone --branch "$BRANCH" "$REPO_URL" "$APP_DIR"
+          else
+            git -C "$APP_DIR" fetch origin "$BRANCH"
+            git -C "$APP_DIR" checkout "$BRANCH"
+            git -C "$APP_DIR" pull --ff-only origin "$BRANCH"
+          fi
+
+          cd "$APP_DIR"
+          [ -f .env ] || cp .env.example .env
+          grep -q '^RPG40K_BIND_ADDRESS=' .env && sed -i "s/^RPG40K_BIND_ADDRESS=.*/RPG40K_BIND_ADDRESS=$RPG40K_BIND_ADDRESS/" .env || echo "RPG40K_BIND_ADDRESS=$RPG40K_BIND_ADDRESS" >> .env
+          grep -q '^RPG40K_HTTP_PORT=' .env && sed -i "s/^RPG40K_HTTP_PORT=.*/RPG40K_HTTP_PORT=$RPG40K_HTTP_PORT/" .env || echo "RPG40K_HTTP_PORT=$RPG40K_HTTP_PORT" >> .env
+          grep -q '^VITE_API_BASE=' .env && sed -i 's#^VITE_API_BASE=.*#VITE_API_BASE=/api#' .env || echo 'VITE_API_BASE=/api' >> .env
+
+          docker compose -p rpg40k up -d --build
+          docker compose -p rpg40k ps
+          curl -fsS "http://127.0.0.1:$RPG40K_HTTP_PORT/api/health"
+          REMOTE

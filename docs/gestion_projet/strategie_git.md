@@ -34,6 +34,7 @@ Deux définitions de pipeline sont disponibles :
 | Plateforme | Fichier | Rôle |
 |---|---|---|
 | GitHub Actions | [.github/workflows/ci.yml](../../.github/workflows/ci.yml) | CI utilisée par le dépôt GitHub actuel |
+| GitHub Actions | [.github/workflows/deploy-vps.yml](../../.github/workflows/deploy-vps.yml) | CD manuel vers le VPS |
 | GitLab CI | [.gitlab-ci.yml](../../.gitlab-ci.yml) | CI prête si le projet est importé sur GitLab |
 
 Les pipelines vérifient :
@@ -44,3 +45,5 @@ Les pipelines vérifient :
 4. tests end-to-end Playwright.
 
 Ces pipelines servent de preuve de non-régression et de qualité continue.
+
+Le déploiement VPS est volontairement manuel : il évite qu’un simple push redéploie automatiquement la production.

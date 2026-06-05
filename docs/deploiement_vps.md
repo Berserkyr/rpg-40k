@@ -155,6 +155,48 @@ git pull --ff-only origin main
 docker compose -p rpg40k up -d --build
 ```
 
+## Déploiement via pipeline
+
+Le déploiement VPS est aussi disponible dans les pipelines CI/CD.
+
+### GitHub Actions
+
+Workflow : [.github/workflows/deploy-vps.yml](../.github/workflows/deploy-vps.yml)
+
+Déclenchement : manuel via **Actions → Deploy VPS → Run workflow**.
+
+Secrets GitHub à configurer dans **Settings → Secrets and variables → Actions** :
+
+| Secret / variable | Exemple | Rôle |
+|---|---|---|
+| `VPS_HOST` | `51.68.103.56` | Adresse du VPS |
+| `VPS_USER` | `debian` | Utilisateur SSH |
+| `VPS_SSH_KEY` | clé privée SSH dédiée | Clé privée utilisée par GitHub Actions |
+| `VPS_PORT` | `22` | Port SSH, optionnel |
+| variable `APP_DIR` | `/opt/rpg-40k` | Dossier de déploiement, optionnel |
+
+La clé privée ne doit jamais être committée. Créer de préférence une clé dédiée au déploiement et ajouter sa clé publique dans `~/.ssh/authorized_keys` sur le VPS.
+
+### GitLab CI
+
+Pipeline : [.gitlab-ci.yml](../.gitlab-ci.yml)
+
+Job : `deploy-vps`, manuel, uniquement sur `main`.
+
+Variables GitLab CI/CD à configurer :
+
+| Variable | Exemple | Rôle |
+|---|---|---|
+| `VPS_HOST` | `51.68.103.56` | Adresse du VPS |
+| `VPS_USER` | `debian` | Utilisateur SSH |
+| `SSH_PRIVATE_KEY` | clé privée SSH dédiée | Clé privée utilisée par GitLab |
+| `VPS_PORT` | `22` | Port SSH, optionnel |
+| `APP_DIR` | `/opt/rpg-40k` | Dossier de déploiement, optionnel |
+| `RPG40K_BIND_ADDRESS` | `0.0.0.0` | Exposition publique directe |
+| `RPG40K_HTTP_PORT` | `8081` | Port dédié de l’application |
+
+Les deux pipelines lancent la même logique : `git pull`, mise à jour du `.env`, `docker compose -p rpg40k up -d --build`, puis vérification de `/api/health`.
+
 ## Logs
 
 ```bash

@@ -31,7 +31,7 @@ Un dossier de preuves a été ajouté pour relier le projet à la grille **Exper
 |---|---|---|
 | BDD | En place | SQLite via [backend/database.py](backend/database.py) |
 | Multi-utilisateur | En place | En-tête `X-User-Id` + champ joueur dans l’UI |
-| Pipeline | En place | [CI GitHub Actions](.github/workflows/ci.yml) + [GitLab CI](.gitlab-ci.yml) |
+| Pipeline CI/CD | En place | [CI GitHub Actions](.github/workflows/ci.yml), [déploiement VPS](.github/workflows/deploy-vps.yml) + [GitLab CI](.gitlab-ci.yml) |
 | Tests unitaires frontend | En place | Vitest + React Testing Library dans [frontend/src/components/__tests__](frontend/src/components/__tests__) |
 | Tests end-to-end | En place | Playwright dans [frontend/e2e/game.spec.js](frontend/e2e/game.spec.js) |
 | Déploiement VPS | En place | Docker Compose + guide [docs/deploiement_vps.md](docs/deploiement_vps.md) |
