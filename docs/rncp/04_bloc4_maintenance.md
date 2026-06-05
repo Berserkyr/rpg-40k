@@ -111,6 +111,7 @@ Processus :
 | 0.7 | Jouabilité | Actions, combat UI, inventaire UI, fallback MJ local |
 | 0.8 | Dossier RNCP | Documentation cadrage, conception, pilotage, maintenance |
 | 0.9 | Qualité API | Healthcheck `/api/health`, tests API FastAPI, labels ARIA principaux |
+| 1.0 | Déploiement | Docker Compose, reverse proxy Nginx, volumes persistants, guide VPS |
 
 ## 7. Recommandations d’amélioration
 
@@ -120,7 +121,7 @@ Processus :
 | Tests frontend | Fiabilité UI | Moyen |
 | CI GitHub Actions | Qualité continue | Faible |
 | Export/import sauvegarde | Sécurité données | Moyen |
-| Déploiement cloud | Démo accessible | Moyen |
+| HTTPS sur domaine | Démo accessible et sécurisée | Moyen |
 | Authentification | Multi-utilisateur | Fort |
 | Base de données | Scalabilité | Moyen |
 | Audit RGAA | Accessibilité | Moyen |

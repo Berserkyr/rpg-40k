@@ -25,7 +25,8 @@ Ce tableau sert de base de pilotage pour la soutenance. Il peut être repris dan
 | KAN-007 | Mettre en place tags Git | Moyenne | En cours | Un tag versionné `v1.0.0-rncp` existe |
 | KAN-008 | Ajouter authentification réelle | Moyenne | Backlog | Connexion par compte sécurisé au lieu d’un simple identifiant HTTP |
 | KAN-009 | Remplacer YAML par sauvegardes 100% BDD | Moyenne | Backlog | Les sauvegardes de partie sont persistées en tables relationnelles |
-| KAN-010 | Déploiement public | Moyenne | Backlog | URL publique stable pour démonstration |
+| KAN-010 | Préparer le déploiement VPS | Haute | Terminé | Docker Compose, reverse proxy, guide VPS et scripts de déploiement disponibles |
+| KAN-011 | Ajouter HTTPS sur domaine | Moyenne | Backlog | Certificat TLS actif via Caddy, Traefik ou Certbot |
 
 ## Definition of Done
 

@@ -21,6 +21,7 @@ Un dossier de preuves a été ajouté pour relier le projet à la grille **Exper
 - [Support de soutenance](docs/rncp/06_support_soutenance.md)
 - [Checklist jury](docs/rncp/07_checklist_jury.md)
 - [Architecture BDD et multi-utilisateur](docs/architecture_bdd_multiutilisateur.md)
+- [Déploiement VPS Docker](docs/deploiement_vps.md)
 - [Kanban projet](docs/gestion_projet/kanban.md)
 - [Stratégie Git, branches, tags et pipeline](docs/gestion_projet/strategie_git.md)
 
@@ -33,6 +34,7 @@ Un dossier de preuves a été ajouté pour relier le projet à la grille **Exper
 | Pipeline | En place | [CI GitHub Actions](.github/workflows/ci.yml) + [GitLab CI](.gitlab-ci.yml) |
 | Tests unitaires frontend | En place | Vitest + React Testing Library dans [frontend/src/components/__tests__](frontend/src/components/__tests__) |
 | Tests end-to-end | En place | Playwright dans [frontend/e2e/game.spec.js](frontend/e2e/game.spec.js) |
+| Déploiement VPS | En place | Docker Compose + guide [docs/deploiement_vps.md](docs/deploiement_vps.md) |
 | Kanban | En place | [docs/gestion_projet/kanban.md](docs/gestion_projet/kanban.md) |
 | Git tag / multibranche | Prévu dans Git | [docs/gestion_projet/strategie_git.md](docs/gestion_projet/strategie_git.md) |
 
@@ -61,6 +63,17 @@ pip install -r requirements.txt
 ```
 
 Copiez `.env.example` en `.env` puis remplissez votre clef.
+
+## Déploiement VPS
+
+Le projet peut être déployé sur un VPS Linux avec Docker Compose :
+
+```bash
+cd /opt/rpg-40k
+docker compose up -d --build
+```
+
+Le guide complet est disponible ici : [docs/deploiement_vps.md](docs/deploiement_vps.md).
 
 ## Lancer une session
 
