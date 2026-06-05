@@ -5,20 +5,34 @@ Ce guide décrit un déploiement simple sur un VPS Linux avec Docker Compose.
 ## Architecture cible
 
 ```text
-Internet
+VPS uniquement en local
    |
    v
-VPS:80
+127.0.0.1:8081
    |
    v
-frontend Nginx React
+frontend Nginx React isolé
    |
    +-- /api/* --> backend FastAPI:8000
 
-Volumes Docker persistants :
+Volumes Docker persistants dédiés au projet `rpg40k` :
 - rpg40k_data  : base SQLite `rpg40k.sqlite3`
 - rpg40k_saves : sauvegardes YAML par utilisateur
 ```
+
+## Important — serveur déjà en production
+
+La configuration est volontairement isolée pour ne pas casser un projet déjà en production sur le VPS :
+
+- aucun bind direct sur les ports publics `80` ou `443` ;
+- le frontend écoute seulement sur `127.0.0.1:8081` par défaut ;
+- Docker Compose est lancé avec le nom de projet `rpg40k` ;
+- les volumes sont séparés du reste du serveur ;
+- aucune configuration Nginx/Apache/Caddy existante n’est modifiée automatiquement.
+
+Conséquence : après déploiement, l’application est testable depuis le VPS avec `curl http://127.0.0.1:8081`, mais elle n’écrase pas le site public existant.
+
+Pour la rendre publique ensuite, il faudra ajouter manuellement une règle dans le reverse proxy déjà en production, par exemple sur un sous-domaine dédié `rpg.ton-domaine.fr` qui proxy vers `http://127.0.0.1:8081`.
 
 ## Fichiers ajoutés
 
@@ -39,7 +53,9 @@ Volumes Docker persistants :
 - Accès SSH avec un utilisateur sudo.
 - Git installé.
 - Docker + Docker Compose v2 installés.
-- Ports ouverts : `22`, `80` et, si HTTPS ajouté ensuite, `443`.
+- Port SSH `22` accessible.
+- Les ports publics `80` et `443` peuvent déjà être utilisés par l’autre projet en production.
+- Le port local `8081` doit seulement être libre sur le VPS.
 
 ## Installation de Docker sur Ubuntu
 
@@ -80,25 +96,32 @@ OPENAI_API_KEY=
 VITE_API_BASE=/api
 DOMAIN=ton-domaine.fr
 APP_DIR=/opt/rpg-40k
+RPG40K_HTTP_PORT=8081
 ```
 
 Relance ensuite :
 
 ```bash
-docker compose up -d --build
+docker compose -p rpg40k up -d --build
 ```
 
 ## Vérification
 
 ```bash
-docker compose ps
-curl http://127.0.0.1/api/health
+docker compose -p rpg40k ps
+curl http://127.0.0.1:8081/api/health
 ```
 
-Depuis un navigateur :
+Pour tester depuis ton PC sans exposer publiquement l’application, ouvre un tunnel SSH :
+
+```bash
+ssh -L 8081:127.0.0.1:8081 root@IP_DU_VPS
+```
+
+Puis ouvre depuis ton PC :
 
 ```text
-http://IP_DU_VPS/
+http://127.0.0.1:8081/
 ```
 
 ## Mise à jour applicative
@@ -106,14 +129,14 @@ http://IP_DU_VPS/
 ```bash
 cd /opt/rpg-40k
 git pull --ff-only origin main
-docker compose up -d --build
+docker compose -p rpg40k up -d --build
 ```
 
 ## Logs
 
 ```bash
-docker compose logs -f backend
-docker compose logs -f frontend
+docker compose -p rpg40k logs -f backend
+docker compose -p rpg40k logs -f frontend
 ```
 
 ## Sauvegarde
@@ -127,29 +150,31 @@ Les archives sont créées dans `~/rpg-40k-backups` par défaut.
 
 ## HTTPS et nom de domaine
 
-La configuration fournie expose l’application en HTTP sur le port `80`.
+La configuration fournie n’expose pas directement l’application sur le port public `80`.
 
-Pour une démonstration RNCP, c’est suffisant si le VPS est accessible par IP. Pour une mise en production publique, ajouter ensuite :
+Pour une mise en production publique sans impacter le site existant, ajouter une règle dans le reverse proxy déjà installé :
 
-1. un nom de domaine pointant vers le VPS ;
-2. un reverse proxy HTTPS avec Caddy, Traefik ou Nginx + Certbot ;
-3. une restriction CORS côté backend.
+1. créer un sous-domaine, par exemple `rpg.ton-domaine.fr` ;
+2. le faire pointer vers le VPS ;
+3. ajouter une règle proxy vers `http://127.0.0.1:8081` ;
+4. générer un certificat TLS ;
+5. tester sans modifier le site principal.
 
 ## Commandes utiles
 
 ```bash
 # Arrêter
 cd /opt/rpg-40k
-docker compose down
+docker compose -p rpg40k down
 
 # Redémarrer
 cd /opt/rpg-40k
-docker compose restart
+docker compose -p rpg40k restart
 
 # Reconstruire complètement
 cd /opt/rpg-40k
-docker compose build --no-cache
-docker compose up -d
+docker compose -p rpg40k build --no-cache
+docker compose -p rpg40k up -d
 ```
 
 ## Points de preuve pour la soutenance

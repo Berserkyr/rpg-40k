@@ -33,8 +33,8 @@ if [ ! -f .env ]; then
   echo "Fichier .env créé depuis .env.example. Renseigne OPENAI_API_KEY si nécessaire."
 fi
 
-docker compose pull || true
-docker compose up -d --build
+docker compose -p rpg40k pull || true
+docker compose -p rpg40k up -d --build
 
 echo "Déploiement terminé. Vérification :"
-docker compose ps
+docker compose -p rpg40k ps
