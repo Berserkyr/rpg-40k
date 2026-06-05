@@ -26,6 +26,7 @@ La configuration est volontairement isolée pour ne pas casser un projet déjà 
 
 - aucun bind direct sur les ports publics `80` ou `443` ;
 - le frontend écoute seulement sur `127.0.0.1:8081` par défaut ;
+- l’exposition publique peut se faire sur `0.0.0.0:8081` si besoin, sans toucher aux ports du site existant ;
 - Docker Compose est lancé avec le nom de projet `rpg40k` ;
 - les volumes sont séparés du reste du serveur ;
 - aucune configuration Nginx/Apache/Caddy existante n’est modifiée automatiquement.
@@ -33,6 +34,27 @@ La configuration est volontairement isolée pour ne pas casser un projet déjà 
 Conséquence : après déploiement, l’application est testable depuis le VPS avec `curl http://127.0.0.1:8081`, mais elle n’écrase pas le site public existant.
 
 Pour la rendre publique ensuite, il faudra ajouter manuellement une règle dans le reverse proxy déjà en production, par exemple sur un sous-domaine dédié `rpg.ton-domaine.fr` qui proxy vers `http://127.0.0.1:8081`.
+
+## Accès public rapide sans tunnel SSH
+
+Si aucun reverse proxy ou sous-domaine n’est encore prêt, l’application peut être exposée directement sur le port dédié `8081`, sans toucher au site existant sur `80/443`.
+
+Sur le VPS :
+
+```bash
+cd /opt/rpg-40k
+grep -q '^RPG40K_BIND_ADDRESS=' .env && sed -i 's/^RPG40K_BIND_ADDRESS=.*/RPG40K_BIND_ADDRESS=0.0.0.0/' .env || echo 'RPG40K_BIND_ADDRESS=0.0.0.0' >> .env
+grep -q '^RPG40K_HTTP_PORT=' .env && sed -i 's/^RPG40K_HTTP_PORT=.*/RPG40K_HTTP_PORT=8081/' .env || echo 'RPG40K_HTTP_PORT=8081' >> .env
+docker compose -p rpg40k up -d --build
+```
+
+L’application devient accessible ici :
+
+```text
+http://IP_DU_VPS:8081/
+```
+
+Cette solution est utile pour une démonstration. Pour une mise en production propre, préférer ensuite un sous-domaine HTTPS.
 
 ## Fichiers ajoutés
 
@@ -96,6 +118,7 @@ OPENAI_API_KEY=
 VITE_API_BASE=/api
 DOMAIN=ton-domaine.fr
 APP_DIR=/opt/rpg-40k
+RPG40K_BIND_ADDRESS=127.0.0.1
 RPG40K_HTTP_PORT=8081
 ```
 
