@@ -2,7 +2,12 @@
 
 ## Avant la soutenance
 
+- [ ] Exporter [BLOC2_DOSSIER_FINAL.md](BLOC2_DOSSIER_FINAL.md) en PDF.
+- [ ] Vérifier que le PDF du Bloc 2 reste sous 30 pages hors annexes, page de garde et sommaire.
+- [ ] Joindre [BLOC2_ANNEXES.md](BLOC2_ANNEXES.md) séparément si le jury accepte les annexes.
 - [ ] Lancer `pytest`.
+- [ ] Lancer `npm test` dans `frontend`.
+- [ ] Lancer `npm run e2e` dans `frontend`.
 - [ ] Lancer `npm run build` dans `frontend`.
 - [ ] Tester [start_game.bat](../../start_game.bat).
 - [ ] Vérifier que `http://localhost:5173` affiche le jeu.
@@ -15,6 +20,8 @@
 
 ## Documents à fournir
 
+- [ ] [BLOC2_DOSSIER_FINAL.md](BLOC2_DOSSIER_FINAL.md)
+- [ ] [BLOC2_ANNEXES.md](BLOC2_ANNEXES.md)
 - [ ] [00_cartographie_grille.md](00_cartographie_grille.md)
 - [ ] [01_bloc1_cadrage.md](01_bloc1_cadrage.md)
 - [ ] [02_bloc2_conception_developpement.md](02_bloc2_conception_developpement.md)

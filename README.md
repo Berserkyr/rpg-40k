@@ -12,6 +12,8 @@ Assistant solo textuel inspire de Warhammer 40K : incarnez un citoyen imperial p
 
 Un dossier de preuves a été ajouté pour relier le projet à la grille **Expert en développement logiciel RNCP 39583** :
 
+- [Dossier final Bloc 2 — rendu 24/07/2026](docs/rncp/BLOC2_DOSSIER_FINAL.md)
+- [Annexes Bloc 2 — preuves hors limite de pages](docs/rncp/BLOC2_ANNEXES.md)
 - [Cartographie avec la grille](docs/rncp/00_cartographie_grille.md)
 - [Bloc 1 — cadrage projet](docs/rncp/01_bloc1_cadrage.md)
 - [Bloc 2 — conception et développement](docs/rncp/02_bloc2_conception_developpement.md)
