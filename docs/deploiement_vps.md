@@ -169,7 +169,7 @@ Secrets GitHub à configurer dans **Settings → Secrets and variables → Actio
 
 | Secret / variable | Exemple | Rôle |
 |---|---|---|
-| `VPS_HOST` | `51.68.103.56` | Adresse du VPS |
+| `VPS_HOST` | `89.116.111.166` | Adresse du VPS |
 | `VPS_USER` | `debian` | Utilisateur SSH |
 | `VPS_SSH_KEY` | clé privée SSH dédiée | Clé privée utilisée par GitHub Actions |
 | `VPS_PORT` | `22` | Port SSH, optionnel |
@@ -187,7 +187,7 @@ Variables GitLab CI/CD à configurer :
 
 | Variable | Exemple | Rôle |
 |---|---|---|
-| `VPS_HOST` | `51.68.103.56` | Adresse du VPS |
+| `VPS_HOST` | `89.116.111.166` | Adresse du VPS |
 | `VPS_USER` | `debian` | Utilisateur SSH |
 | `SSH_PRIVATE_KEY` | clé privée SSH dédiée | Clé privée utilisée par GitLab |
 | `VPS_PORT` | `22` | Port SSH, optionnel |

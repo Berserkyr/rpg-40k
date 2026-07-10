@@ -7,7 +7,7 @@
 **Date de rendu :** 24/07/2026  
 **Version du livrable :** `v1.0.0-rncp`  
 **Dépôt source :** `https://github.com/Berserkyr/rpg-40k`  
-**Application déployée :** `http://51.68.103.56:8081/`
+**Application déployée :** `http://89.116.111.166:8081/`
 
 ---
 
@@ -122,7 +122,7 @@ Le déploiement VPS utilise Docker Compose avec deux conteneurs :
 L’application est exposée sur un port dédié pour ne pas entrer en conflit avec un autre site déjà présent sur le VPS :
 
 ```text
-http://51.68.103.56:8081/
+http://89.116.111.166:8081/
 ```
 
 Les données sont persistées via volumes Docker dédiés :

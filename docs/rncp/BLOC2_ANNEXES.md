@@ -69,8 +69,8 @@ Résultat attendu : configuration valide et conteneurs actifs.
 | Élément | URL |
 |---|---|
 | Dépôt GitHub | `https://github.com/Berserkyr/rpg-40k` |
-| Application VPS | `http://51.68.103.56:8081/` |
-| Healthcheck VPS | `http://51.68.103.56:8081/api/health` |
+| Application VPS | `http://89.116.111.166:8081/` |
+| Healthcheck VPS | `http://89.116.111.166:8081/api/health` |
 
 ## Annexe D — Captures recommandées à insérer dans le PDF final
 
