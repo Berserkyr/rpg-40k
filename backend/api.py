@@ -17,7 +17,14 @@ from openai import AsyncOpenAI
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
-from backend.database import DATABASE_PATH, ensure_user, init_db, list_users, normalize_user_id, record_event
+from backend.database import (
+    DATABASE_PATH, create_account, ensure_user, get_account, init_db,
+    list_users, normalize_user_id, record_event, touch_last_seen,
+)
+from backend.auth import (
+    CurrentUser, ROLE_ADMIN, ROLE_PLAYER, create_access_token,
+    get_current_user, hash_password, require_admin, verify_password,
+)
 
 load_dotenv()
 
@@ -205,9 +212,9 @@ def _save_dir_for_user(user_id: str) -> Path:
     return SAVE_DIR / "users" / safe_user / CAMPAIGN
 
 
-def current_user_id(x_user_id: Optional[str] = Header(default=None, alias="X-User-Id")) -> str:
-    """Lit l'utilisateur courant depuis l'en-tete HTTP."""
-    return normalize_user_id(x_user_id)
+def current_user_id(user: CurrentUser = Depends(get_current_user)) -> str:
+    """Résout l'utilisateur courant à partir du jeton JWT (Authorization: Bearer)."""
+    return normalize_user_id(user.username)
 
 
 def get_session(user_id: str = "default") -> Session:
@@ -349,6 +356,17 @@ class UserRequest(BaseModel):
     display_name: str | None = None
 
 
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    display_name: str | None = None
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -364,17 +382,56 @@ def health_check():
     }
 
 
+@app.post("/api/auth/register", status_code=201)
+def register(req: RegisterRequest):
+    """Crée un compte joueur avec mot de passe haché et retourne un JWT."""
+    username = normalize_user_id(req.username)
+    if not username or username == "default":
+        raise HTTPException(status_code=400, detail="Identifiant invalide.")
+    digest = hash_password(req.password)
+    try:
+        account = create_account(username, digest, req.display_name, role=ROLE_PLAYER)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    record_event(username, "register")
+    token = create_access_token(account["id"], account["role"])
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {"id": account["id"], "display_name": account["display_name"], "role": account["role"]},
+    }
+
+
+@app.post("/api/auth/login")
+def login(req: LoginRequest):
+    """Authentifie un utilisateur et retourne un JWT."""
+    username = normalize_user_id(req.username)
+    account = get_account(username)
+    if not account or not account.get("password_hash") or not verify_password(req.password, account["password_hash"]):
+        raise HTTPException(status_code=401, detail="Identifiants incorrects.")
+    touch_last_seen(username)
+    record_event(username, "login")
+    token = create_access_token(account["id"], account["role"])
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {"id": account["id"], "display_name": account["display_name"], "role": account["role"]},
+    }
+
+
+@app.get("/api/auth/me")
+def me(user: CurrentUser = Depends(get_current_user)):
+    """Retourne l'identité de l'utilisateur authentifié."""
+    account = get_account(user.username)
+    if not account:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+    return {"id": account["id"], "display_name": account["display_name"], "role": account["role"]}
+
+
 @app.get("/api/users")
-def users():
-    """Liste les utilisateurs connus dans la BDD SQLite."""
+def users(_admin: CurrentUser = Depends(require_admin)):
+    """Liste les utilisateurs connus (réservé aux administrateurs)."""
     return {"users": list_users()}
-
-
-@app.post("/api/users")
-def create_user(req: UserRequest):
-    """Cree ou met a jour un utilisateur jouable."""
-    user = ensure_user(req.user_id, req.display_name)
-    return {"user": user}
 
 
 @app.get("/api/state")
@@ -408,14 +465,14 @@ async def chat(req: ChatRequest, user_id: str = Depends(current_user_id)):
 
 
 @app.post("/api/roll")
-def roll_dice():
+def roll_dice(_user: str = Depends(current_user_id)):
     """Lance 2d6 et retourne le resultat."""
     result = roll_2d6()
     return {"formatted": format_roll(result), "total": result.total, "values": result.values}
 
 
 @app.post("/api/spawn")
-def spawn_entity(req: SpawnRequest):
+def spawn_entity(req: SpawnRequest, _user: str = Depends(current_user_id)):
     """Genere une entite procedural."""
     faction_map = {
         "tyranide": Faction.TYRANID,

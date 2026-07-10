@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createUser, getCurrentUserId, getState, postAction, setCurrentUserId } from '../api';
+import { getCurrentUserId, getState, getToken, login, logout, postAction, setCurrentUserId } from '../api';
 
 describe('api client', () => {
   beforeEach(() => {
@@ -18,27 +18,43 @@ describe('api client', () => {
     expect(getCurrentUserId()).toBe('Karimus');
   });
 
-  it('envoie X-User-Id sur getState', async () => {
-    setCurrentUserId('joueur-api');
+  it('n’envoie pas d’en-tête Authorization sans jeton', async () => {
     fetch.mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
 
     await expect(getState()).resolves.toEqual({ ok: true });
 
     expect(fetch).toHaveBeenCalledWith('http://localhost:8000/api/state', {
-      headers: { 'X-User-Id': 'joueur-api' },
+      headers: {},
     });
   });
 
-  it('crée un utilisateur via l’API', async () => {
-    fetch.mockResolvedValueOnce(new Response(JSON.stringify({ user: { id: 'alpha' } }), { status: 200 }));
+  it('stocke le jeton et l’envoie en Bearer après login', async () => {
+    fetch.mockResolvedValueOnce(new Response(
+      JSON.stringify({ access_token: 'jwt-123', user: { id: 'alpha', role: 'player' } }),
+      { status: 200 },
+    ));
 
-    await expect(createUser('alpha', 'Alpha')).resolves.toEqual({ user: { id: 'alpha' } });
+    await login('alpha', 'secret42');
+    expect(getToken()).toBe('jwt-123');
 
-    expect(fetch).toHaveBeenCalledWith('http://localhost:8000/api/users', expect.objectContaining({
-      method: 'POST',
-      headers: expect.objectContaining({ 'Content-Type': 'application/json', 'X-User-Id': 'default' }),
-      body: JSON.stringify({ user_id: 'alpha', display_name: 'Alpha' }),
-    }));
+    fetch.mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    await getState();
+
+    expect(fetch).toHaveBeenLastCalledWith('http://localhost:8000/api/state', {
+      headers: { Authorization: 'Bearer jwt-123' },
+    });
+  });
+
+  it('supprime le jeton au logout', async () => {
+    fetch.mockResolvedValueOnce(new Response(
+      JSON.stringify({ access_token: 'jwt-xyz', user: { id: 'beta', role: 'player' } }),
+      { status: 200 },
+    ));
+    await login('beta', 'secret42');
+    expect(getToken()).toBe('jwt-xyz');
+
+    logout();
+    expect(getToken()).toBe('');
   });
 
   it('remonte les erreurs API', async () => {

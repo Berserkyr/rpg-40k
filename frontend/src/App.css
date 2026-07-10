@@ -176,6 +176,101 @@ body::after {
   50% { border-color: var(--green); box-shadow: 0 0 12px rgba(0,255,65,0.3); }
 }
 
+/* ---- Authentification ---- */
+.auth-body { justify-content: center; }
+
+.auth-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  height: 100%;
+  padding: 2rem;
+}
+
+.auth-title {
+  color: var(--green);
+  letter-spacing: 0.2em;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: min(360px, 90vw);
+}
+
+.auth-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+}
+
+.auth-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.55rem 0.7rem;
+  margin-bottom: 0.4rem;
+}
+
+.auth-input:focus {
+  border-color: var(--green);
+  outline: none;
+  box-shadow: 0 0 10px rgba(0,255,65,0.2);
+}
+
+.auth-error { color: #ff5555; font-size: 0.8rem; }
+
+.auth-submit {
+  background: transparent;
+  border: 1px solid var(--green-dim);
+  color: var(--green);
+  font-family: inherit;
+  letter-spacing: 0.15em;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  margin-top: 0.4rem;
+  transition: all 0.2s;
+}
+
+.auth-submit:hover:not(:disabled) { background: var(--green); color: var(--dark); }
+
+.auth-switch {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  text-decoration: underline;
+}
+
+.auth-switch:hover { color: var(--green); }
+
+.start-user { color: var(--muted); font-size: 0.82rem; margin-bottom: 0.6rem; }
+.start-user strong { color: var(--green); }
+
+.logout-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  padding: 0.2rem 0.5rem;
+  margin-left: 1rem;
+  cursor: pointer;
+}
+
+.logout-btn:hover { color: var(--green); border-color: var(--green-dim); }
+
 @media (max-width: 1100px) {
   .sidebar-left { width: 220px; }
   .sidebar-right { width: 240px; }

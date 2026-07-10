@@ -7,8 +7,9 @@ import QuestPanel from './components/QuestPanel';
 import InventoryPanel from './components/InventoryPanel';
 import CombatPanel from './components/CombatPanel';
 import ActionPanel from './components/ActionPanel';
+import AuthPanel from './components/AuthPanel';
 import { useSSEChat } from './hooks/useSSEChat';
-import { createUser, getCurrentUserId, getState, postAction, setCurrentUserId } from './api';
+import { getCurrentUserId, getState, isAuthenticated, logout, postAction } from './api';
 import './App.css';
 
 const INTRO_ART = String.raw`
@@ -23,6 +24,7 @@ export default function App() {
   const [gameState, setGameState] = useState(null);
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [authed, setAuthed] = useState(isAuthenticated());
   const [playerId, setPlayerId] = useState(getCurrentUserId());
   const { lines, streaming, send, addLine, clear } = useSSEChat();
 
@@ -33,10 +35,28 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!authed) {
+      setLoading(false);
+      return;
+    }
     refreshState()
       .catch((error) => addLine(`ERREUR BACKEND: ${error.message}`, 'danger'))
       .finally(() => setLoading(false));
-  }, [refreshState, addLine]);
+  }, [authed, refreshState, addLine]);
+
+  const handleAuthenticated = useCallback((user) => {
+    setPlayerId(user?.id || getCurrentUserId());
+    setAuthed(true);
+    setLoading(true);
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    logout();
+    setAuthed(false);
+    setStarted(false);
+    setGameState(null);
+    clear();
+  }, [clear]);
 
   const applyAction = useCallback(async (label, action) => {
     try {
@@ -50,12 +70,10 @@ export default function App() {
   }, [addLine]);
 
   const handleStart = async () => {
-    const activeUser = setCurrentUserId(playerId);
-    await createUser(activeUser, activeUser);
     await refreshState();
     setStarted(true);
     clear();
-    addLine(`CONNEXION AU RÉSEAU OBSCURANT... UTILISATEUR ${activeUser.toUpperCase()}`, 'system');
+    addLine(`CONNEXION AU RÉSEAU OBSCURANT... UTILISATEUR ${(playerId || 'joueur').toUpperCase()}`, 'system');
     send('/start', {}, (state) => setGameState(state));
   };
 
@@ -119,9 +137,21 @@ export default function App() {
         <span className="header-logo">⚙ HIVE-NODE//SECTEUR-7</span>
         <span className="header-status">
           {loading ? '◌ SYNCHRONISATION...' : streaming ? '● TRANSMISSION VOX...' : '○ SYSTÈME OPÉRATIONNEL'}
+          {authed && (
+            <button className="logout-btn" onClick={handleLogout} aria-label="Se déconnecter">
+              ⏻ DÉCONNEXION
+            </button>
+          )}
         </span>
       </header>
 
+      {!authed ? (
+        <div className="app-body auth-body">
+          <main className="main-pane">
+            <AuthPanel onAuthenticated={handleAuthenticated} />
+          </main>
+        </div>
+      ) : (
       <div className="app-body">
         <aside className="sidebar-left">
           <CharacterPanel state={gameState} />
@@ -134,16 +164,7 @@ export default function App() {
             <div className="start-screen">
               <pre className="skull-art">{INTRO_ART}</pre>
               <p className="start-subtitle">RUCHES DE KHARAD-RHO · INVASION TYRANIDE · SURVIE SOLO</p>
-              <label className="player-id-label" htmlFor="player-id">IDENTIFIANT JOUEUR</label>
-              <input
-                id="player-id"
-                className="player-id-input"
-                value={playerId}
-                onChange={(event) => setPlayerId(event.target.value)}
-                placeholder="default"
-                disabled={disabled}
-                aria-label="Identifiant du joueur pour la sauvegarde multi-utilisateur"
-              />
+              <p className="start-user">Opérateur authentifié : <strong>{(playerId || 'joueur').toUpperCase()}</strong></p>
               <button className="start-btn" onClick={handleStart} disabled={disabled} aria-label="Initialiser la connexion et démarrer la partie">
                 [ INITIALISER LA CONNEXION ]
               </button>
@@ -172,6 +193,7 @@ export default function App() {
           <InventoryPanel state={gameState} />
         </aside>
       </div>
+      )}
     </div>
   );
 }

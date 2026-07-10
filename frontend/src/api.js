@@ -1,5 +1,7 @@
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
 const USER_KEY = 'rpg40k.userId';
+const TOKEN_KEY = 'rpg40k.token';
+const ROLE_KEY = 'rpg40k.role';
 
 export function getCurrentUserId() {
   return localStorage.getItem(USER_KEY) || 'default';
@@ -11,11 +13,35 @@ export function setCurrentUserId(userId) {
   return normalized;
 }
 
+export function getToken() {
+  return localStorage.getItem(TOKEN_KEY) || '';
+}
+
+export function getRole() {
+  return localStorage.getItem(ROLE_KEY) || '';
+}
+
+export function isAuthenticated() {
+  return Boolean(getToken());
+}
+
+function storeSession(data) {
+  if (data?.access_token) localStorage.setItem(TOKEN_KEY, data.access_token);
+  if (data?.user?.id) localStorage.setItem(USER_KEY, data.user.id);
+  if (data?.user?.role) localStorage.setItem(ROLE_KEY, data.user.role);
+  return data;
+}
+
+export function logout() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(ROLE_KEY);
+}
+
 function apiHeaders(extra = {}) {
-  return {
-    'X-User-Id': getCurrentUserId(),
-    ...extra,
-  };
+  const headers = { ...extra };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
 }
 
 async function parseResponse(response) {
@@ -37,13 +63,22 @@ export async function getState() {
   return parseResponse(r);
 }
 
-export async function createUser(userId, displayName = userId) {
-  const r = await fetch(`${BASE}/users`, {
+export async function register(username, password, displayName) {
+  const r = await fetch(`${BASE}/auth/register`, {
     method: 'POST',
     headers: apiHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ user_id: userId, display_name: displayName }),
+    body: JSON.stringify({ username, password, display_name: displayName || username }),
   });
-  return parseResponse(r);
+  return storeSession(await parseResponse(r));
+}
+
+export async function login(username, password) {
+  const r = await fetch(`${BASE}/auth/login`, {
+    method: 'POST',
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ username, password }),
+  });
+  return storeSession(await parseResponse(r));
 }
 
 export async function postAction(path, body = {}) {

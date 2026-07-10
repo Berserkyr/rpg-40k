@@ -8,6 +8,25 @@ Assistant solo textuel inspire de Warhammer 40K : incarnez un citoyen imperial p
 - des utilitaires pour les jets de des, le suivi d'etat et les sauvegardes par scene,
 - des tests simples pour s'assurer que la logique auxiliaire fonctionne.
 
+## Livrables module Coordination Front & Back (M2)
+
+Ce projet est aussi le rendu du module **Coordination dev Front & Back**. Les livrables attendus par la grille sont regroupés dans `docs/module/` :
+
+- [Document de cadrage](docs/module/DOCUMENT_CADRAGE.md) (objectifs, périmètre, stack, IA)
+- [MCD / MLD](docs/module/MCD_MLD.md) (modèle de données)
+- [Documentation technique](docs/module/DOC_TECHNIQUE.md) (architecture, API, sécurité)
+- [Wireframes](docs/module/WIREFRAMES.md) (écrans clés)
+- [Analyse critique — Activité 10](docs/module/ANALYSE_CRITIQUE.md)
+
+### Authentification (API REST sécurisée par JWT)
+
+- Inscription : `POST /api/auth/register` → renvoie un JWT.
+- Connexion : `POST /api/auth/login` → renvoie un JWT.
+- Identité : `GET /api/auth/me` (JWT requis).
+- Les routes de jeu exigent l'en-tête `Authorization: Bearer <token>` (401 sinon).
+- Mots de passe **hachés bcrypt**, jetons **signés HS256**, rôles `player` / `admin`.
+- Créer un admin : `python -m backend.create_admin <user> <mot_de_passe>`.
+
 ## Dossier RNCP / soutenance
 
 Un dossier de preuves a été ajouté pour relier le projet à la grille **Expert en développement logiciel RNCP 39583** :
@@ -32,7 +51,8 @@ Un dossier de preuves a été ajouté pour relier le projet à la grille **Exper
 | Attendu | Statut | Preuve |
 |---|---|---|
 | BDD | En place | SQLite via [backend/database.py](backend/database.py) |
-| Multi-utilisateur | En place | En-tête `X-User-Id` + champ joueur dans l’UI |
+| Authentification JWT | En place | [backend/auth.py](backend/auth.py) + écran de connexion frontend |
+| Multi-utilisateur | En place | Identité issue du JWT, sauvegardes isolées par compte |
 | Pipeline CI/CD | En place | [CI GitHub Actions](.github/workflows/ci.yml), [déploiement VPS](.github/workflows/deploy-vps.yml) + [GitLab CI](.gitlab-ci.yml) |
 | Tests unitaires frontend | En place | Vitest + React Testing Library dans [frontend/src/components/__tests__](frontend/src/components/__tests__) |
 | Tests end-to-end | En place | Playwright dans [frontend/e2e/game.spec.js](frontend/e2e/game.spec.js) |

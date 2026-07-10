@@ -33,13 +33,15 @@ def connect() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """Crée le schéma SQLite si nécessaire."""
+    """Crée le schéma SQLite si nécessaire (avec migration légère)."""
     with connect() as connection:
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
                 display_name TEXT NOT NULL,
+                password_hash TEXT,
+                role TEXT NOT NULL DEFAULT 'player',
                 created_at TEXT NOT NULL,
                 last_seen_at TEXT NOT NULL
             )
@@ -57,6 +59,12 @@ def init_db() -> None:
             )
             """
         )
+        # Migration : ajoute les colonnes de sécurité sur une base existante.
+        existing_cols = {row["name"] for row in connection.execute("PRAGMA table_info(users)")}
+        if "password_hash" not in existing_cols:
+            connection.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+        if "role" not in existing_cols:
+            connection.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'player'")
         connection.commit()
 
 
@@ -88,9 +96,55 @@ def list_users() -> list[dict[str, Any]]:
     init_db()
     with connect() as connection:
         rows = connection.execute(
-            "SELECT id, display_name, created_at, last_seen_at FROM users ORDER BY last_seen_at DESC"
+            "SELECT id, display_name, role, created_at, last_seen_at FROM users ORDER BY last_seen_at DESC"
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def create_account(user_id: str, password_hash: str, display_name: str | None = None, role: str = "player") -> dict[str, Any]:
+    """Crée un compte avec mot de passe haché. Lève ValueError si déjà pris."""
+    init_db()
+    safe_id = normalize_user_id(user_id)
+    now = utc_now()
+    name = (display_name or safe_id).strip() or safe_id
+    with connect() as connection:
+        existing = connection.execute(
+            "SELECT password_hash FROM users WHERE id = ?", (safe_id,)
+        ).fetchone()
+        if existing and existing["password_hash"]:
+            raise ValueError("Cet identifiant est déjà utilisé.")
+        if existing:
+            connection.execute(
+                "UPDATE users SET display_name = ?, password_hash = ?, role = ?, last_seen_at = ? WHERE id = ?",
+                (name, password_hash, role, now, safe_id),
+            )
+        else:
+            connection.execute(
+                "INSERT INTO users (id, display_name, password_hash, role, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (safe_id, name, password_hash, role, now, now),
+            )
+        connection.commit()
+        row = connection.execute(
+            "SELECT id, display_name, role, created_at, last_seen_at FROM users WHERE id = ?", (safe_id,)
+        ).fetchone()
+    return dict(row)
+
+
+def get_account(user_id: str) -> dict[str, Any] | None:
+    """Retourne le compte complet (avec hash) ou None."""
+    init_db()
+    safe_id = normalize_user_id(user_id)
+    with connect() as connection:
+        row = connection.execute("SELECT * FROM users WHERE id = ?", (safe_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def touch_last_seen(user_id: str) -> None:
+    """Met à jour la date de dernière connexion."""
+    safe_id = normalize_user_id(user_id)
+    with connect() as connection:
+        connection.execute("UPDATE users SET last_seen_at = ? WHERE id = ?", (utc_now(), safe_id))
+        connection.commit()
 
 
 def record_event(user_id: str | None, event_type: str, detail: str | None = None) -> None:
