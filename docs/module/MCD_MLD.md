@@ -103,3 +103,112 @@ Le MLD est fidèlement traduit dans le code :
 - création et migration du schéma : [backend/database.py](../../backend/database.py) (`init_db`) ;
 - accès aux comptes : `create_account`, `get_account`, `list_users` ;
 - traces de session : `record_event`.
+
+## 7. Diagramme entité-association (Mermaid)
+
+```mermaid
+erDiagram
+    UTILISATEUR ||--o{ EVENEMENT_SESSION : "génère"
+    UTILISATEUR {
+        TEXT id PK "login normalisé"
+        TEXT display_name "nom affiché"
+        TEXT password_hash "bcrypt $2b$..."
+        TEXT role "player | admin"
+        TEXT created_at "ISO-8601 UTC"
+        TEXT last_seen_at "dernière visite"
+    }
+    EVENEMENT_SESSION {
+        INTEGER id PK "auto-incrément"
+        TEXT user_id FK "→ UTILISATEUR.id"
+        TEXT event_type "register | login | ..."
+        TEXT detail "optionnel"
+        TEXT created_at "horodatage"
+    }
+```
+
+## 8. Contraintes d'intégrité
+
+| Contrainte | Table | Règle appliquée |
+|---|---|---|
+| Clé primaire | `users` | `id` unique (login normalisé en minuscules) |
+| Clé primaire | `session_events` | `id` auto-incrément |
+| Clé étrangère | `session_events.user_id` | Référence `users.id` |
+| Domaine | `users.role` | Valeurs applicatives `player` / `admin` |
+| Non nul | `display_name`, `role`, `created_at`, `last_seen_at` | Champs obligatoires |
+| Sécurité | `password_hash` | Jamais en clair, toujours haché bcrypt |
+
+## 9. Index et performance
+
+| Index | Colonne(s) | Objectif |
+|---|---|---|
+| PK implicite | `users.id` | Recherche O(log n) au login (route la plus sollicitée) |
+| PK implicite | `session_events.id` | Unicité technique |
+| Recommandé | `session_events(user_id, created_at)` | Accélère l'historique par utilisateur trié par date |
+
+> Le SGBD étant SQLite avec une volumétrie faible (usage démo/pédagogique), les
+> index sur clés primaires suffisent. L'index composite `(user_id, created_at)`
+> est une évolution recommandée si la table d'événements grossit.
+
+## 10. Requêtes SQL types
+
+```sql
+-- Inscription : création d'un compte joueur (hash calculé côté application)
+INSERT INTO users (id, display_name, password_hash, role, created_at, last_seen_at)
+VALUES (?, ?, ?, 'player', ?, ?);
+
+-- Connexion : récupération du compte pour vérifier le mot de passe
+SELECT id, display_name, password_hash, role
+FROM users
+WHERE id = ?;
+
+-- Mise à jour de la dernière visite après authentification réussie
+UPDATE users SET last_seen_at = ? WHERE id = ?;
+
+-- Traçabilité : journalisation d'un événement de session
+INSERT INTO session_events (user_id, event_type, detail, created_at)
+VALUES (?, ?, ?, ?);
+
+-- Administration : liste des utilisateurs (route protégée `require_admin`)
+SELECT id, display_name, role, created_at, last_seen_at
+FROM users
+ORDER BY created_at DESC;
+
+-- Historique d'activité d'un joueur
+SELECT event_type, detail, created_at
+FROM session_events
+WHERE user_id = ?
+ORDER BY created_at DESC
+LIMIT 50;
+```
+
+## 11. Séparation base relationnelle / sauvegardes de partie
+
+Le modèle applique une séparation assumée des responsabilités :
+
+| Donnée | Support | Justification |
+|---|---|---|
+| Comptes, rôles, authentification | **SQLite (relationnel)** | Intégrité, requêtes, sécurité |
+| Traces de session | **SQLite (relationnel)** | Audit, historique |
+| État de partie détaillé (inventaire, carte, quêtes) | **YAML par joueur** | Structure imbriquée riche, lisible, isolée |
+
+Cette séparation est **documentée comme dette technique** dans l'analyse critique :
+la migration des sauvegardes de partie vers des tables SQL dédiées est identifiée
+comme évolution post-module.
+
+## 12. Évolution possible du schéma (post-module)
+
+```sql
+-- Table envisagée pour persister l'état de partie en relationnel
+CREATE TABLE game_saves (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     TEXT NOT NULL,
+    slot        INTEGER NOT NULL DEFAULT 1,
+    state_json  TEXT NOT NULL,            -- snapshot sérialisé de l'état
+    updated_at  TEXT NOT NULL,
+    UNIQUE (user_id, slot),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+Cette table remplacerait à terme les fichiers YAML, tout en conservant la même
+logique d'isolation par utilisateur.

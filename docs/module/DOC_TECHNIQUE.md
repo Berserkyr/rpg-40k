@@ -127,3 +127,147 @@ pytest            # tests backend (dont auth JWT)
 cd frontend
 npm test          # tests unitaires frontend
 ```
+
+## 8. Arborescence du projet
+
+```
+rpg 40k/
+├── backend/
+│   ├── api.py            # routes FastAPI (REST + SSE)
+│   ├── auth.py           # JWT, bcrypt, rôles, dépendances de sécurité
+│   ├── database.py       # SQLite : schéma, migration, accès comptes
+│   └── create_admin.py   # utilitaire de promotion admin
+├── src/                  # domaine métier (indépendant du web)
+│   ├── state.py          # état de partie
+│   ├── combat.py         # combat au tour par tour
+│   ├── inventory.py      # inventaire, butin procédural
+│   ├── world.py          # zones, déplacements
+│   ├── quests.py         # quêtes
+│   ├── relationships.py  # relations de faction
+│   ├── progression.py    # XP, compétences
+│   ├── entities.py       # personnages, ennemis
+│   ├── dice.py           # jets de dés
+│   ├── prompt_builder.py # construction du prompt IA
+│   └── persistence.py    # sauvegarde/chargement YAML
+├── frontend/
+│   └── src/
+│       ├── App.jsx           # composant racine + gating auth
+│       ├── api.js            # client HTTP, tokens, SSE
+│       ├── hooks/            # hooks (useSSEChat...)
+│       └── components/       # panneaux UI (Terminal, Combat, Inventory...)
+├── tests/                # tests backend (pytest)
+├── docs/module/          # livrables du module (ce dossier)
+└── requirements.txt
+```
+
+## 9. Diagramme de séquence — action de jeu authentifiée
+
+```mermaid
+sequenceDiagram
+    participant U as Utilisateur
+    participant F as Frontend (React)
+    participant A as API (FastAPI)
+    participant S as Domaine (src/)
+    participant DB as SQLite/YAML
+    U->>F: clic "FOUILLER"
+    F->>A: POST /api/loot (Authorization: Bearer JWT)
+    A->>A: get_current_user() vérifie le JWT
+    alt JWT invalide
+        A-->>F: 401 Unauthorized
+        F-->>U: message d'erreur
+    else JWT valide
+        A->>S: générer le butin (inventory.py)
+        S->>DB: charger/sauver l'état (isolé par joueur)
+        S-->>A: nouvel état
+        A-->>F: 200 OK (JSON état mis à jour)
+        F-->>U: mise à jour inventaire + terminal
+    end
+```
+
+## 10. Gestion des erreurs (codes HTTP)
+
+| Code | Signification | Cas déclencheur |
+|---|---|---|
+| 200 | Succès | Action traitée, état renvoyé |
+| 201 | Créé | Inscription réussie (`/api/auth/register`) |
+| 400 | Requête invalide | Paramètres manquants / malformés |
+| 401 | Non authentifié | JWT absent, expiré ou invalide |
+| 403 | Interdit | Rôle insuffisant (ex. `/api/users` sans admin) |
+| 409 | Conflit | Login déjà utilisé à l'inscription |
+| 422 | Validation | Corps de requête non conforme au schéma Pydantic |
+| 500 | Erreur serveur | Exception non gérée (repli IA local si OpenAI échoue) |
+
+La validation Pydantic génère automatiquement les réponses `422` documentées dans Swagger.
+
+## 11. Exemples requête / réponse
+
+### Inscription
+
+```http
+POST /api/auth/register
+Content-Type: application/json
+
+{ "user_id": "karimus", "display_name": "Karimus", "password": "secret42" }
+```
+
+```json
+HTTP/1.1 201 Created
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user": { "id": "karimus", "display_name": "Karimus", "role": "player" }
+}
+```
+
+### Appel d'une route protégée sans jeton
+
+```http
+GET /api/state
+```
+
+```json
+HTTP/1.1 401 Unauthorized
+{ "detail": "Not authenticated" }
+```
+
+## 12. Déploiement (Docker Compose)
+
+Le projet est conteneurisé et déployé sur un VPS via Docker Compose.
+
+```powershell
+# Sur le serveur
+docker compose -p rpg40k up -d --build
+docker compose -p rpg40k ps
+docker compose -p rpg40k logs -f
+```
+
+Variables clés côté serveur (`.env`) :
+
+```env
+RPG40K_BIND_ADDRESS=0.0.0.0
+RPG40K_HTTP_PORT=8081
+JWT_SECRET=<secret fort généré via /dev/urandom>
+OPENAI_API_KEY=<clé liée à un compte actif>
+```
+
+Application en production : `http://89.116.111.166:8081/` — voir aussi
+[docs/deploiement_vps.md](../deploiement_vps.md).
+
+## 13. Observabilité et supervision
+
+| Élément | Moyen |
+|---|---|
+| Santé du service | `GET /api/health` → `200 OK` |
+| Healthcheck conteneur | Défini dans `docker-compose` (surveille `/api/health`) |
+| Logs applicatifs | `docker compose -p rpg40k logs -f` |
+| Traçabilité métier | Table `session_events` (register/login) |
+| Documentation vivante | Swagger UI auto-généré sur `/docs` |
+
+## 14. Conventions de code
+
+- **Backend** : découpage couche API (`backend/`) vs domaine métier (`src/`) ;
+  les modules `src/` ne dépendent pas de FastAPI (testables isolément).
+- **Frontend** : un composant par panneau UI, logique réseau centralisée dans
+  `api.js`, flux temps réel isolé dans un hook (`useSSEChat`).
+- **Sécurité** : aucun secret dans le dépôt ; validation systématique du JWT via
+  dépendance FastAPI ; mots de passe uniquement hachés.

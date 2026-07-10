@@ -103,3 +103,40 @@ Slides recommandées :
 6. IA et fallback.
 7. Tests / déploiement.
 8. Analyse critique et feuille de route.
+
+## 8. Rétrospective agile (Start / Stop / Continue)
+
+| Catégorie | Élément |
+|---|---|
+| **Continue** | Découpage en couches, commits atomiques, tests avant chaque incrément |
+| **Continue** | Repli local systématique pour ne jamais casser la démo |
+| **Start** | Restreindre le CORS et exiger un `JWT_SECRET` fort en prod |
+| **Start** | Persister l'état de partie en base plutôt qu'en YAML |
+| **Stop** | Laisser grossir `combat_action` / `streamSSE` sans découpage |
+| **Stop** | Dépendre d'un unique compte OpenAI sans plan de facturation validé |
+
+## 9. Suivi d'avancement du sprint
+
+| Lot | Tâches | Terminées | Reste |
+|---|---:|---:|---|
+| Sécurité (JWT/bcrypt/rôles) | 6 | 6 | — |
+| Frontend auth + gating | 4 | 4 | — |
+| Robustesse IA / fallback | 3 | 3 | — |
+| Tests & build | 3 | 3 | — |
+| Déploiement VPS | 2 | 2 | — |
+| Documentation de rendu | 8 | 8 | — |
+| **Total** | **26** | **26** | **0 bloquant** |
+
+Le seul point ouvert n'est pas un blocage de code mais une action externe :
+**activer la facturation OpenAI** (ou fournir une clé liée à un compte actif)
+pour obtenir 100 % de la fonctionnalité IA distante en démonstration.
+
+## 10. Definition of Done (critères de clôture)
+
+Une fonctionnalité est considérée **terminée** si :
+- [x] le code est écrit et intégré sur `main` ;
+- [x] les tests associés passent (back et/ou front) ;
+- [x] le build frontend reste vert ;
+- [x] la fonctionnalité est vérifiable dans le parcours de démo ;
+- [x] la documentation correspondante est à jour ;
+- [x] aucun secret n'est commité dans le dépôt.

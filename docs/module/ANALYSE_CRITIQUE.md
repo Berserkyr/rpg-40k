@@ -91,7 +91,39 @@ Les tâches **critiques pour le rendu** ont été traitées durant le module :
    technique et cette analyse critique (`docs/module/`).
 4. **Validation** — suite de tests backend au vert (21 tests) et build frontend OK.
 
-## 6. Conclusion
+## 6. Analyse SWOT
+
+| Forces (internes +) | Faiblesses (internes −) |
+|---|---|
+| Architecture en couches nette (présentation / API / domaine) | État de jeu live en mémoire, non persisté à chaud |
+| Sécurité JWT + bcrypt + rôles opérationnelle | CORS permissif, secret JWT par défaut si non configuré |
+| IA réelle avec repli local fiable | Dépendance à un service externe payant (OpenAI) |
+| Suite de tests back + front, build reproductible | Complexité élevée de `combat_action` et `streamSSE` |
+| Déploiement conteneurisé fonctionnel (VPS) | Sauvegardes YAML hors base relationnelle |
+
+| Opportunités (externes +) | Menaces (externes −) |
+|---|---|
+| Migration facile vers PostgreSQL/refresh token | Coût / facturation OpenAI (`billing_not_active`) |
+| Extension multijoueur, nouveaux contenus narratifs | Évolution/rupture d'API du modèle IA |
+| Portfolio valorisable (démo publique en ligne) | Exposition de secrets si mauvaise gestion `.env` |
+
+## 7. Indicateurs qualité (métriques)
+
+| Indicateur | Valeur | Commentaire |
+|---|---|---|
+| Tests backend | 21 tests au vert | Couvre auth, routes protégées, hachage |
+| Tests frontend | 13 tests au vert | Couvre tokens, appels API |
+| Build frontend | OK | Aucune erreur bloquante |
+| Routes API exposées | 17 | REST + SSE, documentées Swagger |
+| Modules domaine (`src/`) | 11 | Découplés du framework web |
+| Couches applicatives | 3 | Présentation / API / domaine |
+| Fonctions à complexité > seuil | 2 | `combat_action`, `streamSSE` (refactoring priorisé) |
+| Disponibilité démo | Repli local garanti | Aucune page blanche même si IA indisponible |
+
+Ces indicateurs servent de **base de référence** : ils permettront de mesurer
+objectivement l'effet des refactorings et durcissements planifiés en section 4.
+
+## 8. Conclusion
 
 Le projet atteint les objectifs du module : jeu fullstack jouable, communication
 front/back en REST + SSE, **sécurité JWT opérationnelle**, IA réellement intégrée et

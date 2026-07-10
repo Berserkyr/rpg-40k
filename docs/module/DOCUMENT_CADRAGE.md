@@ -115,3 +115,58 @@ Un **mode de repli local** garantit que le jeu reste jouable même sans clé API
 - Les routes de jeu refusent l'accès sans JWT valide (401).
 - La narration IA fonctionne et se voit en streaming.
 - Les données de partie sont persistées et isolées par compte.
+
+## 10. Public cible et personas
+
+| Persona | Profil | Besoin principal | Attente clé |
+|---|---|---|---|
+| **Le joueur solo** | Amateur de RPG textuels / fiction interactive | Vivre une aventure immersive et rejouable | Narration crédible, choix qui comptent |
+| **L'évaluateur / jury** | Enseignant du module fullstack | Vérifier les compétences front + back | Code lisible, sécurité, doc, démo fluide |
+| **Le recruteur technique** | Lead dev / CTO consultant le portfolio | Juger la maîtrise technique | Architecture propre, tests, déploiement |
+
+Le persona prioritaire pour le **cadrage produit** est *le joueur solo* ; le persona
+prioritaire pour le **cadrage académique** est *l'évaluateur*. Le projet est conçu
+pour satisfaire les deux : expérience jouable réelle **et** preuves de compétences.
+
+## 11. Contraintes et hypothèses
+
+| Type | Élément | Impact sur le projet |
+|---|---|---|
+| Contrainte technique | Projet solo, temps limité (module) | Périmètre resserré au MVP jouable |
+| Contrainte technique | Jeu **textuel** (pas de moteur graphique) | Effort concentré sur logique + IA + UX terminal |
+| Contrainte externe | Dépendance à l'API OpenAI (coût, disponibilité) | Repli local obligatoire pour garantir la démo |
+| Contrainte sécurité | Secrets hors dépôt | `.env` non commité, variables d'environnement |
+| Hypothèse | Un seul joueur par compte, pas de concurrence forte | SQLite suffit, pas besoin de PostgreSQL |
+| Hypothèse | Volumétrie faible (usage démo/pédagogique) | Sauvegardes YAML acceptables pour le périmètre |
+
+## 12. Jalons et planning
+
+| Jalon | Contenu | État |
+|---|---|---|
+| J1 — Cadrage | Concept, stack, architecture, MCD/MLD | ✅ |
+| J2 — Cœur backend | API REST, moteur de jeu (`src/`), SQLite | ✅ |
+| J3 — Frontend jouable | SPA React, terminal, panneaux, SSE | ✅ |
+| J4 — Sécurité | Auth JWT, bcrypt, rôles, routes protégées | ✅ |
+| J5 — IA | Intégration OpenAI + streaming + repli local | ✅ |
+| J6 — Qualité | Tests backend/front, build, corrections | ✅ |
+| J7 — Déploiement | Docker Compose sur VPS, healthcheck | ✅ |
+| J8 — Finalisation | Audit, analyse critique, doc de rendu | ✅ |
+
+## 13. Matrice des risques projet
+
+| Risque | Probabilité | Gravité | Mitigation |
+|---|---|---|---|
+| Indisponibilité / facturation OpenAI | Élevée | Moyenne | Mode MJ local déterministe automatique |
+| Fuite de secret (clé API, JWT_SECRET) | Moyenne | Élevée | `.env` hors dépôt, rotation en cas d'exposition |
+| Régression lors des évolutions | Moyenne | Moyenne | Suite de tests back + front, build de contrôle |
+| VPS inaccessible le jour de la démo | Faible | Élevée | App aussi lançable en local (`uvicorn` + `vite`) |
+| Complexité de fonctions clés | Moyenne | Faible | Refactoring priorisé et documenté (analyse critique) |
+
+## 14. Méthode de gestion de projet
+
+Le projet est piloté en **mode agile itératif** :
+- backlog et priorisation **MoSCoW** (voir [SPRINT_FINALISATION.md](SPRINT_FINALISATION.md)) ;
+- suivi visuel via [kanban](../gestion_projet/kanban.md) ;
+- versionnement discipliné selon la [stratégie Git](../gestion_projet/strategie_git.md)
+  (commits atomiques, messages explicites, branche `main` stable) ;
+- validation par tests automatisés avant chaque incrément important.

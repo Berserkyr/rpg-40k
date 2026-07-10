@@ -98,3 +98,31 @@ npm run build
 | Refactoring | Découper `combat_action` et le parser SSE en fonctions plus petites |
 | Base de données | Migrer les sauvegardes YAML critiques vers des tables SQL dédiées |
 | Auth | Ajouter refresh token / rotation des tokens |
+
+## 6. Synthèse des gains (avant / après)
+
+| Critère | Avant | Après | Gain |
+|---|---|---|---|
+| Authentification | En-tête `X-User-Id` falsifiable | JWT signé HS256 + bcrypt | Usurpation d'identité éliminée |
+| Accès aux routes de jeu | Ouvert sans contrôle | `401` sans jeton valide | Surface d'attaque réduite |
+| Stockage mot de passe | Potentiellement en clair | Hash bcrypt `$2b$...` | Confidentialité des identifiants |
+| Robustesse IA | Message trompeur si OpenAI KO | Distinction clé absente / service KO + repli | Démo fiable, message clair |
+| Perception latence narration | Attente réponse complète | Streaming SSE token par token | Retour visuel quasi immédiat |
+| Couverture de non-régression | Aucune garantie automatisée | 21 tests back + 13 front | Détection précoce des régressions |
+
+## 7. Perception performance — streaming SSE
+
+Le passage d'une réponse « bloc complet » à un **flux SSE** ne réduit pas le temps
+de calcul total de l'IA, mais améliore fortement la **performance perçue** :
+l'utilisateur voit les premiers mots de la narration dès leur génération, au lieu
+d'attendre plusieurs secondes un écran figé. C'est une optimisation d'**expérience
+utilisateur** mesurable en « temps avant premier octet visible » (TTFB narratif).
+
+## 8. Méthode d'audit appliquée
+
+1. **Inventaire** des couches et des routes (17 endpoints, 11 modules domaine).
+2. **Détection** des points faibles (sécurité, message d'erreur, complexité).
+3. **Priorisation** P0/P1/P2 selon l'impact sécurité puis maintenabilité.
+4. **Correction** des P0/P1 (sécurisation JWT, clarté fallback).
+5. **Validation** par tests automatisés et vérifications en production.
+6. **Documentation** des optimisations restantes pour la suite.
