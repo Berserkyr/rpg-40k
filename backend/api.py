@@ -240,7 +240,12 @@ def get_openai_client() -> AsyncOpenAI:
     return AsyncOpenAI(api_key=key)
 
 
-def _offline_gm_text(session: Session, user_message: str, opening: bool = False) -> str:
+def _offline_gm_text(
+    session: Session,
+    user_message: str,
+    opening: bool = False,
+    missing_key_notice: bool = True,
+) -> str:
     """Fallback local: permet de jouer même sans OPENAI_API_KEY."""
     zone = session.world_map.get_current_zone()
     zone_name = zone.name if zone else "zone inconnue"
@@ -248,9 +253,10 @@ def _offline_gm_text(session: Session, user_message: str, opening: bool = False)
     exits = ", ".join(z.name for z in accessible[:3]) or "aucune sortie claire"
 
     if opening:
+        prefix = "[MODE MJ LOCAL — aucune clé OPENAI_API_KEY détectée]\n\n" if missing_key_notice else ""
         return (
-            "[MODE MJ LOCAL — aucune clé OPENAI_API_KEY détectée]\n\n"
-            f"Karimus reprend conscience dans {zone_name}. Les alarmes de la ruche hurlent, "
+            prefix
+            + f"Karimus reprend conscience dans {zone_name}. Les alarmes de la ruche hurlent, "
             "les conduites vox crachent des prières fragmentées et la poussière de ferro-béton "
             "tombe du plafond comme une cendre grise. Au loin, quelque chose gratte contre les cloisons.\n\n"
             f"Issues repérées : {exits}.\n"
@@ -312,7 +318,7 @@ async def _gm_stream(session: Session, user_message: str, opening: bool = False)
         except Exception as exc:
             full_text = (
                 f"[MODE MJ LOCAL — OpenAI indisponible: {exc}]\n\n"
-                + _offline_gm_text(session, user_message, opening=opening)
+                + _offline_gm_text(session, user_message, opening=opening, missing_key_notice=False)
             )
             async for event in _yield_text_as_sse(full_text):
                 yield event
