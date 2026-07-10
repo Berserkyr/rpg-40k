@@ -16,6 +16,9 @@ Ce projet est aussi le rendu du module **Coordination dev Front & Back**. Les li
 - [MCD / MLD](docs/module/MCD_MLD.md) (modèle de données)
 - [Documentation technique](docs/module/DOC_TECHNIQUE.md) (architecture, API, sécurité)
 - [Wireframes](docs/module/WIREFRAMES.md) (écrans clés)
+- [Checklist activités 1 à 10](docs/module/ACTIVITES_1_A_10_CHECKLIST.md)
+- [Audit technique et optimisation](docs/module/AUDIT_OPTIMISATION.md)
+- [Sprint de finalisation et playtest](docs/module/SPRINT_FINALISATION.md)
 - [Analyse critique — Activité 10](docs/module/ANALYSE_CRITIQUE.md)
 
 ### Authentification (API REST sécurisée par JWT)

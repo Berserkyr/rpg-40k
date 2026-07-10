@@ -102,7 +102,11 @@ Un **mode de repli local** garantit que le jeu reste jouable même sans clé API
 | 2 | MCD / MLD | `docs/module/MCD_MLD.md` |
 | 3, 5 | API REST sécurisée JWT | `backend/api.py`, `backend/auth.py` |
 | 4, 6 | Wireframes + frontend fonctionnel | `docs/module/WIREFRAMES.md`, `frontend/` |
-| 6-9 | Dépôt complet + analyse critique | dépôt GitHub, `docs/module/ANALYSE_CRITIQUE.md` |
+| 6, 7 | Flux clefs + améliorations | `frontend/src/api.js`, `frontend/src/hooks/useSSEChat.js`, `docs/module/SPRINT_FINALISATION.md` |
+| 8 | Audit et optimisations | `docs/module/AUDIT_OPTIMISATION.md` |
+| 9 | Sprint de finalisation + playtest | `docs/module/SPRINT_FINALISATION.md` |
+| 10 | Analyse critique | `docs/module/ANALYSE_CRITIQUE.md` |
+| 1-10 | Checklist de conformité complète | `docs/module/ACTIVITES_1_A_10_CHECKLIST.md` |
 | — | Fonctionnalité IA | `backend/api.py` (`_gm_stream`) |
 
 ## 9. Critères de réussite
