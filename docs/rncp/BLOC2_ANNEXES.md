@@ -15,6 +15,7 @@ Ces annexes complètent le dossier Bloc 2. Elles ne sont pas destinées à être
 | Architecture logicielle | `docs/rncp/BLOC2_DOSSIER_FINAL.md`, `docs/architecture_bdd_multiutilisateur.md` |
 | Tests backend | `tests/` |
 | Tests frontend | `frontend/src/**/__tests__` |
+| Harnais de tests unitaires | `docs/rncp/HARNAIS_TESTS_UNITAIRES.md` |
 | Tests E2E | `frontend/e2e/game.spec.js` |
 | Recette | `docs/rncp/05_plan_de_recette.md` |
 | Plan de correction des bogues | `docs/rncp/PLAN_CORRECTION_BOGUES.md` |

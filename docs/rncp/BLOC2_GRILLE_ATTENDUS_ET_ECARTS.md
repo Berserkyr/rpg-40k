@@ -21,7 +21,7 @@ dans l'ordre, avec :
 | C2.1.1 | Environnements de déploiement et de test + suivi qualité/perf | Protocole de déploiement continu + critères qualité/perf | 🟢 Solide |
 | C2.1.2 | Intégration continue (CI) | Protocole d'intégration continue | 🟢 Solide |
 | C2.2.1 | Prototype applicatif (ergonomie, cibles, sécurité) | Architecture maintenable + prototype + frameworks | 🟢 Solide |
-| C2.2.2 | Harnais de tests unitaires | Jeu de tests couvrant une fonctionnalité | 🟡 Partiel |
+| C2.2.2 | Harnais de tests unitaires | Jeu de tests couvrant une fonctionnalité | 🟢 Solide |
 | C2.2.3 | Sécurité (OWASP) + accessibilité | Mesures sécurité + mesures accessibilité | 🟡 Partiel |
 | C2.2.4 | Déploiement progressif à chaque modification | Historique des versions + version finale viable | � Solide |
 | C2.3.1 | Cahier de recettes | Cahier de recettes | 🟢 Solide |
@@ -131,13 +131,14 @@ fonctionnement du logiciel.
 - Les tests unitaires couvrent la **majorité du code** développé.
 
 **Ce que le projet fournit déjà.**
-- Tests backend (21) : [tests/test_api.py](../../tests/test_api.py) (auth, routes protégées, hachage).
+- Livrable dédié C2.2.2 : [docs/rncp/HARNAIS_TESTS_UNITAIRES.md](HARNAIS_TESTS_UNITAIRES.md).
+- Tests backend (39) : [tests/test_api.py](../../tests/test_api.py), [tests/test_inventory.py](../../tests/test_inventory.py), [tests/test_progression.py](../../tests/test_progression.py), [tests/test_world.py](../../tests/test_world.py), [tests/test_quests.py](../../tests/test_quests.py).
 - Tests frontend (13) : [frontend/src/__tests__/](../../frontend/src/__tests__).
 - Tests E2E Playwright : [frontend/e2e/game.spec.js](../../frontend/e2e/game.spec.js).
 
 **Ce qui manque pour valider.**
-- [ ] Produire une **mesure de couverture chiffrée** (`pytest --cov` + `vitest --coverage`) et l'inscrire dans le dossier (le critère parle de « majorité du code »).
-- [ ] Ajouter une **capture du rapport de couverture** ou le pourcentage global.
+- [x] Produire une **mesure de couverture chiffrée** (`pytest --cov` + `vitest --coverage`) et l'inscrire dans le dossier.
+- [x] Documenter le **pourcentage global** et la méthode de calcul dans le livrable dédié.
 
 ---
 
@@ -274,7 +275,7 @@ et des évolutions futures.
 
 | Priorité | Critère | Action concrète |
 |---|---|---|
-| P0 | C2.2.2 | Générer et documenter la **couverture de tests** chiffrée |
+| ✅ Fait | C2.2.2 | Harnais de tests + couverture chiffrée documentés dans [docs/rncp/HARNAIS_TESTS_UNITAIRES.md](HARNAIS_TESTS_UNITAIRES.md) |
 | P0 | C2.2.3 | Compléter le **tableau OWASP Top 10** + choisir un **référentiel a11y** + mini-audit |
 | P1 | C2.3.1 | Reformater le **cahier de recettes** (fonctionnel/structurel/sécurité) en tableau |
 | ✅ Fait | C2.3.2 | Registre d'anomalies dédié créé dans [docs/rncp/PLAN_CORRECTION_BOGUES.md](PLAN_CORRECTION_BOGUES.md) |
