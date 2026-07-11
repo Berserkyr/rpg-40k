@@ -163,7 +163,15 @@ Le déploiement VPS est aussi disponible dans les pipelines CI/CD.
 
 Workflow : [.github/workflows/deploy-vps.yml](../.github/workflows/deploy-vps.yml)
 
-Déclenchement : manuel via **Actions → Deploy VPS → Run workflow**.
+Déclenchement :
+- **Automatique (CI/CD)** : à chaque push sur `main`, la pipeline **CI** s'exécute
+  (tests backend, build frontend, tests unitaires, E2E). Si elle réussit, le workflow
+  **Deploy VPS** se déclenche automatiquement via `workflow_run` et déploie sur le VPS.
+- **Manuel** : toujours possible via **Actions → Deploy VPS → Run workflow**
+  (utile pour redéployer une branche précise ou faire un rollback).
+
+Le déploiement automatique n'a lieu **que si la CI est verte** : un push qui casse les
+tests ne part pas en production.
 
 Secrets GitHub à configurer dans **Settings → Secrets and variables → Actions** :
 

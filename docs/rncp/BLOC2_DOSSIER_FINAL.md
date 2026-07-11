@@ -165,9 +165,18 @@ Ce cycle réduit les risques de régression à chaque modification de code.
 
 Une pipeline GitLab CI est également fournie pour démontrer la portabilité du processus d’intégration continue. Elle reprend les mêmes étapes : test, build, end-to-end, puis un job manuel de déploiement.
 
-### Déploiement continu manuel
+### Déploiement continu automatique
 
-Le déploiement VPS est volontairement manuel afin d’éviter qu’un simple push redéploie la production sans contrôle. Le workflow **Deploy VPS** permet de déclencher une mise à jour depuis GitHub Actions après validation de la CI.
+Le déploiement VPS est **automatisé** : à chaque push sur `main`, la pipeline **CI**
+s'exécute (tests backend, tests unitaires frontend, build, E2E). Lorsqu'elle réussit,
+le workflow **Deploy VPS** se déclenche automatiquement (via `workflow_run`) et met à
+jour la production sur le VPS, puis vérifie `/api/health`.
+
+Ce fonctionnement satisfait le critère **C2.2.4** (« déployer le logiciel à chaque
+modification de code et de façon progressive ») : chaque modification validée par la CI
+est déployée sans intervention manuelle. Un push qui casse les tests **ne part pas** en
+production (garde-fou de stabilité). Le déclenchement **manuel** reste disponible pour
+les rollbacks ou le déploiement d'une branche spécifique.
 
 Secrets nécessaires :
 

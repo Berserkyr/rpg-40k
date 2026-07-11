@@ -23,7 +23,7 @@ dans l'ordre, avec :
 | C2.2.1 | Prototype applicatif (ergonomie, cibles, sécurité) | Architecture maintenable + prototype + frameworks | 🟢 Solide |
 | C2.2.2 | Harnais de tests unitaires | Jeu de tests couvrant une fonctionnalité | 🟡 Partiel |
 | C2.2.3 | Sécurité (OWASP) + accessibilité | Mesures sécurité + mesures accessibilité | 🟡 Partiel |
-| C2.2.4 | Déploiement progressif à chaque modification | Historique des versions + version finale viable | 🟡 Partiel |
+| C2.2.4 | Déploiement progressif à chaque modification | Historique des versions + version finale viable | � Solide |
 | C2.3.1 | Cahier de recettes | Cahier de recettes | 🟢 Solide |
 | C2.3.2 | Plan de correction des bogues | Plan de correction des bogues | 🟡 Partiel |
 | C2.4.1 | Documentation technique d'exploitation | Manuels déploiement / utilisation / mise à jour | 🟡 Partiel |
@@ -185,11 +185,12 @@ une solution stable et conforme à l'attendu.
 **Ce que le projet fournit déjà.**
 - Git + GitHub (historique de commits) : `https://github.com/Berserkyr/rpg-40k`.
 - Workflow de déploiement VPS : [.github/workflows/deploy-vps.yml](../../.github/workflows/deploy-vps.yml).
+- **Déploiement continu automatique** : push sur `main` → CI verte → déploiement VPS auto (`workflow_run`).
 - Application en ligne autonome : `http://89.116.111.166:8081/`.
 
 **Ce qui manque pour valider.**
-- [ ] Ajouter un **historique de versions lisible** (tags/releases ou CHANGELOG résumant les incréments), le critère demande des évolutions « tracées ».
-- [ ] Justifier explicitement le **déploiement manuel** comme choix de maîtrise du risque (et montrer qu'il est déclenché après CI verte).
+- [x] Déploiement automatique à chaque modification validée par la CI (fait).
+- [ ] Ajouter un **historique de versions lisible** (tags/releases ou CHANGELOG résumant les incréments).
 - [ ] Capturer la **dernière version fonctionnelle** (écran de jeu opérationnel) comme preuve de viabilité.
 
 ---
