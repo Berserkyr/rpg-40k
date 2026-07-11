@@ -634,6 +634,22 @@ def item_from_dict(data: Optional[Dict]) -> Optional[Item]:
             armor.quantity = quantity
             armor.durability = data.get("durability", armor.durability)
             return armor
+        return Armor(
+            id=item_id,
+            name=data.get("name", item_id),
+            item_type=ItemType.ARMOR,
+            description=data.get("description", "Protection recuperee dans la ruche."),
+            weight=data.get("weight", 1.0),
+            value=data.get("value", 0),
+            rarity=Rarity(data.get("rarity", Rarity.COMMON.value)),
+            quantity=quantity,
+            defense_bonus=data.get("defense_bonus", 1),
+            max_defense_bonus=data.get("max_defense_bonus", data.get("defense_bonus", 1)),
+            durability=data.get("durability", 100),
+            max_durability=data.get("max_durability", 100),
+            coverage=data.get("coverage", "torse"),
+            special_properties=data.get("special_properties", []).copy(),
+        )
 
     if item_id in CONSUMABLE_TEMPLATES or item_type == ItemType.CONSUMABLE.value:
         consumable = create_consumable(item_id, quantity)

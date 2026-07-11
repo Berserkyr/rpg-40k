@@ -66,7 +66,7 @@ Tests exécutés après modifications :
 
 ```powershell
 pytest -q
-# 21 passed
+# 39 passed
 
 cd frontend
 npm test
@@ -82,7 +82,7 @@ npm run build
 
 | Validation | Résultat |
 |---|---:|
-| Tests backend | 21 passed |
+| Tests backend | 39 passed |
 | Tests frontend unitaires | 13 passed |
 | Build frontend | OK |
 | Déploiement VPS | OK |
@@ -108,7 +108,7 @@ npm run build
 | Stockage mot de passe | Potentiellement en clair | Hash bcrypt `$2b$...` | Confidentialité des identifiants |
 | Robustesse IA | Message trompeur si OpenAI KO | Distinction clé absente / service KO + repli | Démo fiable, message clair |
 | Perception latence narration | Attente réponse complète | Streaming SSE token par token | Retour visuel quasi immédiat |
-| Couverture de non-régression | Aucune garantie automatisée | 21 tests back + 13 front | Détection précoce des régressions |
+| Couverture de non-régression | Aucune garantie automatisée | 39 tests back + 13 front | Détection précoce des régressions |
 
 ## 7. Perception performance — streaming SSE
 

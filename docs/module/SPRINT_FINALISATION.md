@@ -16,7 +16,7 @@ Ce document regroupe les preuves attendues pour les activités d'amélioration e
 | Combat | ✅ Terminé | tour par tour, attaque, défense, fuite |
 | Inventaire / loot | ✅ Terminé | génération procédurale |
 | Carte / déplacements | ✅ Terminé | zones accessibles |
-| Tests backend | ✅ Terminé | 21 tests |
+| Tests backend | ✅ Terminé | 39 tests |
 | Tests frontend | ✅ Terminé | 13 tests |
 | Déploiement VPS | ✅ Terminé | `http://89.116.111.166:8081/` |
 
@@ -49,7 +49,7 @@ Ce document regroupe les preuves attendues pour les activités d'amélioration e
 
 | Type de test | Commande | Résultat attendu |
 |---|---|---|
-| Backend | `pytest -q` | `21 passed` |
+| Backend | `pytest -q` | `39 passed` |
 | Frontend unitaires | `cd frontend; npm test` | `13 passed` |
 | Build frontend | `cd frontend; npm run build` | build OK |
 | Healthcheck VPS | `GET /api/health` | `200 OK` |
@@ -88,7 +88,7 @@ Ce document regroupe les preuves attendues pour les activités d'amélioration e
 3. **Sécurité** — montrer `register/login`, JWT, route protégée sans token.
 4. **Flux de données** — action frontend → API → état mis à jour.
 5. **IA** — narration streamée en SSE.
-6. **Tests / qualité** — citer `21 passed`, `13 passed`, build OK.
+6. **Tests / qualité** — citer `39 passed`, `13 passed`, build OK.
 7. **Limites honnêtes** — billing OpenAI à activer, fallback local, refresh token en backlog.
 
 ## 7. Support de présentation conseillé

@@ -16,6 +16,7 @@ Ces annexes complètent le dossier Bloc 2. Elles ne sont pas destinées à être
 | Tests frontend | `frontend/src/**/__tests__` |
 | Tests E2E | `frontend/e2e/game.spec.js` |
 | Recette | `docs/rncp/05_plan_de_recette.md` |
+| Plan de correction des bogues | `docs/rncp/PLAN_CORRECTION_BOGUES.md` |
 | Exploitation | `docs/deploiement_vps.md` |
 
 ## Annexe B — Commandes de validation
@@ -26,7 +27,7 @@ Ces annexes complètent le dossier Bloc 2. Elles ne sont pas destinées à être
 python -m pytest
 ```
 
-Résultat attendu : tous les tests backend passent.
+Résultat actuel : `39 passed`.
 
 ### Frontend unitaires
 

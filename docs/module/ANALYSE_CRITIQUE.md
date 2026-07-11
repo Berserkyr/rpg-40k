@@ -89,7 +89,7 @@ Les tâches **critiques pour le rendu** ont été traitées durant le module :
    (`frontend/src/components/AuthPanel.jsx`, `frontend/src/api.js`).
 3. **Documentation de rendu** — document de cadrage, MCD/MLD, wireframes, doc
    technique et cette analyse critique (`docs/module/`).
-4. **Validation** — suite de tests backend au vert (21 tests) et build frontend OK.
+4. **Validation** — suite de tests backend au vert (39 tests) et build frontend OK.
 
 ## 6. Analyse SWOT
 
@@ -111,7 +111,7 @@ Les tâches **critiques pour le rendu** ont été traitées durant le module :
 
 | Indicateur | Valeur | Commentaire |
 |---|---|---|
-| Tests backend | 21 tests au vert | Couvre auth, routes protégées, hachage |
+| Tests backend | 39 tests au vert | Couvre auth, routes protégées, hachage, inventaire, progression, carte, quêtes |
 | Tests frontend | 13 tests au vert | Couvre tokens, appels API |
 | Build frontend | OK | Aucune erreur bloquante |
 | Routes API exposées | 17 | REST + SSE, documentées Swagger |

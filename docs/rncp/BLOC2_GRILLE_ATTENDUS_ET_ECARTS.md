@@ -25,7 +25,7 @@ dans l'ordre, avec :
 | C2.2.3 | Sécurité (OWASP) + accessibilité | Mesures sécurité + mesures accessibilité | 🟡 Partiel |
 | C2.2.4 | Déploiement progressif à chaque modification | Historique des versions + version finale viable | � Solide |
 | C2.3.1 | Cahier de recettes | Cahier de recettes | 🟢 Solide |
-| C2.3.2 | Plan de correction des bogues | Plan de correction des bogues | 🟡 Partiel |
+| C2.3.2 | Plan de correction des bogues | Plan de correction des bogues | 🟢 Solide |
 | C2.4.1 | Documentation technique d'exploitation | Manuels déploiement / utilisation / mise à jour | 🟡 Partiel |
 
 Légende : 🟢 preuve claire et suffisante · 🟡 preuve présente mais à renforcer · 🔴 manquant.
@@ -232,12 +232,13 @@ conforme à l'attendu.
 - Les corrections et améliorations sont conformes à l'attendu et garantissent le bon fonctionnement.
 
 **Ce que le projet fournit déjà.**
+- Plan de correction des bogues dédié : [docs/rncp/PLAN_CORRECTION_BOGUES.md](PLAN_CORRECTION_BOGUES.md).
 - Plan de correction des bugs : [docs/rncp/04_bloc4_maintenance.md](04_bloc4_maintenance.md) (section plan de correction).
 - Anomalies traitées documentées : [docs/rncp/BLOC2_DOSSIER_FINAL.md](BLOC2_DOSSIER_FINAL.md) (tableau des corrections CI/import, fallback IA…).
 
 **Ce qui manque pour valider.**
-- [ ] Créer un **registre d'anomalies** dédié : ID / description / criticité / cause / correction / statut / preuve (commit).
-- [ ] Relier chaque correction à un **commit** ou un test devenu vert (traçabilité).
+- [x] Créer un **registre d'anomalies** dédié : ID / description / criticité / cause / correction / statut / preuve.
+- [x] Relier chaque correction à un **test devenu vert**, une validation CI/CD ou une preuve d'exploitation.
 
 ---
 
@@ -275,7 +276,7 @@ et des évolutions futures.
 | P0 | C2.2.2 | Générer et documenter la **couverture de tests** chiffrée |
 | P0 | C2.2.3 | Compléter le **tableau OWASP Top 10** + choisir un **référentiel a11y** + mini-audit |
 | P1 | C2.3.1 | Reformater le **cahier de recettes** (fonctionnel/structurel/sécurité) en tableau |
-| P1 | C2.3.2 | Créer un **registre d'anomalies** relié aux commits |
+| ✅ Fait | C2.3.2 | Registre d'anomalies dédié créé dans [docs/rncp/PLAN_CORRECTION_BOGUES.md](PLAN_CORRECTION_BOGUES.md) |
 | P1 | C2.4.1 | Ajouter **manuel d'utilisation** + **manuel de mise à jour** dédiés |
 | P2 | C2.1.1 | Formaliser le **protocole de déploiement** en séquences + critères qualité chiffrés |
 | P2 | C2.1.2 | Ajouter **capture CI verte** + séquences d'intégration |

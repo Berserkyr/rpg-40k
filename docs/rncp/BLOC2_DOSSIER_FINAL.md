@@ -447,6 +447,8 @@ La recette valide que les fonctionnalités principales sont utilisables et confo
 
 ## 10. Plan de correction des anomalies — C2.3.2
 
+Le livrable dédié est disponible ici : [PLAN_CORRECTION_BOGUES.md](PLAN_CORRECTION_BOGUES.md).
+
 ### Processus
 
 Le traitement d’une anomalie suit les étapes suivantes :
@@ -478,6 +480,8 @@ Le traitement d’une anomalie suit les étapes suivantes :
 | CI import Python | chemin module absent | ajout `pytest.ini` | GitHub Actions |
 | Tests E2E instables | état utilisateur persistant | identifiant E2E unique | Playwright |
 | Risque conflit VPS | ports 80/443 déjà utilisés | port dédié 8081 | healthcheck public |
+| Désérialisation d'armure équipée | `Armor` restaurée en `Item` générique | reconstruction `Armor` dans `item_from_dict` | `pytest -q` → `39 passed` |
+| Déploiement GitHub Actions refusé | clé SSH dédiée non autorisée / multi-ligne | secret base64 + clé publique VPS | run `Deploy VPS` réussi |
 
 ---
 
