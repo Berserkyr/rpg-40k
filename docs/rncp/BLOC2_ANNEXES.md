@@ -9,8 +9,9 @@ Ces annexes complètent le dossier Bloc 2. Elles ne sont pas destinées à être
 | Code source | Dépôt GitHub `https://github.com/Berserkyr/rpg-40k` |
 | Version stable | Tag `v1.0.0-rncp` |
 | Environnement de développement | `README.md`, `requirements.txt`, `frontend/package.json` |
+| Protocole de déploiement continu + critères qualité/performance | `docs/rncp/PROTOCOLE_DEPLOIEMENT_CONTINU_QUALITE_PERF.md` |
 | Intégration continue | `.github/workflows/ci.yml`, `.gitlab-ci.yml` |
-| Déploiement manuel VPS | `.github/workflows/deploy-vps.yml`, `docs/deploiement_vps.md` |
+| Déploiement automatique VPS | `.github/workflows/deploy-vps.yml`, `docs/deploiement_vps.md` |
 | Architecture logicielle | `docs/rncp/BLOC2_DOSSIER_FINAL.md`, `docs/architecture_bdd_multiutilisateur.md` |
 | Tests backend | `tests/` |
 | Tests frontend | `frontend/src/**/__tests__` |

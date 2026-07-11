@@ -18,7 +18,7 @@ dans l'ordre, avec :
 
 | # | Compétence | Livrable attendu | Statut projet |
 |---|---|---|---|
-| C2.1.1 | Environnements de déploiement et de test + suivi qualité/perf | Protocole de déploiement continu + critères qualité/perf | 🟡 Partiel |
+| C2.1.1 | Environnements de déploiement et de test + suivi qualité/perf | Protocole de déploiement continu + critères qualité/perf | 🟢 Solide |
 | C2.1.2 | Intégration continue (CI) | Protocole d'intégration continue | 🟢 Solide |
 | C2.2.1 | Prototype applicatif (ergonomie, cibles, sécurité) | Architecture maintenable + prototype + frameworks | 🟢 Solide |
 | C2.2.2 | Harnais de tests unitaires | Jeu de tests couvrant une fonctionnalité | 🟡 Partiel |
@@ -51,14 +51,15 @@ déroulement de la phase de développement du logiciel.
 - Les critères de qualité et de performance répondent aux exigences du projet.
 
 **Ce que le projet fournit déjà.**
+- Protocole de déploiement continu + critères qualité/performance : [docs/rncp/PROTOCOLE_DEPLOIEMENT_CONTINU_QUALITE_PERF.md](PROTOCOLE_DEPLOIEMENT_CONTINU_QUALITE_PERF.md).
 - Environnement de dev décrit : [docs/module/DOC_TECHNIQUE.md](DOC_TECHNIQUE.md) (stack, versions, lancement).
 - Déploiement Docker Compose + VPS : [docs/deploiement_vps.md](../deploiement_vps.md).
 - Healthcheck `/api/health` et supervision : [docs/module/DOC_TECHNIQUE.md](DOC_TECHNIQUE.md) (section observabilité).
 - Gestion de sources Git + workflows : [.github/workflows/ci.yml](../../.github/workflows/ci.yml).
 
 **Ce qui manque pour valider.**
-- [ ] Formaliser un **protocole de déploiement en séquences numérotées** (build → test → image → déploiement → vérification santé), en un seul endroit lisible.
-- [ ] Lister explicitement les **critères de qualité/performance mesurés** (temps de réponse `/api/health`, seuil de tests au vert, taille de build) avec valeurs cibles.
+- [x] Formaliser un **protocole de déploiement en séquences numérotées** (build → test → image → déploiement → vérification santé), en un seul endroit lisible.
+- [x] Lister explicitement les **critères de qualité/performance mesurés** (healthcheck, tests, build, bundle, disponibilité) avec valeurs cibles.
 
 ---
 
@@ -278,7 +279,7 @@ et des évolutions futures.
 | P1 | C2.3.1 | Reformater le **cahier de recettes** (fonctionnel/structurel/sécurité) en tableau |
 | ✅ Fait | C2.3.2 | Registre d'anomalies dédié créé dans [docs/rncp/PLAN_CORRECTION_BOGUES.md](PLAN_CORRECTION_BOGUES.md) |
 | P1 | C2.4.1 | Ajouter **manuel d'utilisation** + **manuel de mise à jour** dédiés |
-| P2 | C2.1.1 | Formaliser le **protocole de déploiement** en séquences + critères qualité chiffrés |
+| ✅ Fait | C2.1.1 | Protocole de déploiement continu + critères qualité/performance formalisés dans [docs/rncp/PROTOCOLE_DEPLOIEMENT_CONTINU_QUALITE_PERF.md](PROTOCOLE_DEPLOIEMENT_CONTINU_QUALITE_PERF.md) |
 | P2 | C2.1.2 | Ajouter **capture CI verte** + séquences d'intégration |
 | P2 | C2.2.4 | Ajouter **historique de versions** (tags/CHANGELOG) + justification déploiement manuel |
 | P2 | C2.2.1 | Formaliser les **user stories** + captures d'écran |
