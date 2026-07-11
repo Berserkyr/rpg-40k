@@ -85,7 +85,7 @@ deploy-vps:
     - end-to-end-tests
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
+      when: on_success
     - when: never
   before_script:
     - apk add --no-cache openssh-client git curl bash

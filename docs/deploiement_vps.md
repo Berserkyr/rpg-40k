@@ -189,7 +189,9 @@ La clé privée ne doit jamais être committée. Créer de préférence une clé
 
 Pipeline : [.gitlab-ci.yml](../.gitlab-ci.yml)
 
-Job : `deploy-vps`, manuel, uniquement sur `main`.
+Job : `deploy-vps`, **automatique** sur `main` (`when: on_success`), déclenché
+uniquement après la réussite des jobs `test`, `build` et `e2e`. Un push qui casse un
+test ne déclenche pas le déploiement.
 
 Variables GitLab CI/CD à configurer :
 

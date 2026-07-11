@@ -163,7 +163,7 @@ Ce cycle réduit les risques de régression à chaque modification de code.
 
 ### Pipeline GitLab CI
 
-Une pipeline GitLab CI est également fournie pour démontrer la portabilité du processus d’intégration continue. Elle reprend les mêmes étapes : test, build, end-to-end, puis un job manuel de déploiement.
+Une pipeline GitLab CI est également fournie pour démontrer la portabilité du processus d’intégration continue. Elle reprend les mêmes étapes : test, build, end-to-end, puis un déploiement automatique sur `main` (`when: on_success`) une fois les tests réussis.
 
 ### Déploiement continu automatique
 
