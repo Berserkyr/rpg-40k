@@ -307,6 +307,43 @@ body.reduced-effects *::after {
 .effects-btn:hover { color: var(--amber); border-color: var(--amber); }
 .effects-btn[aria-pressed="true"] { color: var(--amber); border-color: var(--amber); }
 
+.inventory-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+}
+
+.inventory-modal-inner {
+  width: min(760px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  background: #050505;
+  padding: 1rem;
+  position: relative;
+}
+
+.inventory-close {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.4rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.inventory-close:hover {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
 @media (max-width: 1100px) {
   .sidebar-left { width: 220px; }
   .sidebar-right { width: 240px; }

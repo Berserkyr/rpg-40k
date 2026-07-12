@@ -8,6 +8,9 @@ export default function MapPanel({ state }) {
 
   const currentZone = state.current_zone || {};
   const accessible = state.accessible_zones || [];
+  const worldMap = state.world_map || {};
+  const travelHistory = worldMap.travel_history || [];
+  const zonesById = worldMap.zones || {};
 
   return (
     <div className="panel">
@@ -32,6 +35,22 @@ export default function MapPanel({ state }) {
             <div key={zone.id} className="zone-row">
               <span className="zone-icon">{icon}</span>
               <span className="zone-id">{zone.name || zone.id}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="panel-title" style={{ marginTop: '0.4rem' }}>TRACE DE DÉPLACEMENT</div>
+      <div className="zones-list">
+        {travelHistory.length === 0 && <div className="zone-row" style={{ color: '#334433' }}>Aucun déplacement</div>}
+        {travelHistory.slice(-10).map((zoneId, idx, arr) => {
+          const zone = zonesById[zoneId];
+          const isHere = idx === arr.length - 1;
+          return (
+            <div key={`${zoneId}-${idx}`} className={`zone-row ${isHere ? 'zone-current' : ''}`}>
+              <span className="zone-icon">{isHere ? '⦿' : '•'}</span>
+              <span className="zone-id">{zone?.name || zoneId}</span>
+              {isHere && <span className="zone-here">ICI</span>}
             </div>
           );
         })}

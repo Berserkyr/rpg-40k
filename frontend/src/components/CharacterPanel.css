@@ -74,6 +74,23 @@
   gap: 0.3rem;
   margin-top: 0.4rem;
 }
+.attr-plus-btn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid #1a3a1a;
+  color: #00ff41;
+  width: 1.2rem;
+  height: 1.2rem;
+  line-height: 1rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.attr-plus-btn:hover {
+  border-color: #00ff41;
+  color: #0a0a0a;
+  background: #00ff41;
+}
 
 .trait-tag {
   background: #0a1a0a;

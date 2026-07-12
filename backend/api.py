@@ -46,6 +46,7 @@ from src.inventory import (
 from src.progression import (
     ProgressionState, SKILL_TREE, award_xp,
     format_skill_tree, get_available_skills, get_unlocked_skills,
+    calculate_total_bonuses, get_special_abilities,
 )
 from src.world import WorldMap, create_starting_map, format_zone_info, format_map_overview
 from src.quests import QuestLog, create_starting_quests, format_quest_log, format_quest_info
@@ -151,12 +152,15 @@ class Session:
     def full_state(self) -> dict:
         """Sérialise tout l'etat visible par l'UI."""
         zone = self.world_map.get_current_zone()
+        build = _character_build(self)
         return {
             "user": {"id": self.user_id},
             "character": self.character.to_dict(),
+            "character_build": build,
             "progression": self.progression.to_dict(),
             "inventory": self.inventory.to_dict(),
             "world": self.world.to_dict(),
+            "world_map": self.world_map.to_dict(),
             "current_zone": zone.to_dict() if zone else None,
             "accessible_zones": [z.to_dict() for z in self.world_map.get_accessible_zones()],
             "active_quests": [
@@ -210,6 +214,110 @@ def _combat_state(combat: Optional[CombatState]) -> Optional[dict]:
             }
             for e in combat.enemies
         ],
+    }
+
+
+def _character_build(session: Session) -> dict:
+    """Calcule les attributs effectifs dynamiques du personnage.
+
+    Sources de bonus:
+    - niveau du personnage
+    - équipement porté (armes/armures)
+    - compétences (skills), talents passifs et dons spéciaux
+    """
+    base_attributes = session.character.attributes.copy()
+    progression = session.progression
+    inventory = session.inventory
+
+    level = progression.level
+    unlocked = get_unlocked_skills(progression)
+    passive_bonuses = calculate_total_bonuses(progression)
+    special_abilities = get_special_abilities(progression)
+
+    equipment_bonus = {
+        "attaque": 0,
+        "defense": inventory.total_defense_bonus(),
+        "precision": 0,
+        "pv_max": 0,
+    }
+    equipment_traits: list[str] = []
+
+    if inventory.weapon_main:
+        equipment_bonus["attaque"] += max(1, inventory.weapon_main.damage // 2)
+        equipment_bonus["precision"] += inventory.weapon_main.accuracy
+        equipment_traits.extend(inventory.weapon_main.special_abilities)
+    if inventory.weapon_secondary:
+        equipment_bonus["attaque"] += max(0, inventory.weapon_secondary.damage // 3)
+        equipment_bonus["precision"] += max(0, inventory.weapon_secondary.accuracy)
+        equipment_traits.extend(inventory.weapon_secondary.special_abilities)
+    if inventory.armor_body and inventory.armor_body.special_properties:
+        equipment_traits.extend(inventory.armor_body.special_properties)
+    if inventory.armor_head and inventory.armor_head.special_properties:
+        equipment_traits.extend(inventory.armor_head.special_properties)
+
+    level_bonus = {
+        "attaque": max(0, (level - 1) // 2),
+        "defense": max(0, (level - 1) // 3),
+        "pv_max": max(0, (level - 1) * 2),
+    }
+
+    talents = [s.name for s in unlocked if s.passive]
+    gifts = []
+    if level >= 3:
+        gifts.append("Instinct de vétéran")
+    if level >= 5:
+        gifts.append("Volonté inébranlable")
+    if level >= 7:
+        gifts.append("Présence héroïque")
+    if any((i and i.rarity.value == "relique") for i in [inventory.weapon_main, inventory.weapon_secondary, inventory.armor_body, inventory.armor_head]):
+        gifts.append("Porteur de relique")
+
+    effective_attributes = base_attributes.copy()
+    for key, value in passive_bonuses.items():
+        effective_attributes[key] = effective_attributes.get(key, 0) + value
+
+    combat_skill = (
+        effective_attributes.get("robustesse", 2)
+        + effective_attributes.get("discretion", 2)
+        + passive_bonuses.get("attaque", 0)
+        + equipment_bonus["attaque"]
+        + level_bonus["attaque"]
+    )
+    defense_skill = (
+        effective_attributes.get("sang_froid", 3)
+        + equipment_bonus["defense"]
+        + level_bonus["defense"]
+    )
+    speed_skill = effective_attributes.get("ingeniosite", 3) + passive_bonuses.get("technique", 0)
+    special_skill = effective_attributes.get("foi", 2) + passive_bonuses.get("resistance_corruption", 0)
+    max_health = (
+        10
+        + max(0, effective_attributes.get("robustesse", 2) - 2) * 2
+        + passive_bonuses.get("pv_max", 0)
+        + level_bonus["pv_max"]
+    )
+
+    return {
+        "level": level,
+        "base_attributes": base_attributes,
+        "effective_attributes": effective_attributes,
+        "derived_stats": {
+            "combat": combat_skill,
+            "defense": defense_skill,
+            "speed": speed_skill,
+            "special": special_skill,
+            "max_health": max_health,
+            "precision": equipment_bonus["precision"],
+        },
+        "bonuses": {
+            "skills": passive_bonuses,
+            "equipment": equipment_bonus,
+            "level": level_bonus,
+        },
+        "skills": [{"id": s.id, "name": s.name, "category": s.category.value} for s in unlocked],
+        "talents": talents,
+        "special_gifts": gifts,
+        "special_abilities": sorted(set(special_abilities + equipment_traits)),
     }
 
 
@@ -369,6 +477,20 @@ class TravelRequest(BaseModel):
 class SpawnRequest(BaseModel):
     faction: str = "tyranide"
     level: str = "standard"
+
+
+class EquipRequest(BaseModel):
+    item_id: str
+    slot: str = "main"  # main|secondary|body|head
+
+
+class UnequipRequest(BaseModel):
+    slot: str  # weapon_main|weapon_secondary|armor_body|armor_head
+
+
+class AttributeAllocationRequest(BaseModel):
+    attribute: str
+    points: int = 1
 
 
 class UserRequest(BaseModel):
@@ -537,6 +659,14 @@ def start_combat(req: SpawnRequest, user_id: str = Depends(current_user_id)):
     entity = generate_entity(faction, level)
     enemy = Combatant.from_entity(entity)
     player = Combatant.from_player_state(session.character)
+    build = _character_build(session)
+    derived = build.get("derived_stats", {})
+    player.combat = int(derived.get("combat", player.combat))
+    player.defense = int(derived.get("defense", player.defense))
+    player.speed = int(derived.get("speed", player.speed))
+    player.special = int(derived.get("special", player.special))
+    player.max_health = int(derived.get("max_health", player.max_health))
+    player.health = min(player.health, player.max_health)
     session.combat = CombatState(player=player, enemies=[enemy])
     session.save()
     return {"message": f"Combat contre {enemy.name}!", "combat": _combat_state(session.combat), "state": session.full_state()}
@@ -646,6 +776,86 @@ def loot(req: CommandRequest, user_id: str = Depends(current_user_id)):
         "inventory": session.inventory.to_dict(),
         "state": session.full_state(),
     }
+
+
+@app.post("/api/inventory/equip")
+def equip_item(req: EquipRequest, user_id: str = Depends(current_user_id)):
+    """Equipe un objet depuis l'inventaire vers un slot précis."""
+    session = get_session(user_id)
+    item = session.inventory.get_item(req.item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Objet introuvable dans l'inventaire")
+
+    slot = (req.slot or "main").lower()
+    if item.item_type.value in ("arme_melee", "arme_distance"):
+        if slot not in ("main", "secondary"):
+            raise HTTPException(status_code=400, detail="Slot d'arme invalide")
+        old = session.inventory.equip_weapon(item, slot=slot)
+        message = f"{item.name} equipe en {slot}."
+        if old:
+            message += f" {old.name} range dans le sac."
+    elif item.item_type.value == "armure":
+        old = session.inventory.equip_armor(item)
+        message = f"{item.name} equipe."
+        if old:
+            message += f" {old.name} range dans le sac."
+    else:
+        raise HTTPException(status_code=400, detail="Cet objet ne peut pas etre equipe")
+
+    session.save()
+    return {"message": message, "state": session.full_state()}
+
+
+@app.post("/api/inventory/unequip")
+def unequip_item(req: UnequipRequest, user_id: str = Depends(current_user_id)):
+    """Retire un objet équipe et le remet dans l'inventaire."""
+    session = get_session(user_id)
+    slot = req.slot
+
+    allowed_slots = {"weapon_main", "weapon_secondary", "armor_body", "armor_head"}
+    if slot not in allowed_slots:
+        raise HTTPException(status_code=400, detail="Slot invalide")
+
+    item = getattr(session.inventory, slot)
+    if not item:
+        raise HTTPException(status_code=400, detail="Aucun objet equipe sur ce slot")
+
+    if not session.inventory.can_add(item):
+        raise HTTPException(status_code=400, detail="Inventaire trop charge pour desequiper")
+
+    setattr(session.inventory, slot, None)
+    session.inventory.add_item(item)
+    session.save()
+    return {"message": f"{item.name} retire et range dans le sac.", "state": session.full_state()}
+
+
+@app.post("/api/attributes/allocate")
+def allocate_attribute(req: AttributeAllocationRequest, user_id: str = Depends(current_user_id)):
+    """Alloue des points d'attribut gagnés au niveau."""
+    session = get_session(user_id)
+    points = max(1, int(req.points or 1))
+    if session.progression.attribute_points_available < points:
+        raise HTTPException(status_code=400, detail="Pas assez de points d'attribut disponibles")
+
+    attr = (req.attribute or "").strip().lower()
+    if attr not in session.character.attributes:
+        raise HTTPException(status_code=400, detail="Attribut inconnu")
+
+    session.character.attributes[attr] = int(session.character.attributes.get(attr, 0)) + points
+    session.progression.attribute_points_available -= points
+    session.save()
+    return {
+        "message": f"{attr} augmente de +{points}.",
+        "remaining": session.progression.attribute_points_available,
+        "state": session.full_state(),
+    }
+
+
+@app.get("/api/character/build")
+def character_build(user_id: str = Depends(current_user_id)):
+    """Retourne le build dynamique: skills/talents/dons/stats effectives."""
+    session = get_session(user_id)
+    return _character_build(session)
 
 
 @app.post("/api/learn")

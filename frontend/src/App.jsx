@@ -9,7 +9,7 @@ import CombatPanel from './components/CombatPanel';
 import ActionPanel from './components/ActionPanel';
 import AuthPanel from './components/AuthPanel';
 import { useSSEChat } from './hooks/useSSEChat';
-import { getCurrentUserId, getState, isAuthenticated, logout, postAction } from './api';
+import { allocateAttribute, equipItem, getCurrentUserId, getState, isAuthenticated, logout, postAction, unequipItem } from './api';
 import './App.css';
 
 const INTRO_ART = String.raw`
@@ -26,6 +26,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [authed, setAuthed] = useState(isAuthenticated());
   const [playerId, setPlayerId] = useState(getCurrentUserId());
+  const [inventoryOpen, setInventoryOpen] = useState(false);
   const [reducedEffects, setReducedEffects] = useState(() => {
     if (typeof globalThis === 'undefined' || !globalThis.localStorage) return false;
     const stored = globalThis.localStorage.getItem('reducedEffects');
@@ -141,6 +142,21 @@ export default function App() {
     clear();
   };
 
+  const handleEquip = async (itemId, slot = 'main') => {
+    const result = await applyAction('ÉQUIPEMENT', () => equipItem(itemId, slot));
+    addLine(result.message || 'Objet équipé.', 'system');
+  };
+
+  const handleUnequip = async (slot) => {
+    const result = await applyAction('ÉQUIPEMENT', () => unequipItem(slot));
+    addLine(result.message || 'Objet retiré.', 'system');
+  };
+
+  const handleAllocateAttribute = async (attribute, points = 1) => {
+    const result = await applyAction('ATTRIBUT', () => allocateAttribute(attribute, points));
+    addLine(result.message || `${attribute} amélioré.`, 'loot');
+  };
+
   const combat = gameState?.combat;
   const disabled = loading || streaming;
 
@@ -160,6 +176,17 @@ export default function App() {
             {reducedEffects ? '◍ EFFETS RÉDUITS' : '◉ EFFETS COMPLETS'}
           </button>
           {authed && (
+            <button
+              className="effects-btn"
+              onClick={() => setInventoryOpen((v) => !v)}
+              aria-pressed={inventoryOpen}
+              aria-label="Ouvrir ou fermer le sac à dos"
+              title="Sac à dos"
+            >
+              🎒 SAC
+            </button>
+          )}
+          {authed && (
             <button className="logout-btn" onClick={handleLogout} aria-label="Se déconnecter">
               ⏻ DÉCONNEXION
             </button>
@@ -176,7 +203,7 @@ export default function App() {
       ) : (
       <div className="app-body">
         <aside className="sidebar-left">
-          <CharacterPanel state={gameState} />
+          <CharacterPanel state={gameState} onAllocateAttribute={handleAllocateAttribute} />
           <MapPanel state={gameState} />
           <QuestPanel state={gameState} />
         </aside>
@@ -212,8 +239,17 @@ export default function App() {
 
         <aside className="sidebar-right">
           <CombatPanel combat={combat} onCombatAction={handleCombatAction} disabled={disabled} />
-          <InventoryPanel state={gameState} />
+          {!inventoryOpen && <InventoryPanel state={gameState} onEquip={handleEquip} onUnequip={handleUnequip} />}
         </aside>
+
+        {inventoryOpen && (
+          <div className="inventory-modal" role="dialog" aria-label="Sac à dos">
+            <div className="inventory-modal-inner">
+              <button className="inventory-close" onClick={() => setInventoryOpen(false)} aria-label="Fermer le sac à dos">✕</button>
+              <InventoryPanel state={gameState} onEquip={handleEquip} onUnequip={handleUnequip} />
+            </div>
+          </div>
+        )}
       </div>
       )}
     </div>

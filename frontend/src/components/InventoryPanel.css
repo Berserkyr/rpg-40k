@@ -42,4 +42,20 @@
   white-space: nowrap;
 }
 
+.item-action {
+  border: 1px solid #1a3a1a;
+  background: transparent;
+  color: #00ff41;
+  font-size: 0.55rem;
+  padding: 0.1rem 0.3rem;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+}
+
+.item-action:hover {
+  border-color: #00ff41;
+  background: #00ff41;
+  color: #0a0a0a;
+}
+
 .rarity-rare, .rarity-exotique, .rarity-relique { color: #ffa500; }

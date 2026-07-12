@@ -90,6 +90,18 @@ export async function postAction(path, body = {}) {
   return parseResponse(r);
 }
 
+export async function equipItem(itemId, slot = 'main') {
+  return postAction('/inventory/equip', { item_id: itemId, slot });
+}
+
+export async function unequipItem(slot) {
+  return postAction('/inventory/unequip', { slot });
+}
+
+export async function allocateAttribute(attribute, points = 1) {
+  return postAction('/attributes/allocate', { attribute, points });
+}
+
 export function streamSSE(path, body, onToken, onDone, onError) {
   let cancelled = false;
 

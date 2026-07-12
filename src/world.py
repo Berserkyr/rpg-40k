@@ -158,6 +158,7 @@ class WorldMap:
     zones: dict[str, Zone] = field(default_factory=dict)
     current_zone_id: str = ""
     discovered_zones: list[str] = field(default_factory=list)
+    travel_history: list[str] = field(default_factory=list)
     
     def add_zone(self, zone: Zone) -> None:
         """Ajoute une zone a la carte."""
@@ -217,6 +218,10 @@ class WorldMap:
             target.status = ZoneStatus.EXPLORE
         
         self.current_zone_id = target_zone_id
+        if not self.travel_history:
+            self.travel_history.append(target_zone_id)
+        elif self.travel_history[-1] != target_zone_id:
+            self.travel_history.append(target_zone_id)
         
         # Evenement aleatoire base sur le danger
         event = self._roll_travel_event(target)
@@ -254,6 +259,7 @@ class WorldMap:
         return {
             "current_zone_id": self.current_zone_id,
             "discovered_zones": self.discovered_zones.copy(),
+            "travel_history": self.travel_history.copy(),
             "zones": {zid: zone.to_dict() for zid, zone in self.zones.items()},
         }
     
@@ -263,9 +269,12 @@ class WorldMap:
         world = cls()
         world.current_zone_id = data.get("current_zone_id", "")
         world.discovered_zones = data.get("discovered_zones", []).copy()
+        world.travel_history = data.get("travel_history", []).copy()
         for zone_data in data.get("zones", {}).values():
             zone = Zone.from_dict(zone_data)
             world.zones[zone.id] = zone
+        if not world.travel_history and world.current_zone_id:
+            world.travel_history = [world.current_zone_id]
         return world
 
 
@@ -568,6 +577,7 @@ def create_starting_map() -> WorldMap:
     # Position de depart
     world.current_zone_id = "hab_block_7"
     world.discovered_zones = ["hab_block_7"]
+    world.travel_history = ["hab_block_7"]
     
     return world
 
