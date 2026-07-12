@@ -169,8 +169,34 @@ Le mini-audit ci-dessous est un **contrôle manuel ciblé** sur les parcours ess
 | Prévention des actions invalides | ✅ Conforme | Les commandes impossibles sont désactivées en combat ou selon le contexte. |
 | Réduction des effets visuels | ✅ Conforme | Un bouton « effets réduits » désactive scanlines/animations et la préférence est persistée. |
 | Respect de `prefers-reduced-motion` | ✅ Conforme | Les animations sont automatiquement limitées si l'OS le demande. |
-| Contrastes et confort visuel | ⚠️ Partiellement conforme | L'interface sombre est lisible, mais un contrôle outilisé des contrastes reste recommandé. |
+| Contrastes et confort visuel | ✅ Conforme (vérifié) | Le token `--muted` a été corrigé pour atteindre un contraste WCAG AA en texte normal. |
 | Parcours lecteur d'écran global | ⚠️ À approfondir | La base est saine, mais un audit complet avec lecteur d'écran reste à réaliser. |
+
+### 6.1 Résultat d'audit automatisé axe
+
+Un audit automatisé `axe-core` a été exécuté sur l'écran d'authentification (Playwright + Chromium) :
+
+- périmètre : règles `wcag2a` et `wcag2aa` ;
+- résultat final : **0 violation critique/sérieuse** après correction du contraste ;
+- scénario : `frontend/e2e/accessibility.spec.js` (test temporaire de vérification).
+
+Point détecté puis corrigé : contraste insuffisant des éléments en couleur secondaire (`--muted`).
+
+### 6.2 Documentation des ratios de contraste (WCAG)
+
+Ratios calculés après correction du design token `--muted: #7f9f7f` :
+
+| Couple (texte / fond) | Ratio |
+|---|---|
+| `--text` / `--dark` | **17.53:1** |
+| `--text` / `--surface` | **18.05:1** |
+| `--muted` / `--dark` | **6.76:1** |
+| `--muted` / `--surface` | **6.96:1** |
+| `--green` / `--dark` | **14.50:1** |
+| `--green-dim` / `--dark` | **6.44:1** |
+| `--amber` / `--dark` | **10.03:1** |
+
+Ces valeurs sont supérieures au seuil **4.5:1** attendu pour du texte normal (WCAG AA).
 
 ### Forces principales
 
@@ -181,9 +207,8 @@ Le mini-audit ci-dessous est un **contrôle manuel ciblé** sur les parcours ess
 
 ### Améliorations planifiées
 
-1. ajouter un contrôle automatisé complémentaire (Lighthouse ou axe) avant soutenance finale ;
-2. vérifier et documenter les ratios de contraste ;
-3. mener un audit complet au lecteur d'écran.
+1. compléter par un audit Lighthouse reproductible dans un environnement avec Chrome système ;
+2. mener un audit complet au lecteur d'écran.
 
 ---
 
