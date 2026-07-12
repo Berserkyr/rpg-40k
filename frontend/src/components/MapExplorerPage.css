@@ -1,0 +1,127 @@
+.map-page-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10002;
+}
+
+.map-page-card {
+  width: min(1100px, 95vw);
+  max-height: 92vh;
+  overflow: auto;
+  background: #050505;
+  border: 1px solid #1a3a1a;
+  padding: 0.8rem;
+}
+
+.map-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.7rem;
+}
+
+.map-page-header h2 {
+  color: #ffa500;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+}
+
+.map-page-close {
+  border: 1px solid #1a3a1a;
+  background: transparent;
+  color: #7f9f7f;
+  cursor: pointer;
+}
+
+.map-page-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.map-block {
+  border: 1px solid #1a3a1a;
+  padding: 0.5rem;
+}
+
+.map-block.full-width {
+  grid-column: 1 / -1;
+}
+
+.map-block h3 {
+  color: #00ff41;
+  font-size: 0.72rem;
+  margin-bottom: 0.4rem;
+}
+
+.map-current-zone {
+  border-left: 2px solid #ffa500;
+  padding-left: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.map-zone-title { color: #c8ffc8; font-weight: 600; }
+.map-zone-desc { color: #7f9f7f; font-size: 0.68rem; }
+.map-zone-meta { color: #556655; font-size: 0.62rem; }
+
+.map-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 270px;
+  overflow: auto;
+}
+
+.map-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border-left: 2px solid #1a3a1a;
+  padding: 0.2rem 0.35rem;
+  color: #c8ffc8;
+}
+
+.map-row.current {
+  border-left-color: #ffa500;
+  background: rgba(255, 165, 0, 0.06);
+}
+
+.map-actions button {
+  border: 1px solid #1a3a1a;
+  background: transparent;
+  color: #00ff41;
+  font-size: 0.6rem;
+  cursor: pointer;
+}
+
+.map-actions button:hover { border-color: #00ff41; }
+
+.map-muted { color: #556655; font-size: 0.62rem; }
+
+.map-empty { color: #556655; font-size: 0.66rem; }
+
+.map-trace {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.35rem;
+}
+
+.map-trace-node {
+  border: 1px solid #1a3a1a;
+  padding: 0.25rem 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.badge-here {
+  margin-left: auto;
+  color: #ffa500;
+  font-size: 0.6rem;
+}
+
+.dot { color: #00ff41; }

@@ -493,6 +493,50 @@ class AttributeAllocationRequest(BaseModel):
     points: int = 1
 
 
+class ConsumableRequest(BaseModel):
+    item_id: str
+
+
+def _improve_wound_track(current: str) -> str:
+    order = ["Condamne", "Fracture", "Erafle", "Indemne"]
+    try:
+        idx = order.index(current)
+    except ValueError:
+        return "Indemne"
+    return order[min(len(order) - 1, idx + 1)]
+
+def _apply_consumable_effect(session: Session, item) -> str:
+    """Applique l'effet d'un consommable sur l'état du personnage."""
+    effect = getattr(item, "effect_type", "")
+    value = int(getattr(item, "effect_value", 0) or 0)
+
+    if effect == "heal":
+        before = str(session.character.tracks.get("blessures", "Indemne"))
+        session.character.tracks["blessures"] = _improve_wound_track(before)
+        if session.character.tracks["blessures"] == before:
+            # Si deja indemne, on convertit en reduction de stress
+            stress = int(session.character.tracks.get("stress", 0) or 0)
+            reduced = min(stress, max(1, value // 2))
+            session.character.tracks["stress"] = max(0, stress - reduced)
+            return f"{item.name}: -{reduced} stress."
+        return f"{item.name}: blessures {before} -> {session.character.tracks['blessures']}."
+
+    if effect == "cure":
+        corruption = int(session.character.tracks.get("corruption", 0) or 0)
+        reduced = min(corruption, max(1, value))
+        session.character.tracks["corruption"] = max(0, corruption - reduced)
+        return f"{item.name}: -{reduced} corruption."
+
+    if effect == "buff":
+        stress = int(session.character.tracks.get("stress", 0) or 0)
+        reduced = min(stress, max(1, value))
+        session.character.tracks["stress"] = max(0, stress - reduced)
+        return f"{item.name}: regain de focus, -{reduced} stress."
+
+    return f"{item.name} utilise sans effet notable."
+
+
+
 class UserRequest(BaseModel):
     user_id: str
     display_name: str | None = None
@@ -776,6 +820,25 @@ def loot(req: CommandRequest, user_id: str = Depends(current_user_id)):
         "inventory": session.inventory.to_dict(),
         "state": session.full_state(),
     }
+
+
+@app.post("/api/inventory/use")
+def use_consumable(req: ConsumableRequest, user_id: str = Depends(current_user_id)):
+    """Utilise un consommable de l'inventaire."""
+    session = get_session(user_id)
+    item = session.inventory.get_item(req.item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Consommable introuvable")
+    if item.item_type.value != "consommable":
+        raise HTTPException(status_code=400, detail="Cet objet n'est pas un consommable")
+
+    removed = session.inventory.remove_item(req.item_id, 1)
+    if not removed:
+        raise HTTPException(status_code=400, detail="Impossible d'utiliser cet objet")
+
+    message = _apply_consumable_effect(session, item)
+    session.save()
+    return {"message": message, "state": session.full_state()}
 
 
 @app.post("/api/inventory/equip")

@@ -14,6 +14,7 @@ export default function CharacterPanel({ state, onAllocateAttribute }) {
   const talents = build.talents || [];
   const gifts = build.special_gifts || [];
   const abilities = build.special_abilities || [];
+  const learnedSkills = build.skills || [];
 
   // Statut de blessure (texte : Indemne, Légère, etc.)
   const blessures = tracks.blessures || 'Indemne';
@@ -100,6 +101,11 @@ export default function CharacterPanel({ state, onAllocateAttribute }) {
       {!!abilities.length && <div className="panel-title" style={{ marginTop: '0.5rem' }}>APTITUDES</div>}
       {abilities.slice(0, 5).map((a) => (
         <div key={a} className="stat-row"><span className="stat-val">→ {a}</span></div>
+      ))}
+
+      {!!learnedSkills.length && <div className="panel-title" style={{ marginTop: '0.5rem' }}>SKILLS</div>}
+      {learnedSkills.slice(0, 5).map((s) => (
+        <div key={s.id} className="stat-row"><span className="stat-val">• {s.name}</span></div>
       ))}
 
       <div className="panel-title" style={{ marginTop: '0.5rem' }}>RESSOURCES</div>

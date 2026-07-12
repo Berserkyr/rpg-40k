@@ -102,6 +102,14 @@ export async function allocateAttribute(attribute, points = 1) {
   return postAction('/attributes/allocate', { attribute, points });
 }
 
+export async function useConsumable(itemId) {
+  return postAction('/inventory/use', { item_id: itemId });
+}
+
+export async function learnSkill(skillId) {
+  return postAction('/learn', { command: 'learn', args: [skillId] });
+}
+
 export function streamSSE(path, body, onToken, onDone, onError) {
   let cancelled = false;
 

@@ -1,6 +1,6 @@
 import './InventoryPanel.css';
 
-export default function InventoryPanel({ state, onEquip, onUnequip }) {
+export default function InventoryPanel({ state, onEquip, onUnequip, onUseConsumable }) {
   if (!state) return <div className="panel"><div className="panel-title">INVENTAIRE</div><div className="panel-empty">— HORS LIGNE —</div></div>;
 
   const inventory = state.inventory || {};
@@ -54,10 +54,16 @@ export default function InventoryPanel({ state, onEquip, onUnequip }) {
           <div key={item.id + item.name} className="item-row">
             <span className="item-name">{item.name}{item.quantity > 1 ? ` x${item.quantity}` : ''}</span>
             <span className={`rarity rarity-${item.rarity}`}>{item.rarity}</span>
-            {onEquip && (item.type === 'arme_melee' || item.type === 'arme_distance' || item.type === 'armure') && (
-              <button className="item-action" onClick={() => onEquip(item.id, slotFor(item))} aria-label={`Equiper ${item.name}`}>
-                ÉQUIPER
+            {item.type === 'consommable' && onUseConsumable ? (
+              <button className="item-action" onClick={() => onUseConsumable(item.id)} aria-label={`Utiliser ${item.name}`}>
+                UTILISER
               </button>
+            ) : (
+              onEquip && (item.type === 'arme_melee' || item.type === 'arme_distance' || item.type === 'armure') && (
+                <button className="item-action" onClick={() => onEquip(item.id, slotFor(item))} aria-label={`Equiper ${item.name}`}>
+                  ÉQUIPER
+                </button>
+              )
             )}
           </div>
         ))}

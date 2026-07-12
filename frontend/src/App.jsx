@@ -8,8 +8,10 @@ import InventoryPanel from './components/InventoryPanel';
 import CombatPanel from './components/CombatPanel';
 import ActionPanel from './components/ActionPanel';
 import AuthPanel from './components/AuthPanel';
+import MapExplorerPage from './components/MapExplorerPage';
+import SkillsPanel from './components/SkillsPanel';
 import { useSSEChat } from './hooks/useSSEChat';
-import { allocateAttribute, equipItem, getCurrentUserId, getState, isAuthenticated, logout, postAction, unequipItem } from './api';
+import { allocateAttribute, equipItem, getCurrentUserId, getState, isAuthenticated, learnSkill, logout, postAction, unequipItem, useConsumable as consumeItem } from './api';
 import './App.css';
 
 const INTRO_ART = String.raw`
@@ -27,6 +29,8 @@ export default function App() {
   const [authed, setAuthed] = useState(isAuthenticated());
   const [playerId, setPlayerId] = useState(getCurrentUserId());
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [skillsOpen, setSkillsOpen] = useState(false);
   const [reducedEffects, setReducedEffects] = useState(() => {
     if (typeof globalThis === 'undefined' || !globalThis.localStorage) return false;
     const stored = globalThis.localStorage.getItem('reducedEffects');
@@ -157,6 +161,16 @@ export default function App() {
     addLine(result.message || `${attribute} amélioré.`, 'loot');
   };
 
+  const handleUseConsumable = async (itemId) => {
+    const result = await applyAction('CONSOMMABLE', () => consumeItem(itemId));
+    addLine(result.message || 'Consommable utilisé.', 'system');
+  };
+
+  const handleLearnSkill = async (skillId) => {
+    const result = await applyAction('SKILL', () => learnSkill(skillId));
+    addLine(result.message || 'Compétence apprise.', 'loot');
+  };
+
   const combat = gameState?.combat;
   const disabled = loading || streaming;
 
@@ -184,6 +198,16 @@ export default function App() {
               title="Sac à dos"
             >
               🎒 SAC
+            </button>
+          )}
+          {authed && (
+            <button className="effects-btn" onClick={() => setMapOpen(true)} aria-label="Ouvrir la carte explorateur" title="Carte explorateur">
+              🗺 CARTE
+            </button>
+          )}
+          {authed && (
+            <button className="effects-btn" onClick={() => setSkillsOpen(true)} aria-label="Ouvrir le panneau skills" title="Skills">
+              🧠 SKILLS
             </button>
           )}
           {authed && (
@@ -239,16 +263,33 @@ export default function App() {
 
         <aside className="sidebar-right">
           <CombatPanel combat={combat} onCombatAction={handleCombatAction} disabled={disabled} />
-          {!inventoryOpen && <InventoryPanel state={gameState} onEquip={handleEquip} onUnequip={handleUnequip} />}
+          {!inventoryOpen && <InventoryPanel state={gameState} onEquip={handleEquip} onUnequip={handleUnequip} onUseConsumable={handleUseConsumable} />}
         </aside>
 
         {inventoryOpen && (
           <div className="inventory-modal" role="dialog" aria-label="Sac à dos">
             <div className="inventory-modal-inner">
               <button className="inventory-close" onClick={() => setInventoryOpen(false)} aria-label="Fermer le sac à dos">✕</button>
-              <InventoryPanel state={gameState} onEquip={handleEquip} onUnequip={handleUnequip} />
+              <InventoryPanel state={gameState} onEquip={handleEquip} onUnequip={handleUnequip} onUseConsumable={handleUseConsumable} />
             </div>
           </div>
+        )}
+
+        {mapOpen && (
+          <MapExplorerPage
+            state={gameState}
+            onTravel={handleTravel}
+            onClose={() => setMapOpen(false)}
+            disabled={disabled || combat?.active}
+          />
+        )}
+
+        {skillsOpen && (
+          <SkillsPanel
+            state={gameState}
+            onLearnSkill={handleLearnSkill}
+            onClose={() => setSkillsOpen(false)}
+          />
         )}
       </div>
       )}
