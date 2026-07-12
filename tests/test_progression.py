@@ -24,9 +24,10 @@ def test_add_xp_can_level_up_multiple_times_and_keeps_overflow():
     assert state.current_xp == 25
     assert state.total_xp_earned == 400
     assert state.attribute_points_available == 2
+    assert state.skill_points_available == 2
     assert messages == [
-        "NIVEAU 2 ATTEINT! +1 point d'attribut disponible.",
-        "NIVEAU 3 ATTEINT! +1 point d'attribut disponible.",
+        "NIVEAU 2 ATTEINT! +1 point d'attribut, +1 point de competence.",
+        "NIVEAU 3 ATTEINT! +1 point d'attribut, +1 point de competence.",
     ]
 
 

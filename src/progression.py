@@ -41,6 +41,7 @@ class ProgressionState:
     total_xp_earned: int = 0
     skills_unlocked: list[str] = field(default_factory=list)
     attribute_points_available: int = 0
+    skill_points_available: int = 0
     
     def xp_for_next_level(self) -> int:
         """XP requis pour le prochain niveau."""
@@ -69,8 +70,9 @@ class ProgressionState:
             self.level += 1
             self.current_xp = overflow
             self.attribute_points_available += 1
+            self.skill_points_available += 1
             messages.append(
-                f"NIVEAU {self.level} ATTEINT! +1 point d'attribut disponible."
+                f"NIVEAU {self.level} ATTEINT! +1 point d'attribut, +1 point de competence."
             )
         
         return messages
@@ -101,7 +103,7 @@ class ProgressionState:
     
     def unlock_skill(self, skill: Skill) -> tuple[bool, str]:
         """
-        Tente de debloquer une competence.
+        Tente de debloquer une competence (paiement en XP).
         Retourne (succes, message).
         """
         can_unlock, reason = self.can_unlock_skill(skill)
@@ -111,7 +113,29 @@ class ProgressionState:
         self.current_xp -= skill.xp_cost
         self.skills_unlocked.append(skill.id)
         return True, f"Competence '{skill.name}' debloquee!"
-    
+
+    def can_unlock_with_point(self, skill: Skill) -> tuple[bool, str]:
+        """Verifie si une competence peut etre choisie via un point de competence."""
+        if self.has_skill(skill.id):
+            return False, "Competence deja acquise"
+        if self.level < skill.level_required:
+            return False, f"Niveau {skill.level_required} requis (actuel: {self.level})"
+        if self.skill_points_available < 1:
+            return False, "Aucun point de competence disponible"
+        for prereq in skill.prerequisites:
+            if prereq not in self.skills_unlocked:
+                return False, f"Prerequis manquant: {prereq}"
+        return True, "OK"
+
+    def unlock_with_skill_point(self, skill: Skill) -> tuple[bool, str]:
+        """Debloque une competence en depensant un point de competence (choix de niveau)."""
+        can_unlock, reason = self.can_unlock_with_point(skill)
+        if not can_unlock:
+            return False, reason
+        self.skill_points_available -= 1
+        self.skills_unlocked.append(skill.id)
+        return True, f"Competence '{skill.name}' apprise!"
+
     def to_dict(self) -> dict:
         """Serialise l'etat de progression."""
         return {
@@ -120,6 +144,7 @@ class ProgressionState:
             "total_xp_earned": self.total_xp_earned,
             "skills_unlocked": self.skills_unlocked.copy(),
             "attribute_points_available": self.attribute_points_available,
+            "skill_points_available": self.skill_points_available,
             "xp_to_next_level": self.xp_to_next_level(),
         }
     
@@ -131,6 +156,7 @@ class ProgressionState:
             current_xp=data.get("current_xp", 0),
             total_xp_earned=data.get("total_xp_earned", 0),
             attribute_points_available=data.get("attribute_points_available", 0),
+            skill_points_available=data.get("skill_points_available", 0),
         )
         state.skills_unlocked = data.get("skills_unlocked", []).copy()
         return state
@@ -192,6 +218,62 @@ _register_skill(Skill(
     level_required=4,
     prerequisites=["coup_desespere", "parade"],
     special_ability="fureur_imperiale",
+))
+
+_register_skill(Skill(
+    id="frappe_puissante",
+    name="Frappe puissante",
+    description="Capacite active: attaque avec avantage et +2 degats (2 PA).",
+    category=SkillCategory.COMBAT,
+    xp_cost=90,
+    level_required=2,
+    prerequisites=["combat_base"],
+    special_ability="frappe_puissante",
+))
+
+_register_skill(Skill(
+    id="coup_etourdissant",
+    name="Coup etourdissant",
+    description="Capacite active: une attaque qui etourdit la cible touchee (2 PA).",
+    category=SkillCategory.COMBAT,
+    xp_cost=140,
+    level_required=3,
+    prerequisites=["frappe_puissante"],
+    special_ability="coup_etourdissant",
+))
+
+_register_skill(Skill(
+    id="tir_suppression",
+    name="Tir de suppression",
+    description="Capacite active: applique Supprimé (-3 attaque) a un ennemi (1 PA).",
+    category=SkillCategory.COMBAT,
+    xp_cost=110,
+    level_required=2,
+    prerequisites=["combat_base"],
+    special_ability="tir_suppression",
+))
+
+_register_skill(Skill(
+    id="marquage",
+    name="Marquage de cible",
+    description="Capacite active: marque un ennemi, +2 degats subis (1 PA).",
+    category=SkillCategory.COMBAT,
+    xp_cost=110,
+    level_required=3,
+    prerequisites=["tir_suppression"],
+    special_ability="marquage",
+))
+
+_register_skill(Skill(
+    id="maitre_armes",
+    name="Maitre d'armes",
+    description="+1 point d'action maximum en combat.",
+    category=SkillCategory.COMBAT,
+    xp_cost=260,
+    level_required=6,
+    prerequisites=["coup_etourdissant", "fureur_imperiale"],
+    attribute_bonus={"pa_max": 1},
+    passive=True,
 ))
 
 # --- SURVIE ---
@@ -270,6 +352,41 @@ _register_skill(Skill(
     xp_cost=75,
     level_required=2,
     attribute_bonus={"intimidation": 2},
+    passive=True,
+))
+
+_register_skill(Skill(
+    id="negociateur",
+    name="Negociateur aguerri",
+    description="+2 aux tentatives de negociation avec les ennemis.",
+    category=SkillCategory.SOCIAL,
+    xp_cost=120,
+    level_required=3,
+    prerequisites=["langue_bien_pendue"],
+    attribute_bonus={"negociation": 2},
+    passive=True,
+))
+
+_register_skill(Skill(
+    id="cri_ralliement",
+    name="Cri de ralliement",
+    description="Capacite active: inspire le groupe (+2 attaque) (1 PA).",
+    category=SkillCategory.SOCIAL,
+    xp_cost=150,
+    level_required=4,
+    prerequisites=["intimidation"],
+    special_ability="cri_ralliement",
+))
+
+_register_skill(Skill(
+    id="meneur",
+    name="Meneur d'hommes",
+    description="Vos allies recrutes gagnent +2 PV max.",
+    category=SkillCategory.SOCIAL,
+    xp_cost=200,
+    level_required=5,
+    prerequisites=["cri_ralliement"],
+    attribute_bonus={"commandement": 1},
     passive=True,
 ))
 
@@ -428,6 +545,42 @@ def get_special_abilities(progression: ProgressionState) -> list[str]:
         if skill.special_ability:
             abilities.append(skill.special_ability)
     return abilities
+
+
+def skill_to_dict(skill: Skill, progression: "ProgressionState") -> dict:
+    """Serialise une competence avec son statut pour le personnage courant."""
+    if progression.has_skill(skill.id):
+        status = "unlocked"
+    elif progression.can_unlock_with_point(skill)[0]:
+        status = "available"
+    else:
+        status = "locked"
+    _, reason = progression.can_unlock_with_point(skill)
+    return {
+        "id": skill.id,
+        "name": skill.name,
+        "description": skill.description,
+        "category": skill.category.value,
+        "xp_cost": skill.xp_cost,
+        "level_required": skill.level_required,
+        "prerequisites": list(skill.prerequisites),
+        "attribute_bonus": dict(skill.attribute_bonus),
+        "special_ability": skill.special_ability,
+        "passive": skill.passive,
+        "status": status,
+        "lock_reason": None if status != "locked" else reason,
+    }
+
+
+def serialize_skill_tree(progression: "ProgressionState") -> list[dict]:
+    """Serialise l'ensemble de l'arbre de competences pour le frontend."""
+    return [
+        skill_to_dict(skill, progression)
+        for skill in sorted(
+            SKILL_TREE.values(),
+            key=lambda s: (s.category.value, s.level_required, s.name),
+        )
+    ]
 
 
 def format_skill_tree(progression: ProgressionState) -> str:

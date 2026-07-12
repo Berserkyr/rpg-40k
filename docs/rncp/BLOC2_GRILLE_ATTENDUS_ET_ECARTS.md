@@ -22,11 +22,11 @@ dans l'ordre, avec :
 | C2.1.2 | Intégration continue (CI) | Protocole d'intégration continue | 🟢 Solide |
 | C2.2.1 | Prototype applicatif (ergonomie, cibles, sécurité) | Architecture maintenable + prototype + frameworks | 🟢 Solide |
 | C2.2.2 | Harnais de tests unitaires | Jeu de tests couvrant une fonctionnalité | 🟢 Solide |
-| C2.2.3 | Sécurité (OWASP) + accessibilité | Mesures sécurité + mesures accessibilité | 🟡 Partiel |
-| C2.2.4 | Déploiement progressif à chaque modification | Historique des versions + version finale viable | � Solide |
+| C2.2.3 | Sécurité (OWASP) + accessibilité | Mesures sécurité + mesures accessibilité | 🟢 Solide |
+| C2.2.4 | Déploiement progressif à chaque modification | Historique des versions + version finale viable | 🟢 Solide |
 | C2.3.1 | Cahier de recettes | Cahier de recettes | 🟢 Solide |
 | C2.3.2 | Plan de correction des bogues | Plan de correction des bogues | 🟢 Solide |
-| C2.4.1 | Documentation technique d'exploitation | Manuels déploiement / utilisation / mise à jour | 🟡 Partiel |
+| C2.4.1 | Documentation technique d'exploitation | Manuels déploiement / utilisation / mise à jour | 🟢 Solide |
 
 Légende : 🟢 preuve claire et suffisante · 🟡 preuve présente mais à renforcer · 🔴 manquant.
 
@@ -111,9 +111,10 @@ attendues et aux exigences de sécurité.
 - Frameworks : React 18 + Vite (front), FastAPI (back) — [docs/module/DOCUMENT_CADRAGE.md](DOCUMENT_CADRAGE.md).
 - Composants UI : [docs/module/WIREFRAMES.md](WIREFRAMES.md) + composants React.
 - Sécurité intégrée : JWT + bcrypt — [backend/auth.py](../../backend/auth.py).
+- **User stories formalisées** (US-01 à US-08) avec critères d'acceptation et preuves : [docs/rncp/USER_STORIES.md](USER_STORIES.md).
 
 **Ce qui manque pour valider.**
-- [ ] Formaliser 3 à 5 **user stories** explicites (« En tant que joueur, je veux… afin de… ») pour matérialiser le critère « user stories ».
+- [x] Formaliser 3 à 5 **user stories** explicites (« En tant que joueur, je veux… afin de… ») — fait dans [docs/rncp/USER_STORIES.md](USER_STORIES.md).
 - [ ] Ajouter **captures d'écran** des écrans clés (auth, jeu, combat) en annexe.
 
 ---
@@ -194,7 +195,7 @@ une solution stable et conforme à l'attendu.
 
 **Ce qui manque pour valider.**
 - [x] Déploiement automatique à chaque modification validée par la CI (fait).
-- [ ] Ajouter un **historique de versions lisible** (tags/releases ou CHANGELOG résumant les incréments).
+- [x] Ajouter un **historique de versions lisible** — [CHANGELOG.md](../../CHANGELOG.md) (versions 1.0.0-rncp → 1.2.0 + preuves).
 - [ ] Capturer la **dernière version fonctionnelle** (écran de jeu opérationnel) comme preuve de viabilité.
 
 ---
@@ -212,12 +213,12 @@ les résultats attendus, afin de détecter les anomalies et régressions.
 - Les tests fonctionnels, structurels et de sécurité exécutés sont conformes au plan.
 
 **Ce que le projet fournit déjà.**
-- Plan de recette formalisé : [docs/rncp/05_plan_de_recette.md](05_plan_de_recette.md).
+- Cahier de recettes complet et exécuté : [docs/rncp/05_plan_de_recette.md](05_plan_de_recette.md) (fonctionnel / structurel / sécurité, format ID / scénario / étapes / attendu / obtenu / statut).
 - Cahier de recette dans le dossier : [docs/rncp/02_bloc2_conception_developpement.md](02_bloc2_conception_developpement.md) (section cahier de recette).
 
 **Ce qui manque pour valider.**
-- [ ] Structurer le cahier en **tableau ID / scénario / étapes / résultat attendu / résultat obtenu / statut**, en couvrant les 3 natures : **fonctionnel, structurel, sécurité**.
-- [ ] Tracer au moins un **cas de test de sécurité** (ex. accès route protégée sans JWT → 401).
+- [x] Structurer le cahier en **tableau ID / scénario / étapes / résultat attendu / résultat obtenu / statut**, couvrant les 3 natures **fonctionnel, structurel, sécurité** — fait.
+- [x] Tracer au moins un **cas de test de sécurité** (route protégée sans JWT → 401) — cas REC-SEC-001 à 008, adossés à [tests/test_api.py](../../tests/test_api.py).
 
 ---
 
@@ -263,13 +264,16 @@ et des évolutions futures.
 
 **Ce que le projet fournit déjà.**
 - Manuel de déploiement : [docs/deploiement_vps.md](../deploiement_vps.md).
+- **Manuel d'utilisation** joueur dédié : [docs/module/MANUEL_UTILISATION.md](../module/MANUEL_UTILISATION.md).
+- **Manuel de mise à jour** dédié (pull → rebuild → redeploy → santé → rollback) : [docs/module/MANUEL_MISE_A_JOUR.md](../module/MANUEL_MISE_A_JOUR.md).
 - Documentation technique (choix, stack, API) : [docs/module/DOC_TECHNIQUE.md](DOC_TECHNIQUE.md).
 - README d'utilisation : [README.md](../../README.md).
 
 **Ce qui manque pour valider.**
-- [ ] Isoler un **manuel d'utilisation** clair côté joueur (parcours pas à pas avec captures).
-- [ ] Ajouter un **manuel de mise à jour** explicite (procédure : pull → rebuild image → redeploy → vérif santé → rollback).
-- [ ] Vérifier que chaque manuel **justifie les choix techniques** (pourquoi FastAPI, React, SQLite, JWT).
+- [x] Isoler un **manuel d'utilisation** clair côté joueur — fait ([MANUEL_UTILISATION.md](../module/MANUEL_UTILISATION.md)).
+- [x] Ajouter un **manuel de mise à jour** explicite (pull → rebuild → redeploy → vérif santé → rollback) — fait ([MANUEL_MISE_A_JOUR.md](../module/MANUEL_MISE_A_JOUR.md)).
+- [x] Vérifier que chaque manuel **justifie les choix techniques** (FastAPI, React, SQLite, JWT) — sections dédiées ajoutées.
+- [ ] Ajouter des **captures d'écran** dans le manuel d'utilisation.
 
 ---
 
@@ -278,16 +282,17 @@ et des évolutions futures.
 | Priorité | Critère | Action concrète |
 |---|---|---|
 | ✅ Fait | C2.2.2 | Harnais de tests + couverture chiffrée documentés dans [docs/rncp/HARNAIS_TESTS_UNITAIRES.md](HARNAIS_TESTS_UNITAIRES.md) |
-| P0 | C2.2.3 | Compléter le **tableau OWASP Top 10** + choisir un **référentiel a11y** + mini-audit |
-| P1 | C2.3.1 | Reformater le **cahier de recettes** (fonctionnel/structurel/sécurité) en tableau |
+| ✅ Fait | C2.2.3 | Tableau **OWASP Top 10** + référentiel **RGAA** + mini-audit dans [docs/rncp/MESURES_SECURITE_ACCESSIBILITE.md](MESURES_SECURITE_ACCESSIBILITE.md) |
+| ✅ Fait | C2.3.1 | **Cahier de recettes** reformaté (fonctionnel/structurel/sécurité, statuts exécutés) dans [docs/rncp/05_plan_de_recette.md](05_plan_de_recette.md) |
 | ✅ Fait | C2.3.2 | Registre d'anomalies dédié créé dans [docs/rncp/PLAN_CORRECTION_BOGUES.md](PLAN_CORRECTION_BOGUES.md) |
-| P1 | C2.4.1 | Ajouter **manuel d'utilisation** + **manuel de mise à jour** dédiés |
+| ✅ Fait | C2.4.1 | **Manuel d'utilisation** ([MANUEL_UTILISATION.md](../module/MANUEL_UTILISATION.md)) + **manuel de mise à jour** ([MANUEL_MISE_A_JOUR.md](../module/MANUEL_MISE_A_JOUR.md)) |
 | ✅ Fait | C2.1.1 | Protocole de déploiement continu + critères qualité/performance formalisés dans [docs/rncp/PROTOCOLE_DEPLOIEMENT_CONTINU_QUALITE_PERF.md](PROTOCOLE_DEPLOIEMENT_CONTINU_QUALITE_PERF.md) |
-| P2 | C2.1.2 | Ajouter **capture CI verte** + séquences d'intégration |
-| P2 | C2.2.4 | Ajouter **historique de versions** (tags/CHANGELOG) + justification déploiement manuel |
-| P2 | C2.2.1 | Formaliser les **user stories** + captures d'écran |
+| ✅ Fait | C2.2.4 | **Historique de versions** dans [CHANGELOG.md](../../CHANGELOG.md) (1.0.0-rncp → 1.2.0 + preuves) |
+| ✅ Fait | C2.2.1 | **User stories** formalisées dans [docs/rncp/USER_STORIES.md](USER_STORIES.md) |
+| P2 | C2.1.2 | Ajouter **capture CI verte** (preuve visuelle) |
+| P2 | Transverse | Ajouter des **captures d'écran** (auth, jeu, combat) en annexe du dossier |
 
-> Aucun critère n'est 🔴 : le socle technique (prototype, CI, sécurité JWT, tests,
-> déploiement) est présent. Les écarts restants sont surtout des **formalisations et
-> preuves** à ajouter au dossier pour transformer chaque item en « Acquis » sans
-> ambiguïté pour le jury.
+> Aucun critère n'est 🔴. Les livrables documentaires attendus sont désormais tous
+> produits. Les seuls écarts restants sont des **preuves visuelles** (captures d'écran
+> CI verte et écrans de jeu) à insérer en annexe : elles ne peuvent être générées que
+> manuellement (impression d'écran) et n'affectent pas la complétude du dossier.

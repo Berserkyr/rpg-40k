@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import random
 from pathlib import Path
 from typing import AsyncIterator, Optional
 
@@ -38,7 +39,17 @@ from src.state import CharacterState
 from src.prompt_builder import build_system_prompt
 from src.dice import format_roll, roll_2d6
 from src.entities import Faction, ThreatLevel, generate_entity, generate_encounter
-from src.combat import Combatant, CombatState, resolve_attack, resolve_flee
+from src.combat import (
+    Combatant, CombatState, resolve_attack, resolve_flee,
+    CoverType, CombatRange, use_combat_ability, compute_tactical_advantage,
+    get_available_abilities, enemy_ai_action, ActionType,
+)
+from src.negotiation import (
+    NegotiationApproach, attempt_negotiation, approach_from_str, is_negotiable,
+)
+from src.team import (
+    Team, Companion, create_companion, available_templates,
+)
 from src.inventory import (
     Inventory, generate_loot, WEAPON_TEMPLATES, ARMOR_TEMPLATES,
     create_weapon, create_armor,
@@ -46,7 +57,7 @@ from src.inventory import (
 from src.progression import (
     ProgressionState, SKILL_TREE, award_xp,
     format_skill_tree, get_available_skills, get_unlocked_skills,
-    calculate_total_bonuses, get_special_abilities,
+    calculate_total_bonuses, get_special_abilities, serialize_skill_tree,
 )
 from src.world import WorldMap, create_starting_map, format_zone_info, format_map_overview
 from src.quests import QuestLog, create_starting_quests, format_quest_log, format_quest_info
@@ -131,6 +142,7 @@ class Session:
         self.world_map = _load("world_map.yaml", WorldMap, create_starting_map)
         self.quest_log = _load("quests.yaml", QuestLog, create_starting_quests)
         self.relationships = _load("relationships.yaml", RelationshipManager, create_starting_relationships)
+        self.team = _load("team.yaml", Team, Team)
 
     def _build_prompt(self) -> str:
         base = build_system_prompt(PROMPT_FILE, self.character)
@@ -145,9 +157,21 @@ class Session:
             ("world_map.yaml", self.world_map),
             ("quests.yaml", self.quest_log),
             ("relationships.yaml", self.relationships),
+            ("team.yaml", self.team),
         ]:
             with open(self.save_dir / fname, "w", encoding="utf-8") as f:
                 yaml.safe_dump(obj.to_dict(), f, allow_unicode=True)
+
+    def _progression_payload(self) -> dict:
+        """Serialise la progression enrichie (arbre + competences disponibles)."""
+        payload = self.progression.to_dict()
+        payload["skill_tree"] = serialize_skill_tree(self.progression)
+        payload["available_skills"] = [
+            s.id for s in SKILL_TREE.values()
+            if self.progression.can_unlock_with_point(s)[0]
+        ]
+        payload["unlocked_skills"] = list(self.progression.skills_unlocked)
+        return payload
 
     def full_state(self) -> dict:
         """Sérialise tout l'etat visible par l'UI."""
@@ -157,7 +181,7 @@ class Session:
             "user": {"id": self.user_id},
             "character": self.character.to_dict(),
             "character_build": build,
-            "progression": self.progression.to_dict(),
+            "progression": self._progression_payload(),
             "inventory": self.inventory.to_dict(),
             "world": self.world.to_dict(),
             "world_map": self.world_map.to_dict(),
@@ -180,6 +204,11 @@ class Session:
                 ],
             },
             "combat": _combat_state(self.combat),
+            "team": {
+                "members": [m.to_dict() for m in self.team.members],
+                "max_size": self.team.max_size,
+                "available": available_templates(self.progression.level),
+            },
         }
 
 
@@ -197,6 +226,10 @@ def _init_inventory() -> Inventory:
 def _combat_state(combat: Optional[CombatState]) -> Optional[dict]:
     if not combat:
         return None
+    living = combat.get_living_enemies()
+    spokesperson_faction = (
+        getattr(living[0], "faction_id", "tyranide") if living else "tyranide"
+    )
     return {
         "active": combat.is_active,
         "turn": combat.turn_number,
@@ -204,16 +237,38 @@ def _combat_state(combat: Optional[CombatState]) -> Optional[dict]:
             "name": combat.player.name,
             "health": combat.player.health,
             "max_health": combat.player.max_health,
+            "action_points": combat.player.action_points,
+            "max_action_points": combat.player.max_action_points,
+            "cover": combat.player.cover.value,
+            "is_aiming": combat.player.is_aiming,
+            "is_defending": combat.player.is_defending,
+            "conditions": combat.player.active_conditions(),
         },
+        "abilities": get_available_abilities(combat.player.abilities),
         "enemies": [
             {
                 "name": e.name,
                 "health": e.health,
                 "max_health": e.max_health,
                 "is_dead": e.is_dead,
+                "cover": e.cover.value,
+                "conditions": e.active_conditions(),
+                "faction": getattr(e, "faction_id", "tyranide"),
+                "threat": getattr(e, "threat_id", "standard"),
             }
             for e in combat.enemies
         ],
+        "allies": [
+            {
+                "name": a.name,
+                "health": a.health,
+                "max_health": a.max_health,
+                "is_dead": a.is_dead,
+                "conditions": a.active_conditions(),
+            }
+            for a in combat.allies
+        ],
+        "negotiable": is_negotiable(spokesperson_faction),
     }
 
 
@@ -497,6 +552,21 @@ class ConsumableRequest(BaseModel):
     item_id: str
 
 
+class CombatActionRequest(BaseModel):
+    command: str                     # attack|aim|cover|defend|flee|ability
+    target: int = 0                  # index de l'ennemi cible
+    ability_id: Optional[str] = None  # capacite a utiliser (command == "ability")
+
+
+class NegotiateRequest(BaseModel):
+    approach: str = "persuasion"     # persuasion|intimidation|marchandage
+    target: int = 0                  # index de l'ennemi vise (porte-parole)
+
+
+class RecruitRequest(BaseModel):
+    template_id: str                 # archetype du compagnon (ex: "milicien")
+
+
 def _improve_wound_track(current: str) -> str:
     order = ["Condamne", "Fracture", "Erafle", "Indemne"]
     try:
@@ -702,6 +772,8 @@ def start_combat(req: SpawnRequest, user_id: str = Depends(current_user_id)):
     level = level_map.get(req.level.lower(), ThreatLevel.STANDARD)
     entity = generate_entity(faction, level)
     enemy = Combatant.from_entity(entity)
+    enemy.faction_id = faction.value
+    enemy.threat_id = level.value
     player = Combatant.from_player_state(session.character)
     build = _character_build(session)
     derived = build.get("derived_stats", {})
@@ -711,78 +783,319 @@ def start_combat(req: SpawnRequest, user_id: str = Depends(current_user_id)):
     player.special = int(derived.get("special", player.special))
     player.max_health = int(derived.get("max_health", player.max_health))
     player.health = min(player.health, player.max_health)
-    session.combat = CombatState(player=player, enemies=[enemy])
+    # Capacites actives issues des competences et traits d'equipement.
+    player.abilities = list(build.get("special_abilities", []))
+    player.action_points = player.max_action_points
+    allies = _build_team_allies(session)
+    session.combat = CombatState(player=player, enemies=[enemy], allies=allies)
     session.save()
-    return {"message": f"Combat contre {enemy.name}!", "combat": _combat_state(session.combat), "state": session.full_state()}
+    ally_note = f" (+{len(allies)} allie(s))" if allies else ""
+    return {"message": f"Combat contre {enemy.name}!{ally_note}", "combat": _combat_state(session.combat), "state": session.full_state()}
+
+
+def _build_team_allies(session: Session) -> list:
+    """Construit les combattants allies a partir de l'equipe recrutee.
+
+    La competence 'meneur' accorde +2 PV max a chaque compagnon.
+    """
+    build = _character_build(session)
+    leader_bonus = 2 if "cri_ralliement" in build.get("special_abilities", []) else 0
+    # 'meneur' est passif: detecte via les competences acquises.
+    if session.progression.has_skill("meneur"):
+        leader_bonus += 2
+    allies = []
+    for member in session.team.members:
+        hp = member.max_health + leader_bonus
+        allies.append(Combatant(
+            name=member.name,
+            is_player=False,
+            combat=member.combat,
+            defense=member.defense,
+            speed=member.speed,
+            special=member.special,
+            health=hp,
+            max_health=hp,
+        ))
+    return allies
+
+
+_NO_AP_DETAIL = "Plus de points d'action"
+
+
+def _spend_ap(player, cost: int = 1) -> None:
+    """Depense des points d'action ou leve une erreur 400."""
+    if player.action_points < cost:
+        raise HTTPException(status_code=400, detail=_NO_AP_DETAIL)
+    player.action_points -= cost
+
+
+def _run_enemy_turn(combat, log: list) -> None:
+    """Fait jouer chaque ennemi vivant (conditions, IA, attaque)."""
+    for enemy in combat.get_living_enemies():
+        # Conditions (saignement, etc.) puis controle (etourdi).
+        log.extend(enemy.tick_conditions())
+        if enemy.is_dead:
+            log.append(f"{enemy.name} succombe a ses blessures!")
+            continue
+        if enemy.is_stunned():
+            log.append(f"{enemy.name} est etourdi et perd son tour.")
+            continue
+        target = combat.player
+        # Cible un allie proche parfois (combat de groupe).
+        living_allies = [a for a in combat.allies if not a.is_dead]
+        if living_allies and random.random() < 0.4:
+            target = random.choice(living_allies)
+        adv = compute_tactical_advantage(enemy, target, combat)
+        result = resolve_attack(enemy, target, advantage=adv)
+        log.append(result["description"])
+        if result["hit"]:
+            target.take_damage(result["damage"])
+
+
+def _run_ally_turn(combat, log: list) -> None:
+    """Fait agir chaque allie/compagnon vivant (combat de groupe)."""
+    for ally in combat.allies:
+        if ally.is_dead:
+            continue
+        log.extend(ally.tick_conditions())
+        if ally.is_dead or ally.is_stunned():
+            continue
+        living_enemies = combat.get_living_enemies()
+        if not living_enemies:
+            break
+        target = random.choice(living_enemies)
+        adv = compute_tactical_advantage(ally, target, combat)
+        result = resolve_attack(ally, target, advantage=adv)
+        log.append(f"[Allie] {result['description']}")
+        if result["hit"]:
+            target.take_damage(result["damage"])
 
 
 @app.post("/api/combat/action")
-def combat_action(req: CommandRequest, user_id: str = Depends(current_user_id)):
-    """Execute une action de combat (attack/defend/flee)."""
-    import random
+def combat_action(req: CombatActionRequest, user_id: str = Depends(current_user_id)):
+    """Execute une action de combat tactique.
+
+    Commandes: attack | aim | cover | defend | flee | ability.
+    Le joueur agit tant qu'il a des points d'action; les commandes qui
+    terminent le tour (defend/flee, ou epuisement des PA) declenchent le
+    tour ennemi.
+    """
     session = get_session(user_id)
     if not session.combat or not session.combat.is_active:
         raise HTTPException(status_code=400, detail="Pas de combat actif")
 
-    action = req.command
     combat = session.combat
     player = combat.player
     enemies = combat.get_living_enemies()
-    log = []
+    log: list[str] = []
 
     if not enemies:
         combat.is_active = False
         session.save()
         return {"log": ["Plus d'ennemis!"], "combat": _combat_state(combat), "state": session.full_state(), "ended": True, "victory": True}
 
-    target = enemies[0]
+    # Selection de la cible par index (borne).
+    idx = max(0, min(req.target, len(enemies) - 1))
+    target = enemies[idx]
+    command = req.command
+    ends_turn = False
 
-    if action == "attack":
-        result = resolve_attack(player, target)
+    if command == "attack":
+        _spend_ap(player)
+        adv = compute_tactical_advantage(player, target, combat)
+        result = resolve_attack(player, target, advantage=adv)
         log.append(result["description"])
         if result["hit"]:
-            target.health -= result["damage"]
-            if target.health <= 0:
-                target.is_dead = True
+            target.take_damage(result["damage"])
+            if target.is_dead:
                 log.append(f"{target.name} est elimine!")
-    elif action == "defend":
+    elif command == "aim":
+        _spend_ap(player)
+        player.is_aiming = True
+        log.append(f"{player.name} vise soigneusement (avantage a la prochaine attaque).")
+    elif command == "cover":
+        _spend_ap(player)
+        player.cover = CoverType.HEAVY if player.cover != CoverType.HEAVY else CoverType.LIGHT
+        log.append(f"{player.name} se met a couvert ({player.cover.value}).")
+    elif command == "ability":
+        result = use_combat_ability(player, req.ability_id or "", target, combat)
+        log.extend(result["log"])
+        if not result["success"]:
+            # Action refusee: ne consomme pas le tour.
+            session.save()
+            return {"log": log, "combat": _combat_state(combat), "state": session.full_state(), "ended": False, "victory": False}
+        if target.is_dead:
+            log.append(f"{target.name} est elimine!")
+    elif command == "defend":
         player.is_defending = True
+        player.add_condition("en_garde", 1)
         log.append(f"{player.name} se met en position defensive.")
-    elif action == "flee":
+        ends_turn = True
+    elif command == "flee":
         flee_result = resolve_flee(player, enemies)
         log.append(flee_result["description"])
         if flee_result["success"]:
             combat.is_active = False
+            _, xp_msgs = award_xp(session.progression, "fuite_reussie")
+            log.extend(xp_msgs)
             session.save()
             return {"log": log, "combat": _combat_state(combat), "state": session.full_state(), "ended": True, "victory": False, "fled": True}
+        ends_turn = True
+    else:
+        raise HTTPException(status_code=400, detail=f"Action inconnue: {command}")
 
-    # Tour ennemi
-    for enemy in combat.get_living_enemies():
-        enemy_action = random.choice(["attack", "attack", "defend"])
-        if enemy_action == "attack":
-            result = resolve_attack(enemy, player)
-            log.append(result["description"])
-            if result["hit"]:
-                player.health -= result["damage"]
-                if player.health <= 0:
-                    player.is_dead = True
-
-    # Reset defense
-    player.is_defending = False
-    for e in enemies:
-        e.is_defending = False
-
-    combat.next_turn()
+    # Verifie une victoire immediate.
     is_over, reason = combat.is_combat_over()
+    if not is_over and (ends_turn or player.action_points <= 0):
+        # Fin du tour joueur -> conditions du joueur puis allies puis ennemis.
+        log.extend(player.tick_conditions())
+        _run_ally_turn(combat, log)
+        _run_enemy_turn(combat, log)
+        combat.next_turn()
+        is_over, reason = combat.is_combat_over()
+
     victory = reason == "victoire"
     if is_over:
         combat.is_active = False
         if victory:
-            _, xp_msgs = award_xp(session.progression, "victoire_difficile")
+            threat = getattr(combat.enemies[0], "threat_id", "standard")
+            reward = {"sbire": "victoire_facile", "standard": "victoire_difficile",
+                      "elite": "victoire_heroique", "boss": "victoire_heroique"}.get(threat, "victoire_difficile")
+            _, xp_msgs = award_xp(session.progression, reward)
             log.extend(xp_msgs)
-    session.save()
 
-    return {"log": log, "combat": _combat_state(combat), "state": session.full_state(), "ended": is_over, "victory": victory}
+    session.save()
+    return {
+        "log": log,
+        "combat": _combat_state(combat),
+        "state": session.full_state(),
+        "ended": is_over,
+        "victory": victory,
+        "player_ap": player.action_points,
+    }
+
+
+def _negotiation_modifier(build: dict, approach: NegotiationApproach) -> int:
+    """Calcule le bonus de negociation selon l'approche et le personnage.
+
+    Chaque registre s'appuie sur un attribut du personnage (enrichi par les
+    competences sociales via effective_attributes) :
+      - persuasion   : solidarite + competence 'negociation'
+      - intimidation : sang_froid + competence 'intimidation'
+      - marchandage  : ingeniosite + competence 'commandement'
+    """
+    attrs = build.get("effective_attributes", {})
+    if approach == NegotiationApproach.INTIMIDATION:
+        base = attrs.get("sang_froid", 3) + attrs.get("intimidation", 0)
+    elif approach == NegotiationApproach.MARCHANDAGE:
+        base = attrs.get("ingeniosite", 3) + attrs.get("commandement", 0)
+    else:  # PERSUASION
+        base = attrs.get("solidarite", 3) + attrs.get("negociation", 0)
+    # On centre le modificateur pour que 2d6 (moy. 7) reste pertinent.
+    return base - 3
+
+
+@app.post("/api/combat/negotiate")
+def combat_negotiate(req: NegotiateRequest, user_id: str = Depends(current_user_id)):
+    """Tente de negocier avec l'ennemi pour eviter ou inflechir le combat."""
+    session = get_session(user_id)
+    combat = session.combat
+    if not combat or not combat.is_active:
+        raise HTTPException(status_code=400, detail="Aucun combat actif")
+
+    approach = approach_from_str(req.approach) or NegotiationApproach.PERSUASION
+    living = combat.get_living_enemies()
+    if not living:
+        raise HTTPException(status_code=400, detail="Aucun ennemi a qui parler")
+    idx = max(0, min(req.target, len(living) - 1))
+    spokesperson = living[idx]
+    faction_id = getattr(spokesperson, "faction_id", "tyranide")
+    threat_id = getattr(spokesperson, "threat_id", "standard")
+
+    build = _character_build(session)
+    modifier = _negotiation_modifier(build, approach)
+    result = attempt_negotiation(approach, modifier, threat_id, faction_id)
+
+    log: list[str] = [f"[Negociation - {approach.value}] {result.message}"]
+
+    if result.outcome == "impossible":
+        return {
+            "log": log, "combat": _combat_state(combat), "state": session.full_state(),
+            "outcome": result.outcome, "ended": False,
+        }
+
+    if result.outcome == "success":
+        if result.can_recruit:
+            # Rallie le porte-parole comme allie (lien avec la gestion d'equipe).
+            combat.enemies.remove(spokesperson)
+            spokesperson.name = f"{spokesperson.name} (rallie)"
+            spokesperson.is_fleeing = False
+            combat.allies.append(spokesperson)
+            log.append(f"{spokesperson.name} rejoint votre groupe!")
+        # Les autres ennemis se retirent.
+        for enemy in combat.get_living_enemies():
+            enemy.is_fleeing = True
+        combat.is_active = False
+        _, xp_msgs = award_xp(session.progression, "fuite_reussie")
+        log.extend(xp_msgs)
+        session.save()
+        return {
+            "log": log, "combat": _combat_state(combat), "state": session.full_state(),
+            "outcome": result.outcome, "ended": True, "victory": True, "negotiated": True,
+        }
+
+    # waver / fail : la tentative consomme le tour, l'ennemi riposte.
+    if result.condition:
+        for enemy in combat.get_living_enemies():
+            enemy.add_condition(result.condition, result.condition_turns)
+    log.extend(session.combat.player.tick_conditions())
+    _run_ally_turn(combat, log)
+    _run_enemy_turn(combat, log)
+    combat.next_turn()
+    is_over, reason = combat.is_combat_over()
+    if is_over:
+        combat.is_active = False
+    session.save()
+    return {
+        "log": log, "combat": _combat_state(combat), "state": session.full_state(),
+        "outcome": result.outcome, "ended": is_over, "victory": reason == "victoire",
+    }
+
+
+@app.get("/api/team")
+def get_team(user_id: str = Depends(current_user_id)):
+    """Retourne l'equipe et les compagnons recrutables."""
+    session = get_session(user_id)
+    return {
+        "members": [m.to_dict() for m in session.team.members],
+        "max_size": session.team.max_size,
+        "available": available_templates(session.progression.level),
+    }
+
+
+@app.post("/api/team/recruit")
+def recruit_companion(req: RecruitRequest, user_id: str = Depends(current_user_id)):
+    """Recrute un compagnon d'un archetype donne."""
+    session = get_session(user_id)
+    companion, msg = create_companion(req.template_id, session.progression.level)
+    if not companion:
+        raise HTTPException(status_code=400, detail=msg)
+    ok, add_msg = session.team.add(companion)
+    if not ok:
+        raise HTTPException(status_code=400, detail=add_msg)
+    session.save()
+    return {"message": add_msg, "state": session.full_state()}
+
+
+@app.post("/api/team/dismiss")
+def dismiss_companion(req: RecruitRequest, user_id: str = Depends(current_user_id)):
+    """Retire un compagnon de l'equipe."""
+    session = get_session(user_id)
+    ok, msg = session.team.remove(req.template_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail=msg)
+    session.save()
+    return {"message": msg, "state": session.full_state()}
 
 
 @app.post("/api/travel")
@@ -931,11 +1244,11 @@ def learn_skill(req: CommandRequest, user_id: str = Depends(current_user_id)):
     skill_id = req.args[0]
     if skill_id not in SKILL_TREE:
         raise HTTPException(status_code=404, detail="Competence inconnue")
-    success, msg = session.progression.unlock_skill(SKILL_TREE[skill_id])
+    success, msg = session.progression.unlock_with_skill_point(SKILL_TREE[skill_id])
     if not success:
         raise HTTPException(status_code=400, detail=msg)
     session.save()
-    return {"message": msg, "progression": session.progression.to_dict(), "state": session.full_state()}
+    return {"message": msg, "progression": session._progression_payload(), "state": session.full_state()}
 
 
 @app.post("/api/save")

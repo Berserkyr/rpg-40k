@@ -110,6 +110,22 @@ export async function learnSkill(skillId) {
   return postAction('/learn', { command: 'learn', args: [skillId] });
 }
 
+export async function combatAction(command, { target = 0, abilityId = null } = {}) {
+  return postAction('/combat/action', { command, target, ability_id: abilityId });
+}
+
+export async function negotiate(approach = 'persuasion', target = 0) {
+  return postAction('/combat/negotiate', { approach, target });
+}
+
+export async function recruitCompanion(templateId) {
+  return postAction('/team/recruit', { template_id: templateId });
+}
+
+export async function dismissCompanion(templateId) {
+  return postAction('/team/dismiss', { template_id: templateId });
+}
+
 export function streamSSE(path, body, onToken, onDone, onError) {
   let cancelled = false;
 

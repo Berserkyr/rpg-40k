@@ -1,6 +1,33 @@
+import { useState } from 'react';
 import './CombatPanel.css';
+import EnemySprite from './EnemySprite';
 
-export default function CombatPanel({ combat, onCombatAction, disabled }) {
+function ConditionChips({ conditions }) {
+  if (!conditions?.length) return null;
+  return (
+    <div className="condition-chips">
+      {conditions.map((c) => (
+        <span key={c.id} className="condition-chip" title={`${c.label} (${c.turns} tour${c.turns > 1 ? 's' : ''})`}>
+          {c.icon} {c.turns}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function HealthBar({ value, max, dead }) {
+  const pct = Math.max(0, Math.round((value / Math.max(1, max)) * 100));
+  const color = dead ? '#333' : pct > 35 ? '#00ff41' : '#ff3333';
+  return (
+    <div className="bar-track combat-bar">
+      <div className="bar-fill" style={{ width: `${dead ? 100 : pct}%`, background: color }} />
+    </div>
+  );
+}
+
+export default function CombatPanel({ combat, onCombatAction, onNegotiate, disabled }) {
+  const [target, setTarget] = useState(0);
+
   if (!combat?.active) {
     return (
       <div className="panel combat-panel">
@@ -10,37 +37,154 @@ export default function CombatPanel({ combat, onCombatAction, disabled }) {
     );
   }
 
-  const playerPct = Math.max(0, Math.round((combat.player.health / combat.player.max_health) * 100));
+  const player = combat.player;
+  const ap = player.action_points ?? 0;
+  const maxAp = player.max_action_points ?? 2;
+  const abilities = combat.abilities || [];
+  const enemies = combat.enemies || [];
+  const livingEnemyIndexes = enemies.map((e, i) => (e.is_dead ? -1 : i)).filter((i) => i >= 0);
+  const safeTarget = livingEnemyIndexes.includes(target) ? target : (livingEnemyIndexes[0] ?? 0);
+
+  const act = (command, opts = {}) => onCombatAction(command, { target: safeTarget, ...opts });
+  const negotiate = (approach) => onNegotiate?.(approach, safeTarget);
 
   return (
     <div className="panel combat-panel combat-active">
       <div className="panel-title danger-title">◈ COMBAT · TOUR {combat.turn}</div>
-      <div className="combatant-row">
-        <span>{combat.player.name}</span>
-        <span>{combat.player.health}/{combat.player.max_health}</span>
+
+      <div className="ap-row" aria-label={`Points d'action: ${ap} sur ${maxAp}`}>
+        <span className="ap-label">PA</span>
+        {Array.from({ length: maxAp }).map((_, i) => (
+          <span key={`ap-slot-${i}`} className={`ap-dot ${i < ap ? 'ap-on' : 'ap-off'}`} />
+        ))}
       </div>
-      <div className="bar-track combat-bar"><div className="bar-fill" style={{ width: `${playerPct}%`, background: playerPct > 35 ? '#00ff41' : '#ff3333' }} /></div>
+
+      <div className="combatant-row player-row">
+        <span>
+          {player.name}
+          {player.is_aiming && <span className="stance-tag" title="En visée">🎯</span>}
+          {player.cover && player.cover !== 'aucune' && <span className="stance-tag" title={`Couvert: ${player.cover}`}>🧱</span>}
+        </span>
+        <span>{player.health}/{player.max_health}</span>
+      </div>
+      <HealthBar value={player.health} max={player.max_health} />
+      <ConditionChips conditions={player.conditions} />
 
       <div className="enemies-list">
-        {combat.enemies.map((enemy, i) => {
-          const pct = Math.max(0, Math.round((enemy.health / enemy.max_health) * 100));
-          return (
-            <div key={`${enemy.name}-${i}`} className="enemy-card">
-              <div className="combatant-row">
-                <span>{enemy.name}</span>
-                <span>{enemy.is_dead ? 'MORT' : `${enemy.health}/${enemy.max_health}`}</span>
+        {enemies.map((enemy, i) => (
+          <button
+            type="button"
+            key={`${enemy.name}-${i}`}
+            className={`enemy-card ${i === safeTarget && !enemy.is_dead ? 'enemy-targeted' : ''} ${enemy.is_dead ? 'enemy-dead' : ''}`}
+            onClick={() => !enemy.is_dead && setTarget(i)}
+            disabled={enemy.is_dead}
+            aria-label={`Cibler ${enemy.name}`}
+            aria-pressed={i === safeTarget}
+          >
+            <div className="enemy-card-body">
+              <EnemySprite
+                faction={enemy.faction}
+                threat={enemy.threat}
+                name={enemy.name}
+                dead={enemy.is_dead}
+                size={44}
+              />
+              <div className="enemy-card-info">
+                <div className="combatant-row">
+                  <span>
+                    {i === safeTarget && !enemy.is_dead && <span className="target-marker">▸</span>} {enemy.name}
+                    {enemy.cover && enemy.cover !== 'aucune' && <span className="stance-tag" title={`Couvert: ${enemy.cover}`}>🧱</span>}
+                  </span>
+                  <span>{enemy.is_dead ? 'MORT' : `${enemy.health}/${enemy.max_health}`}</span>
+                </div>
+                <HealthBar value={enemy.health} max={enemy.max_health} dead={enemy.is_dead} />
+                <ConditionChips conditions={enemy.conditions} />
               </div>
-              <div className="bar-track combat-bar"><div className="bar-fill" style={{ width: `${pct}%`, background: enemy.is_dead ? '#333' : '#ff3333' }} /></div>
             </div>
-          );
-        })}
+          </button>
+        ))}
       </div>
 
+      {combat.allies?.length > 0 && (
+        <div className="allies-list">
+          <div className="allies-title">ALLIÉS</div>
+          {combat.allies.map((ally, i) => (
+            <div key={`${ally.name}-${i}`} className="ally-card">
+              <div className="combatant-row">
+                <span>{ally.name}</span>
+                <span>{ally.is_dead ? 'MORT' : `${ally.health}/${ally.max_health}`}</span>
+              </div>
+              <HealthBar value={ally.health} max={ally.max_health} dead={ally.is_dead} />
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="combat-actions" role="group" aria-label="Actions de combat">
-        <button onClick={() => onCombatAction('attack')} disabled={disabled} aria-label="Attaquer l'ennemi ciblé">ATTAQUER</button>
-        <button onClick={() => onCombatAction('defend')} disabled={disabled} aria-label="Se défendre pendant ce tour">DÉFENDRE</button>
-        <button onClick={() => onCombatAction('flee')} disabled={disabled} aria-label="Tenter de fuir le combat">FUIR</button>
+        <button onClick={() => act('attack')} disabled={disabled || ap < 1} aria-label="Attaquer la cible sélectionnée" title="1 PA">⚔ ATTAQUER</button>
+        <button onClick={() => act('aim')} disabled={disabled || ap < 1} aria-label="Viser pour un avantage" title="1 PA · avantage à la prochaine attaque">🎯 VISER</button>
+        <button onClick={() => act('cover')} disabled={disabled || ap < 1} aria-label="Se mettre à couvert" title="1 PA · +défense">🧱 COUVERT</button>
+        <button onClick={() => act('defend')} disabled={disabled} aria-label="Se défendre (fin du tour)" title="Termine le tour · +défense">🛡 DÉFENDRE</button>
+        <button onClick={() => act('flee')} disabled={disabled} aria-label="Tenter de fuir le combat">🏃 FUIR</button>
       </div>
+
+      {abilities.length > 0 && (
+        <div className="combat-abilities">
+          <div className="abilities-title">CAPACITÉS</div>
+          <div className="abilities-grid">
+            {abilities.map((ab) => (
+              <button
+                key={ab.id}
+                className="ability-btn"
+                onClick={() => act('ability', { abilityId: ab.id })}
+                disabled={disabled || ap < ab.ap_cost}
+                title={`${ab.description} (${ab.ap_cost} PA${ab.once_per_combat ? ' · 1×/combat' : ''})`}
+                aria-label={`${ab.name}: ${ab.description}`}
+              >
+                <span className="ability-icon">{ab.icon}</span>
+                <span className="ability-name">{ab.name}</span>
+                <span className="ability-cost">{ab.ap_cost}PA</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {onNegotiate && (
+        <div className="combat-negotiate">
+          <div className="abilities-title">DIALOGUE</div>
+          {combat.negotiable ? (
+            <div className="negotiate-grid" role="group" aria-label="Options de négociation">
+              <button
+                className="negotiate-btn"
+                onClick={() => negotiate('persuasion')}
+                disabled={disabled}
+                title="Convaincre par la raison (solidarité). Peut rallier un ennemi."
+              >
+                🕊 PERSUADER
+              </button>
+              <button
+                className="negotiate-btn"
+                onClick={() => negotiate('intimidation')}
+                disabled={disabled}
+                title="Forcer le repli par la peur (sang-froid). Efficace sur les faibles."
+              >
+                😠 INTIMIDER
+              </button>
+              <button
+                className="negotiate-btn"
+                onClick={() => negotiate('marchandage')}
+                disabled={disabled}
+                title="Proposer un échange (ingéniosité)."
+              >
+                💰 MARCHANDER
+              </button>
+            </div>
+          ) : (
+            <div className="negotiate-impossible">Cet adversaire ne connaît pas le dialogue.</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

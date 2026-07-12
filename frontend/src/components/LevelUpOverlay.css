@@ -1,0 +1,109 @@
+.levelup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, rgba(60, 40, 0, 0.55), rgba(0, 0, 0, 0.9));
+  cursor: pointer;
+  animation: levelup-fade 0.35s ease-out;
+}
+
+@keyframes levelup-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.levelup-burst {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.levelup-ray {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 46vh;
+  background: linear-gradient(to top, rgba(255, 165, 0, 0), rgba(255, 200, 60, 0.55));
+  transform-origin: bottom center;
+  transform: rotate(calc(var(--i) * 30deg));
+  animation: levelup-spin 6s linear infinite;
+}
+
+@keyframes levelup-spin {
+  from { opacity: 0.15; }
+  50% { opacity: 0.4; }
+  to { opacity: 0.15; }
+}
+
+.levelup-card {
+  position: relative;
+  text-align: center;
+  padding: 2rem 3rem;
+  border: 1px solid #6b4e00;
+  background: rgba(5, 4, 0, 0.92);
+  box-shadow: 0 0 60px rgba(255, 165, 0, 0.25);
+  animation: levelup-pop 0.5s cubic-bezier(0.2, 1.3, 0.5, 1);
+}
+
+@keyframes levelup-pop {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.levelup-eyebrow {
+  color: #b8860b;
+  font-size: 0.7rem;
+  letter-spacing: 0.4em;
+  margin-bottom: 0.5rem;
+}
+
+.levelup-title {
+  color: #ffc83c;
+  font-size: 2.6rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-shadow: 0 0 18px rgba(255, 165, 0, 0.6);
+}
+
+.levelup-sub {
+  color: #ffa500;
+  font-size: 1rem;
+  letter-spacing: 0.5em;
+  margin-bottom: 1rem;
+}
+
+.levelup-rewards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #d7c9a0;
+  font-size: 0.85rem;
+  margin-bottom: 1.2rem;
+}
+
+.levelup-close {
+  border: 1px solid #6b4e00;
+  background: transparent;
+  color: #ffc83c;
+  padding: 0.5rem 1.4rem;
+  cursor: pointer;
+  letter-spacing: 0.2em;
+  font-size: 0.75rem;
+}
+
+.levelup-close:hover {
+  background: rgba(255, 165, 0, 0.12);
+}
+
+body.reduced-effects .levelup-ray {
+  animation: none;
+}
+
+body.reduced-effects .levelup-card {
+  animation: none;
+}

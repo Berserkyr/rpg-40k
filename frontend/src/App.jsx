@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Terminal from './components/Terminal';
 import InputBar from './components/InputBar';
 import CharacterPanel from './components/CharacterPanel';
@@ -10,8 +10,10 @@ import ActionPanel from './components/ActionPanel';
 import AuthPanel from './components/AuthPanel';
 import MapExplorerPage from './components/MapExplorerPage';
 import SkillsPanel from './components/SkillsPanel';
+import TeamPanel from './components/TeamPanel';
+import LevelUpOverlay from './components/LevelUpOverlay';
 import { useSSEChat } from './hooks/useSSEChat';
-import { allocateAttribute, equipItem, getCurrentUserId, getState, isAuthenticated, learnSkill, logout, postAction, unequipItem, useConsumable as consumeItem } from './api';
+import { allocateAttribute, combatAction, dismissCompanion, equipItem, getCurrentUserId, getState, isAuthenticated, learnSkill, logout, negotiate, postAction, recruitCompanion, unequipItem, useConsumable as consumeItem } from './api';
 import './App.css';
 
 const INTRO_ART = String.raw`
@@ -31,6 +33,9 @@ export default function App() {
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [skillsOpen, setSkillsOpen] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(false);
+  const [levelUpInfo, setLevelUpInfo] = useState(null);
+  const prevLevelRef = useRef(null);
   const [reducedEffects, setReducedEffects] = useState(() => {
     if (typeof globalThis === 'undefined' || !globalThis.localStorage) return false;
     const stored = globalThis.localStorage.getItem('reducedEffects');
@@ -45,6 +50,25 @@ export default function App() {
     }
     globalThis.localStorage?.setItem('reducedEffects', String(reducedEffects));
   }, [reducedEffects]);
+
+  // Detection de montee de niveau -> animation
+  useEffect(() => {
+    const level = gameState?.progression?.level;
+    if (typeof level !== 'number') return;
+    if (prevLevelRef.current === null) {
+      prevLevelRef.current = level;
+      return;
+    }
+    if (level > prevLevelRef.current) {
+      const gained = level - prevLevelRef.current;
+      setLevelUpInfo({
+        level,
+        skillPoints: gained,
+        attributePoints: gained,
+      });
+    }
+    prevLevelRef.current = level;
+  }, [gameState?.progression?.level]);
 
   const refreshState = useCallback(async () => {
     const state = await getState();
@@ -120,10 +144,17 @@ export default function App() {
     addLine(result.message, 'danger');
   };
 
-  const handleCombatAction = async (command) => {
-    const result = await applyAction('COMBAT', () => postAction('/combat/action', { command, args: [] }));
+  const handleCombatAction = async (command, opts = {}) => {
+    const result = await applyAction('COMBAT', () => combatAction(command, opts));
     for (const entry of result.log || []) addLine(entry, command === 'defend' ? 'system' : 'danger');
     if (result.ended) addLine(result.victory ? 'Combat terminé: victoire.' : 'Combat terminé: repli.', result.victory ? 'loot' : 'system');
+  };
+
+  const handleNegotiate = async (approach, target = 0) => {
+    const result = await applyAction('DIALOGUE', () => negotiate(approach, target));
+    const tone = result.outcome === 'success' ? 'loot' : result.outcome === 'impossible' ? 'system' : 'danger';
+    for (const entry of result.log || []) addLine(entry, tone);
+    if (result.ended && result.victory) addLine('Combat évité par la négociation.', 'loot');
   };
 
   const handleTravel = async (zoneId) => {
@@ -171,6 +202,16 @@ export default function App() {
     addLine(result.message || 'Compétence apprise.', 'loot');
   };
 
+  const handleRecruit = async (templateId) => {
+    const result = await applyAction('RECRUTEMENT', () => recruitCompanion(templateId));
+    addLine(result.message || 'Compagnon recruté.', 'loot');
+  };
+
+  const handleDismiss = async (templateId) => {
+    const result = await applyAction('EQUIPE', () => dismissCompanion(templateId));
+    addLine(result.message || 'Compagnon renvoyé.', 'system');
+  };
+
   const combat = gameState?.combat;
   const disabled = loading || streaming;
 
@@ -208,6 +249,11 @@ export default function App() {
           {authed && (
             <button className="effects-btn" onClick={() => setSkillsOpen(true)} aria-label="Ouvrir le panneau skills" title="Skills">
               🧠 SKILLS
+            </button>
+          )}
+          {authed && (
+            <button className="effects-btn" onClick={() => setTeamOpen(true)} aria-label="Ouvrir la gestion d'équipe" title="Équipe">
+              👥 ÉQUIPE
             </button>
           )}
           {authed && (
@@ -262,7 +308,7 @@ export default function App() {
         </main>
 
         <aside className="sidebar-right">
-          <CombatPanel combat={combat} onCombatAction={handleCombatAction} disabled={disabled} />
+          <CombatPanel combat={combat} onCombatAction={handleCombatAction} onNegotiate={handleNegotiate} disabled={disabled} />
           {!inventoryOpen && <InventoryPanel state={gameState} onEquip={handleEquip} onUnequip={handleUnequip} onUseConsumable={handleUseConsumable} />}
         </aside>
 
@@ -289,6 +335,25 @@ export default function App() {
             state={gameState}
             onLearnSkill={handleLearnSkill}
             onClose={() => setSkillsOpen(false)}
+          />
+        )}
+
+        {teamOpen && (
+          <TeamPanel
+            state={gameState}
+            onRecruit={handleRecruit}
+            onDismiss={handleDismiss}
+            onClose={() => setTeamOpen(false)}
+            disabled={disabled}
+          />
+        )}
+
+        {levelUpInfo && (
+          <LevelUpOverlay
+            level={levelUpInfo.level}
+            skillPoints={levelUpInfo.skillPoints}
+            attributePoints={levelUpInfo.attributePoints}
+            onClose={() => setLevelUpInfo(null)}
           />
         )}
       </div>

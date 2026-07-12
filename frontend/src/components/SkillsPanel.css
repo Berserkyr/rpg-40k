@@ -91,4 +91,11 @@
 .skill-btn:hover { border-color: #00ff41; }
 
 .skill-badge { color: #ffa500; font-size: 0.6rem; }
-.skill-locked { color: #556655; font-size: 0.6rem; }
+.skill-locked { color: #556655; font-size: 0.6rem; cursor: help; }
+.skill-prereq { color: #8a6d3b; font-size: 0.56rem; margin-top: 0.1rem; }
+
+.skill-points-hot {
+  color: #ffc83c;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(255, 165, 0, 0.5);
+}
