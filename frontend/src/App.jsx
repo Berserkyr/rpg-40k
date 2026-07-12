@@ -26,7 +26,20 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [authed, setAuthed] = useState(isAuthenticated());
   const [playerId, setPlayerId] = useState(getCurrentUserId());
+  const [reducedEffects, setReducedEffects] = useState(() => {
+    if (typeof globalThis === 'undefined' || !globalThis.localStorage) return false;
+    const stored = globalThis.localStorage.getItem('reducedEffects');
+    if (stored !== null && stored !== undefined) return stored === 'true';
+    return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  });
   const { lines, streaming, send, addLine, clear } = useSSEChat();
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.classList.toggle('reduced-effects', reducedEffects);
+    }
+    globalThis.localStorage?.setItem('reducedEffects', String(reducedEffects));
+  }, [reducedEffects]);
 
   const refreshState = useCallback(async () => {
     const state = await getState();
@@ -135,8 +148,17 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <span className="header-logo">⚙ HIVE-NODE//SECTEUR-7</span>
-        <span className="header-status">
+        <span className="header-status" aria-live="polite">
           {loading ? '◌ SYNCHRONISATION...' : streaming ? '● TRANSMISSION VOX...' : '○ SYSTÈME OPÉRATIONNEL'}
+          <button
+            className="effects-btn"
+            onClick={() => setReducedEffects((v) => !v)}
+            aria-pressed={reducedEffects}
+            aria-label={reducedEffects ? 'Réactiver les effets visuels' : 'Réduire les effets visuels pour un meilleur confort de lecture'}
+            title="Accessibilité : réduire les effets visuels"
+          >
+            {reducedEffects ? '◍ EFFETS RÉDUITS' : '◉ EFFETS COMPLETS'}
+          </button>
           {authed && (
             <button className="logout-btn" onClick={handleLogout} aria-label="Se déconnecter">
               ⏻ DÉCONNEXION

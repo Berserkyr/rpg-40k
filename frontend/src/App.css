@@ -37,6 +37,27 @@ body::after {
   z-index: 9999;
 }
 
+/* Accessibilité : mode effets réduits (RGAA - confort visuel / animations) */
+body.reduced-effects::after {
+  display: none;
+}
+body.reduced-effects *,
+body.reduced-effects *::before,
+body.reduced-effects *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Respect de la préférence système de réduction des animations */
+@media (prefers-reduced-motion: reduce) {
+  body::after { opacity: 0.4; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 .app-shell {
   display: flex;
   flex-direction: column;
@@ -270,6 +291,21 @@ body::after {
 }
 
 .logout-btn:hover { color: var(--green); border-color: var(--green-dim); }
+
+.effects-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  padding: 0.2rem 0.5rem;
+  margin-left: 1rem;
+  cursor: pointer;
+}
+
+.effects-btn:hover { color: var(--amber); border-color: var(--amber); }
+.effects-btn[aria-pressed="true"] { color: var(--amber); border-color: var(--amber); }
 
 @media (max-width: 1100px) {
   .sidebar-left { width: 220px; }

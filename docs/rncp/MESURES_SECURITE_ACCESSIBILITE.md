@@ -59,6 +59,19 @@ Les secrets sensibles ne sont pas codés en dur dans les workflows de déploieme
 - la signature JWT est pilotée par `JWT_SECRET` ;
 - les secrets de déploiement VPS sont stockés dans les secrets GitHub (`VPS_HOST`, `VPS_USER`, `VPS_PORT`, `VPS_SSH_KEY_B64`).
 
+### 3.6 CORS restreignable en production
+
+La politique CORS n'est plus figée sur `*`. Elle est pilotée par la variable
+d'environnement `CORS_ALLOWED_ORIGINS` (liste d'origines séparées par des virgules).
+En développement, l'ouverture par défaut facilite les tests ; en production, il suffit
+de définir les domaines autorisés pour restreindre l'accès (OWASP A05).
+
+### 3.7 Audit automatisé des dépendances
+
+La CI GitHub exécute un job `security-audit` qui lance `pip-audit` (dépendances Python)
+et `npm audit` (dépendances frontend) à chaque push. Ce contrôle informe en continu sur
+les vulnérabilités connues des composants tiers (OWASP A06).
+
 ### 3.3 Réduction du risque de panne externe
 
 Le projet prévoit un **fallback local** si `OPENAI_API_KEY` est absente. Cela permet de maintenir la jouabilité du prototype sans dépendance stricte à un fournisseur externe.
@@ -89,8 +102,8 @@ Cette stratégie limite le risque de mise en production d'une version cassée ou
 | **A02 — Cryptographic Failures** | **Couvert** | Hachage des mots de passe avec `bcrypt`, jetons JWT signés, secrets externalisés via variables d'environnement | `backend/auth.py` |
 | **A03 — Injection** | **Couvert partiellement** | API typée, validation des données, pas de concaténation SQL libre côté logique métier, usage de structures contrôlées | `backend/api.py`, `backend/database.py` |
 | **A04 — Insecure Design** | **Couvert partiellement** | Séparation frontend / API / domaine, rôles, persistance isolée par utilisateur, fallback maîtrisé | `docs/rncp/BLOC2_DOSSIER_FINAL.md`, `backend/api.py`, `src/` |
-| **A05 — Security Misconfiguration** | **Couvert partiellement** | Variables d'environnement, workflow de déploiement contrôlé, mais CORS encore permissif (`allow_origins=["*"]`) | `backend/api.py`, `.github/workflows/deploy-vps.yml` |
-| **A06 — Vulnerable and Outdated Components** | **Couvert partiellement** | Dépendances déclarées explicitement, exécution récurrente de la CI, mise à jour du harnais de tests | `requirements.txt`, `frontend/package.json`, `.github/workflows/ci.yml` |
+| **A05 — Security Misconfiguration** | **Couvert** | Variables d'environnement, workflow de déploiement contrôlé, **CORS restreignable** via `CORS_ALLOWED_ORIGINS` | `backend/api.py`, `.github/workflows/deploy-vps.yml` |
+| **A06 — Vulnerable and Outdated Components** | **Couvert** | Dépendances déclarées, **audit automatisé `pip-audit` + `npm audit`** en CI, harnais de tests entretenu | `requirements.txt`, `frontend/package.json`, `.github/workflows/ci.yml` |
 | **A07 — Identification and Authentication Failures** | **Couvert** | Vérification du mot de passe, tokens expirables, extraction stricte du bearer token, refus 401/403 | `backend/auth.py` |
 | **A08 — Software and Data Integrity Failures** | **Couvert partiellement** | Déploiement depuis dépôt versionné, pipeline automatisée, build contrôlé, persistance structurée | `.github/workflows/ci.yml`, `.github/workflows/deploy-vps.yml` |
 | **A09 — Security Logging and Monitoring Failures** | **Couvert partiellement** | Healthcheck `/api/health`, traces applicatives et suivi par pipeline, mais absence de SIEM/alerting avancé | `backend/api.py`, `docs/rncp/PROTOCOLE_DEPLOIEMENT_CONTINU_QUALITE_PERF.md` |
@@ -98,11 +111,13 @@ Cette stratégie limite le risque de mise en production d'une version cassée ou
 
 ### Synthèse OWASP
 
-Le prototype couvre correctement les risques critiques liés à l'authentification, au contrôle d'accès, à la gestion des secrets et à la stabilité de déploiement. Les principaux axes d'amélioration restants pour une version de production renforcée sont :
+Le prototype couvre correctement les risques critiques liés à l'authentification, au contrôle d'accès, à la gestion des secrets, à la configuration et à la stabilité de déploiement. Les mesures suivantes ont été **implémentées** durant la finalisation :
 
-1. **restreindre CORS** aux domaines autorisés en production ;
-2. **industrialiser l'audit de dépendances** (`pip-audit`, `npm audit`) ;
-3. **renforcer l'observabilité** avec journalisation structurée et alertes.
+1. **CORS restreignable** en production via `CORS_ALLOWED_ORIGINS` (A05) ;
+2. **audit automatisé des dépendances** (`pip-audit` + `npm audit`) intégré à la CI (A06).
+
+L'axe d'amélioration restant pour une industrialisation complète est le **renforcement de
+l'observabilité** (journalisation structurée et alertes centralisées).
 
 ---
 
@@ -128,6 +143,9 @@ Le prototype vise une interface simple, textuelle et rapidement compréhensible 
 | Messages d'erreur perceptibles | Usage de `role="alert"` sur les erreurs d'authentification |
 | Navigation clavier | Formulaires HTML standards, boutons `submit`, champs activables sans souris |
 | Prévention des erreurs | Désactivation des boutons non disponibles (`disabled`) selon l'état du jeu |
+| Réduction des effets visuels | Bouton d'en-tête « effets réduits » (`aria-pressed`) qui désactive scanlines et animations, préférence persistée |
+| Respect des préférences système | Prise en charge de `prefers-reduced-motion` pour limiter automatiquement les animations |
+| État annoncé | Zone de statut d'en-tête en `aria-live="polite"` |
 
 ### 5.3 Exemples représentatifs
 
@@ -149,8 +167,9 @@ Le mini-audit ci-dessous est un **contrôle manuel ciblé** sur les parcours ess
 | Messages d'erreur annoncés | ✅ Conforme | Les erreurs d'authentification sont portées par un conteneur `role="alert"`. |
 | Navigation clavier de base | ✅ Conforme | Les interactions principales reposent sur des éléments HTML standards (`form`, `input`, `button`). |
 | Prévention des actions invalides | ✅ Conforme | Les commandes impossibles sont désactivées en combat ou selon le contexte. |
+| Réduction des effets visuels | ✅ Conforme | Un bouton « effets réduits » désactive scanlines/animations et la préférence est persistée. |
+| Respect de `prefers-reduced-motion` | ✅ Conforme | Les animations sont automatiquement limitées si l'OS le demande. |
 | Contrastes et confort visuel | ⚠️ Partiellement conforme | L'interface sombre est lisible, mais un contrôle outilisé des contrastes reste recommandé. |
-| Réduction des effets visuels | ⚠️ À améliorer | Une option explicite de réduction d'effets/scanlines n'est pas encore formalisée. |
 | Parcours lecteur d'écran global | ⚠️ À approfondir | La base est saine, mais un audit complet avec lecteur d'écran reste à réaliser. |
 
 ### Forces principales
@@ -158,12 +177,13 @@ Le mini-audit ci-dessous est un **contrôle manuel ciblé** sur les parcours ess
 1. **Formulaires déjà accessibles** grâce aux labels et attributs ARIA.
 2. **Actions principales compréhensibles** sans dépendre uniquement du contexte visuel.
 3. **Gestion d'état claire** grâce à la désactivation des actions indisponibles.
+4. **Option d'accessibilité intégrée** (réduction des effets visuels) et respect de `prefers-reduced-motion`.
 
 ### Améliorations planifiées
 
 1. ajouter un contrôle automatisé complémentaire (Lighthouse ou axe) avant soutenance finale ;
 2. vérifier et documenter les ratios de contraste ;
-3. prévoir une option d'interface réduisant les effets décoratifs.
+3. mener un audit complet au lecteur d'écran.
 
 ---
 

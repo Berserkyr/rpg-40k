@@ -160,12 +160,14 @@ techniques et fonctionnelles.
 **Ce que le projet fournit déjà.**
 - Livrable dédié C2.2.3 : [docs/rncp/MESURES_SECURITE_ACCESSIBILITE.md](MESURES_SECURITE_ACCESSIBILITE.md).
 - Mesures de sécurité : JWT, bcrypt, rôles, routes protégées — [backend/auth.py](../../backend/auth.py).
-- Accessibilité : labels ARIA, groupes sémantiques, navigation clavier, messages d'erreur accessibles — [frontend/src/components](../../frontend/src/components).
+- CORS restreignable via `CORS_ALLOWED_ORIGINS` et audit `pip-audit`/`npm audit` en CI — [backend/api.py](../../backend/api.py), [.github/workflows/ci.yml](../../.github/workflows/ci.yml).
+- Accessibilité : labels ARIA, groupes sémantiques, navigation clavier, messages d'erreur accessibles, option « effets réduits » + `prefers-reduced-motion` — [frontend/src/components](../../frontend/src/components), [frontend/src/App.jsx](../../frontend/src/App.jsx).
 
 **Ce qui manque pour valider.**
 - [x] Tableau **OWASP Top 10 (2021)** complété avec statut, mesure et preuve.
 - [x] Référentiel d'accessibilité **RGAA** choisi et justifié.
 - [x] Mini-audit d'accessibilité manuel formalisé avec forces, écarts et actions d'amélioration.
+- [x] Mesures renforcées **implémentées** : CORS restreignable (A05), audit dépendances CI (A06), option d'accessibilité (réduction d'effets).
 
 ---
 
