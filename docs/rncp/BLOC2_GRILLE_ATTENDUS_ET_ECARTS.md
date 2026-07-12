@@ -158,14 +158,14 @@ techniques et fonctionnelles.
 - Le prototype répond aux exigences du référentiel d'accessibilité établi.
 
 **Ce que le projet fournit déjà.**
-- Analyse OWASP synthétique : [docs/rncp/02_bloc2_conception_developpement.md](02_bloc2_conception_developpement.md) (section référentiel OWASP).
+- Livrable dédié C2.2.3 : [docs/rncp/MESURES_SECURITE_ACCESSIBILITE.md](MESURES_SECURITE_ACCESSIBILITE.md).
 - Mesures de sécurité : JWT, bcrypt, rôles, routes protégées — [backend/auth.py](../../backend/auth.py).
-- Accessibilité : labels ARIA, contrastes, navigation clavier — [docs/module/WIREFRAMES.md](WIREFRAMES.md).
+- Accessibilité : labels ARIA, groupes sémantiques, navigation clavier, messages d'erreur accessibles — [frontend/src/components](../../frontend/src/components).
 
 **Ce qui manque pour valider.**
-- [ ] Compléter le **tableau OWASP Top 10** avec les **10 catégories** (2021) une par une : statut + mesure + preuve.
-- [ ] **Choisir et nommer un référentiel d'accessibilité** (RGAA ou OPQUAST) et justifier le choix.
-- [ ] Fournir un **mini-audit d'accessibilité** (Lighthouse / axe) avec score et 3 points corrigés/à corriger.
+- [x] Tableau **OWASP Top 10 (2021)** complété avec statut, mesure et preuve.
+- [x] Référentiel d'accessibilité **RGAA** choisi et justifié.
+- [x] Mini-audit d'accessibilité manuel formalisé avec forces, écarts et actions d'amélioration.
 
 ---
 

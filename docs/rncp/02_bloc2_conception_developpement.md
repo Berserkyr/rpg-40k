@@ -69,6 +69,8 @@ Fonctionnalités actuellement disponibles :
 
 ## 5. Sécurité
 
+Le livrable détaillé de référence est désormais : [MESURES_SECURITE_ACCESSIBILITE.md](MESURES_SECURITE_ACCESSIBILITE.md).
+
 ### Mesures déjà présentes
 
 | Risque | Mesure |
@@ -83,18 +85,20 @@ Fonctionnalités actuellement disponibles :
 
 | Catégorie OWASP | Situation actuelle | Action recommandée |
 |---|---|---|
-| Broken Access Control | Pas d’authentification car prototype local | Ajouter auth si multi-utilisateur |
-| Cryptographic Failures | Pas de données sensibles hors clé API | Ne jamais versionner `.env` |
-| Injection | Pas de SQL, entrées typées Pydantic | Échapper/valider davantage si DB future |
-| Insecure Design | Mode local mono-utilisateur | Définir modèle de menace si déploiement public |
-| Security Misconfiguration | CORS ouvert en dev | Restreindre CORS en production |
-| Vulnerable Components | Dépendances npm/pip | Ajouter audit régulier |
-| Authentication Failures | Non concerné prototype local | Prévoir session/auth si comptes utilisateurs |
-| Software/Data Integrity | YAML local | Sauvegardes horodatées et validation schéma |
-| Logging/Monitoring | Logs Uvicorn | Ajouter monitoring structuré |
-| SSRF | Pas d’URL utilisateur appelée côté serveur | Maintenir cette restriction |
+| Broken Access Control | JWT + routes protégées + rôle admin | Restreindre davantage certaines actions d'administration si besoin |
+| Cryptographic Failures | bcrypt + JWT + secrets d'environnement | Renforcer la gestion du secret JWT en production |
+| Injection | Entrées typées et API structurée | Ajouter des contrôles complémentaires si le modèle SQL s'étend |
+| Insecure Design | Architecture séparée frontend / API / domaine | Formaliser un modèle de menace pour la production |
+| Security Misconfiguration | Déploiement outillé mais CORS permissif | Restreindre CORS en production |
+| Vulnerable Components | Dépendances déclarées et vérifiées en CI | Ajouter audit automatisé des dépendances |
+| Authentication Failures | Authentification par mot de passe + bearer token | Prévoir rotation et révocation plus fine des sessions |
+| Software/Data Integrity | CI/CD + lockfile + dépôt versionné | Ajouter vérification d'intégrité plus poussée si industrialisation |
+| Logging/Monitoring | Healthcheck + logs conteneurs | Ajouter supervision centralisée et alertes |
+| SSRF | Aucune URL utilisateur arbitraire appelée côté serveur | Maintenir cette restriction |
 
 ## 6. Accessibilité
+
+Le livrable détaillé de référence est désormais : [MESURES_SECURITE_ACCESSIBILITE.md](MESURES_SECURITE_ACCESSIBILITE.md).
 
 Référentiel conseillé : **RGAA**.
 

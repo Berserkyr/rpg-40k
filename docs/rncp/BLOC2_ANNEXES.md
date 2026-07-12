@@ -13,6 +13,7 @@ Ces annexes complètent le dossier Bloc 2. Elles ne sont pas destinées à être
 | Intégration continue | `.github/workflows/ci.yml`, `.gitlab-ci.yml` |
 | Déploiement automatique VPS | `.github/workflows/deploy-vps.yml`, `docs/deploiement_vps.md` |
 | Architecture logicielle | `docs/rncp/BLOC2_DOSSIER_FINAL.md`, `docs/architecture_bdd_multiutilisateur.md` |
+| Sécurité OWASP + accessibilité RGAA | `docs/rncp/MESURES_SECURITE_ACCESSIBILITE.md` |
 | Tests backend | `tests/` |
 | Tests frontend | `frontend/src/**/__tests__` |
 | Harnais de tests unitaires | `docs/rncp/HARNAIS_TESTS_UNITAIRES.md` |
