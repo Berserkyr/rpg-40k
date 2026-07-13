@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './CombatPanel.css';
 import EnemySprite from './EnemySprite';
 
@@ -27,6 +27,39 @@ function HealthBar({ value, max, dead }) {
 
 export default function CombatPanel({ combat, onCombatAction, onNegotiate, disabled }) {
   const [target, setTarget] = useState(0);
+  // Effets d'animation par ennemi ({action, seq}) et pour le joueur.
+  const [enemyFx, setEnemyFx] = useState([]);
+  const prevRef = useRef(null);
+
+  // Detecte les changements d'etat pour declencher les animations de combat.
+  useEffect(() => {
+    const enemiesNow = combat?.enemies || [];
+    const playerNow = combat?.player;
+    const prev = prevRef.current;
+    if (prev) {
+      // Touche / mort des ennemis.
+      setEnemyFx((old) => enemiesNow.map((e, i) => {
+        const po = prev.enemies[i];
+        const cur = old[i] || { action: 'idle', seq: 0 };
+        if (!po) return cur;
+        if (e.is_dead && !po.is_dead) return { action: 'death', seq: cur.seq + 1 };
+        if (!e.is_dead && e.health < po.health) return { action: 'hurt', seq: cur.seq + 1 };
+        return cur;
+      }));
+      // Le joueur a encaisse -> les ennemis vivants bondissent (attaque).
+      if (playerNow && prev.player && playerNow.health < prev.player.health) {
+        setEnemyFx((old) => enemiesNow.map((e, i) => {
+          const cur = old[i] || { action: 'idle', seq: 0 };
+          if (e.is_dead || cur.action === 'hurt' || cur.action === 'death') return cur;
+          return { action: 'attack', seq: cur.seq + 1 };
+        }));
+      }
+    }
+    prevRef.current = {
+      enemies: enemiesNow.map((e) => ({ health: e.health, is_dead: e.is_dead })),
+      player: playerNow ? { health: playerNow.health } : null,
+    };
+  }, [combat]);
 
   if (!combat?.active) {
     return (
@@ -84,9 +117,12 @@ export default function CombatPanel({ combat, onCombatAction, onNegotiate, disab
             <div className="enemy-card-body">
               <EnemySprite
                 faction={enemy.faction}
+                archetype={enemy.archetype}
                 threat={enemy.threat}
                 name={enemy.name}
                 dead={enemy.is_dead}
+                action={enemyFx[i]?.action || 'idle'}
+                actionSeq={enemyFx[i]?.seq || 0}
                 size={44}
               />
               <div className="enemy-card-info">

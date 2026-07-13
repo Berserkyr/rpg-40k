@@ -28,8 +28,14 @@ Incréments intégrés sur `main` en vue de la prochaine version.
 - **Gestion d'équipe & combats de groupe** : recrutement de compagnons
   (archétypes gérés par niveau), les alliés agissent à chaque tour, bonus de
   meneur, persistance de l'équipe.
-- **Sprites pixel procéduraux** des ennemis, générés de façon déterministe
-  (faction + menace + nom) sur canvas, sans aucun asset externe.
+- **Bestiaire étendu** : 8 factions jouables (Tyranides, Culte Genestealer, Chaos,
+  Mechanicus, Arbites, Ecclésiarchie, Garde impériale, Civils) et rencontres
+  générées en **groupes variés** (chef + sbires) avec factions aléatoires.
+- **Sprites pixel art animés** des ennemis, générés de façon déterministe
+  (faction + archétype + nom) sur canvas, sans aucun asset externe, avec
+  **animations de combat vectorisées** (idle, attaque, touché, mort) et
+  silhouettes distinctes par archétype (nuée, bête, colosse, psyker, humanoïde,
+  daemon, machine).
 
 ### Modifié
 - Barre d'en-tête enrichie (`👥 ÉQUIPE`).
@@ -39,7 +45,7 @@ Incréments intégrés sur `main` en vue de la prochaine version.
 
 ### Tests
 - Nouveaux tests unitaires : `test_combat_tactics.py`, `test_negotiation.py`,
-  `test_team.py` (62 tests backend, 14 tests frontend au vert).
+  `test_team.py`, `test_bestiary.py` (69 tests backend, 14 tests frontend au vert).
 
 ### Documentation
 - Cahier de recettes reformaté (fonctionnel / structurel / sécurité) avec statuts exécutés.

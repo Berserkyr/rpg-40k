@@ -38,7 +38,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.state import CharacterState
 from src.prompt_builder import build_system_prompt
 from src.dice import format_roll, roll_2d6
-from src.entities import Faction, ThreatLevel, generate_entity, generate_encounter
+from src.entities import (
+    Faction, ThreatLevel, generate_entity, generate_encounter,
+    entity_body_type, HOSTILE_FACTIONS,
+)
 from src.combat import (
     Combatant, CombatState, resolve_attack, resolve_flee,
     CoverType, CombatRange, use_combat_ability, compute_tactical_advantage,
@@ -255,6 +258,7 @@ def _combat_state(combat: Optional[CombatState]) -> Optional[dict]:
                 "conditions": e.active_conditions(),
                 "faction": getattr(e, "faction_id", "tyranide"),
                 "threat": getattr(e, "threat_id", "standard"),
+                "archetype": getattr(e, "archetype", "beast"),
             }
             for e in combat.enemies
         ],
@@ -532,6 +536,7 @@ class TravelRequest(BaseModel):
 class SpawnRequest(BaseModel):
     faction: str = "tyranide"
     level: str = "standard"
+    count: Optional[int] = None  # nombre total d'ennemis (None = auto varie)
 
 
 class EquipRequest(BaseModel):
@@ -763,17 +768,29 @@ def spawn_entity(req: SpawnRequest, _user: str = Depends(current_user_id)):
 
 @app.post("/api/combat/start")
 def start_combat(req: SpawnRequest, user_id: str = Depends(current_user_id)):
-    """Demarre un combat."""
+    """Demarre un combat, potentiellement contre un groupe varie d'ennemis."""
     session = get_session(user_id)
-    faction_map = {"tyranide": Faction.TYRANID, "culte": Faction.GENESTEALER_CULT}
+    faction_map = {
+        "tyranide": Faction.TYRANID,
+        "culte": Faction.GENESTEALER_CULT,
+        "culte_genestealer": Faction.GENESTEALER_CULT,
+        "chaos": Faction.CHAOS,
+        "mechanicus": Faction.MECHANICUS,
+        "arbites": Faction.ARBITES,
+        "ecclesiarchie": Faction.ECCLESIARCHY,
+        "garde_imperiale": Faction.IMPERIAL_GUARD,
+    }
     level_map = {"sbire": ThreatLevel.MINION, "standard": ThreatLevel.STANDARD,
                  "elite": ThreatLevel.ELITE, "boss": ThreatLevel.BOSS}
-    faction = faction_map.get(req.faction.lower(), Faction.TYRANID)
+    key = req.faction.lower()
+    if key in ("random", "aleatoire", "mixte"):
+        faction = random.choice(HOSTILE_FACTIONS)
+    else:
+        faction = faction_map.get(key, Faction.TYRANID)
     level = level_map.get(req.level.lower(), ThreatLevel.STANDARD)
-    entity = generate_entity(faction, level)
-    enemy = Combatant.from_entity(entity)
-    enemy.faction_id = faction.value
-    enemy.threat_id = level.value
+
+    enemies = _spawn_enemy_group(faction, level, req.count)
+
     player = Combatant.from_player_state(session.character)
     build = _character_build(session)
     derived = build.get("derived_stats", {})
@@ -787,10 +804,52 @@ def start_combat(req: SpawnRequest, user_id: str = Depends(current_user_id)):
     player.abilities = list(build.get("special_abilities", []))
     player.action_points = player.max_action_points
     allies = _build_team_allies(session)
-    session.combat = CombatState(player=player, enemies=[enemy], allies=allies)
+    session.combat = CombatState(player=player, enemies=enemies, allies=allies)
     session.save()
     ally_note = f" (+{len(allies)} allie(s))" if allies else ""
-    return {"message": f"Combat contre {enemy.name}!{ally_note}", "combat": _combat_state(session.combat), "state": session.full_state()}
+    lead = enemies[0].name
+    group_note = f" et {len(enemies) - 1} autre(s)" if len(enemies) > 1 else ""
+    return {
+        "message": f"Combat contre {lead}{group_note}!{ally_note}",
+        "combat": _combat_state(session.combat),
+        "state": session.full_state(),
+    }
+
+
+def _make_enemy(faction: Faction, level: ThreatLevel) -> Combatant:
+    """Genere un Combatant ennemi enrichi (faction, menace, silhouette)."""
+    entity = generate_entity(faction, level)
+    enemy = Combatant.from_entity(entity)
+    enemy.faction_id = faction.value
+    enemy.threat_id = level.value
+    enemy.archetype = entity_body_type(entity)
+    return enemy
+
+
+def _spawn_enemy_group(faction: Faction, level: ThreatLevel, count: Optional[int]) -> list:
+    """Construit un groupe d'ennemis varie selon le niveau de menace.
+
+    Un chef du niveau demande est toujours present; des sbires l'accompagnent
+    pour des combats de groupe plus dynamiques. `count` force le nombre total.
+    """
+    leader = _make_enemy(faction, level)
+    group = [leader]
+
+    if count is not None:
+        extra = max(0, int(count) - 1)
+        for _ in range(min(extra, 5)):
+            group.append(_make_enemy(faction, ThreatLevel.MINION))
+        return group
+
+    if level == ThreatLevel.MINION:
+        for _ in range(random.randint(1, 2)):
+            group.append(_make_enemy(faction, ThreatLevel.MINION))
+    elif level == ThreatLevel.STANDARD:
+        for _ in range(random.randint(0, 2)):
+            group.append(_make_enemy(faction, ThreatLevel.MINION))
+    elif level in (ThreatLevel.ELITE, ThreatLevel.BOSS) and random.random() < 0.5:
+        group.append(_make_enemy(faction, ThreatLevel.MINION))
+    return group
 
 
 def _build_team_allies(session: Session) -> list:

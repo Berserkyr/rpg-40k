@@ -140,7 +140,7 @@ export default function App() {
   };
 
   const handleStartCombat = async () => {
-    const result = await applyAction('RENCONTRE', () => postAction('/combat/start', { faction: 'tyranide', level: 'standard' }));
+    const result = await applyAction('RENCONTRE', () => postAction('/combat/start', { faction: 'random', level: 'standard' }));
     addLine(result.message, 'danger');
   };
 
