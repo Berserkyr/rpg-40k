@@ -82,30 +82,50 @@ export function computeAnimationTransforms(phases, globalProgress) {
   const result = {
     translateX: 0,
     translateY: 0,
+    translateZ: 0,
     rotation: 0,
+    rotateX: 0,
+    rotateY: 0,
+    rotateZ: 0,
     scale: 1.0,
     opacity: 1.0,
+    perspective: 800,
   };
 
   // Accumule les transforms de toutes les phases actives
   for (const phase of phases) {
     const phaseTransforms = computePhaseTransforms(phase, globalProgress);
     if (phaseTransforms) {
-      // Additionne translateX/Y/rotation, multiplie scale, prend le min pour opacity
+      // Additionne translateX/Y/Z/rotation/rotateX/Y/Z, multiplie scale, prend le min pour opacity
       if (phaseTransforms.translateX !== undefined) {
         result.translateX += phaseTransforms.translateX;
       }
       if (phaseTransforms.translateY !== undefined) {
         result.translateY += phaseTransforms.translateY;
       }
+      if (phaseTransforms.translateZ !== undefined) {
+        result.translateZ += phaseTransforms.translateZ;
+      }
       if (phaseTransforms.rotation !== undefined) {
         result.rotation += phaseTransforms.rotation;
+      }
+      if (phaseTransforms.rotateX !== undefined) {
+        result.rotateX += phaseTransforms.rotateX;
+      }
+      if (phaseTransforms.rotateY !== undefined) {
+        result.rotateY += phaseTransforms.rotateY;
+      }
+      if (phaseTransforms.rotateZ !== undefined) {
+        result.rotateZ += phaseTransforms.rotateZ;
       }
       if (phaseTransforms.scale !== undefined) {
         result.scale *= phaseTransforms.scale;
       }
       if (phaseTransforms.opacity !== undefined) {
         result.opacity = Math.min(result.opacity, phaseTransforms.opacity);
+      }
+      if (phaseTransforms.perspective !== undefined) {
+        result.perspective = phaseTransforms.perspective;
       }
     }
   }
@@ -125,13 +145,19 @@ export function createParticle(descriptor, sourceX, sourceY) {
   const speed = descriptor.speed || 100;
   const vx = Math.cos(angle) * speed;
   const vy = Math.sin(angle) * speed;
+  
+  // Support 3D: vitesse en profondeur
+  const depth = descriptor.depth || 0;
+  const vz = depth > 0 ? (Math.random() - 0.5) * depth * 2 : 0;
 
   return {
     type: descriptor.type,
     x: sourceX,
     y: sourceY,
+    z: 0,
     vx,
     vy,
+    vz,
     color: descriptor.color || '#ffffff',
     life: 1.0, // 0-1, decremente au fil du temps
     maxLife: descriptor.duration || 0.8, // duree en secondes
@@ -148,6 +174,7 @@ export function createParticle(descriptor, sourceX, sourceY) {
 export function updateParticle(particle, deltaTime) {
   particle.x += particle.vx * deltaTime;
   particle.y += particle.vy * deltaTime;
+  particle.z = (particle.z || 0) + (particle.vz || 0) * deltaTime;
   particle.vy += particle.gravity * deltaTime * 100; // gravite
   particle.life -= deltaTime / particle.maxLife;
 
@@ -158,7 +185,14 @@ export function updateParticle(particle, deltaTime) {
  * Dessine une particule sur un canvas.
  */
 export function renderParticle(ctx, particle) {
-  const alpha = particle.fadeOut ? particle.life : 1.0;
+  // Effet de profondeur 3D basé sur z
+  const z = particle.z || 0;
+  const depthScale = 1 + z / 500; // Plus proche = plus grand
+  const depthAlpha = Math.max(0.2, Math.min(1, 1 + z / 300)); // Plus proche = plus opaque
+  
+  const alpha = (particle.fadeOut ? particle.life : 1.0) * depthAlpha;
+  const size = particle.size * depthScale;
+  
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.fillStyle = particle.color;
@@ -166,39 +200,39 @@ export function renderParticle(ctx, particle) {
   // Differents types de rendu
   if (particle.type === 'spark' || particle.type === 'muzzle_flash') {
     // Étoile brillante avec halo
-    const grad = ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, particle.size * 3);
+    const grad = ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, size * 3);
     grad.addColorStop(0, particle.color);
     grad.addColorStop(0.5, particle.color + '88');
     grad.addColorStop(1, 'transparent');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(particle.x, particle.y, particle.size * 3 * particle.life, 0, Math.PI * 2);
+    ctx.arc(particle.x, particle.y, size * 3 * particle.life, 0, Math.PI * 2);
     ctx.fill();
     
     // Point central brillant
     ctx.fillStyle = '#ffffff';
     ctx.globalAlpha = alpha * 0.9;
     ctx.beginPath();
-    ctx.arc(particle.x, particle.y, particle.size * 0.8, 0, Math.PI * 2);
+    ctx.arc(particle.x, particle.y, size * 0.8, 0, Math.PI * 2);
     ctx.fill();
   } else if (particle.type === 'blood' || particle.type === 'blood_splatter') {
     // Goutte de sang avec éclaboussure
     ctx.fillStyle = particle.color;
     ctx.globalAlpha = alpha * 0.9;
     ctx.beginPath();
-    ctx.arc(particle.x, particle.y, particle.size * particle.life * 1.2, 0, Math.PI * 2);
+    ctx.arc(particle.x, particle.y, size * particle.life * 1.2, 0, Math.PI * 2);
     ctx.fill();
     
     // Traînée
     ctx.fillRect(
-      particle.x - particle.size * 0.5, 
-      particle.y - particle.size * 0.5, 
-      particle.size * 0.8, 
-      particle.size * 1.5
+      particle.x - size * 0.5, 
+      particle.y - size * 0.5, 
+      size * 0.8, 
+      size * 1.5
     );
   } else if (particle.type === 'energy' || particle.type === 'aura') {
     // Halo lumineux pulsant
-    const pulseSize = particle.size * (2 + Math.sin(Date.now() * 0.01) * 0.3);
+    const pulseSize = size * (2 + Math.sin(Date.now() * 0.01) * 0.3);
     const grad = ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, pulseSize * 2);
     grad.addColorStop(0, particle.color + 'cc');
     grad.addColorStop(0.3, particle.color + '88');
@@ -221,7 +255,7 @@ export function renderParticle(ctx, particle) {
     grad.addColorStop(0.5, particle.color + '88');
     grad.addColorStop(1, particle.color);
     ctx.strokeStyle = grad;
-    ctx.lineWidth = particle.size * 1.5;
+    ctx.lineWidth = size * 1.5;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(particle.x - particle.vx * 0.02, particle.y - particle.vy * 0.02);
@@ -232,23 +266,23 @@ export function renderParticle(ctx, particle) {
     ctx.fillStyle = '#ffffff';
     ctx.globalAlpha = alpha;
     ctx.beginPath();
-    ctx.arc(particle.x, particle.y, particle.size * 0.7, 0, Math.PI * 2);
+    ctx.arc(particle.x, particle.y, size * 0.7, 0, Math.PI * 2);
     ctx.fill();
   } else if (particle.type === 'explosion') {
     // Explosion avec cercles
     for (let i = 0; i < 3; i++) {
       const offset = i * 0.15;
-      const size = particle.size * (3 - i) * particle.life;
+      const explSize = size * (3 - i) * particle.life;
       ctx.globalAlpha = alpha * (0.8 - i * 0.2);
       ctx.fillStyle = i === 0 ? '#ffffff' : particle.color;
       ctx.beginPath();
-      ctx.arc(particle.x, particle.y, size, 0, Math.PI * 2);
+      ctx.arc(particle.x, particle.y, explSize, 0, Math.PI * 2);
       ctx.fill();
     }
   } else {
     // Générique: carré lumineux
-    const size = particle.size * particle.life;
-    ctx.fillRect(particle.x - size / 2, particle.y - size / 2, size, size);
+    const genericSize = size * particle.life;
+    ctx.fillRect(particle.x - genericSize / 2, particle.y - genericSize / 2, genericSize, genericSize);
   }
 
   ctx.restore();

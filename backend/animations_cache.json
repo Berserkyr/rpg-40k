@@ -576,5 +576,406 @@
       "intensity": 0.9,
       "duration": 0.2
     }
+  },
+  "spin_attack_3d": {
+    "skill_id": "spin_attack_3d",
+    "name": "Attaque Tournoyante 3D",
+    "duration": 900,
+    "phases": [
+      {
+        "name": "windup",
+        "start": 0,
+        "end": 0.15,
+        "easing": "easeOut",
+        "transforms": {
+          "rotateY": [0, -0.6],
+          "translateZ": [0, -80],
+          "scale": [1.0, 0.85]
+        }
+      },
+      {
+        "name": "spin",
+        "start": 0.15,
+        "end": 0.55,
+        "easing": "linear",
+        "transforms": {
+          "rotateY": [-0.6, 5.7],
+          "translateZ": [-80, 150],
+          "translateX": [0, 100],
+          "scale": [0.85, 1.4]
+        }
+      },
+      {
+        "name": "impact",
+        "start": 0.55,
+        "end": 0.65,
+        "easing": "easeOut",
+        "transforms": {
+          "rotateY": [5.7, 6.28],
+          "translateZ": [150, 120],
+          "translateX": [100, 90],
+          "scale": [1.4, 0.75]
+        }
+      },
+      {
+        "name": "recover",
+        "start": 0.65,
+        "end": 1.0,
+        "easing": "easeOut",
+        "transforms": {
+          "rotateY": [6.28, 0],
+          "translateZ": [120, 0],
+          "translateX": [90, 0],
+          "scale": [0.75, 1.0]
+        }
+      }
+    ],
+    "particles": [
+      {
+        "type": "energy",
+        "at": 0.3,
+        "color": "#44ddff",
+        "count": 20,
+        "spread": 360,
+        "speed": 180,
+        "size": 5,
+        "depth": 200
+      },
+      {
+        "type": "spark",
+        "at": 0.55,
+        "color": "#ffaa00",
+        "count": 25,
+        "spread": 120,
+        "speed": 220,
+        "size": 4,
+        "depth": 250
+      }
+    ],
+    "cameraShake": {
+      "at": 0.55,
+      "intensity": 6.0
+    },
+    "flash": {
+      "at": 0.55,
+      "color": "#ffffff",
+      "intensity": 0.8,
+      "duration": 0.12
+    }
+  },
+  "uppercut_3d": {
+    "skill_id": "uppercut_3d",
+    "name": "Uppercut Volant 3D",
+    "duration": 850,
+    "phases": [
+      {
+        "name": "crouch",
+        "start": 0,
+        "end": 0.2,
+        "easing": "easeIn",
+        "transforms": {
+          "translateY": [0, 25],
+          "rotateX": [0, -0.4],
+          "scale": [1.0, 0.8]
+        }
+      },
+      {
+        "name": "launch",
+        "start": 0.2,
+        "end": 0.45,
+        "easing": "easeOut",
+        "transforms": {
+          "translateY": [25, -90],
+          "translateZ": [0, 180],
+          "rotateX": [-0.4, 2.1],
+          "scale": [0.8, 1.55]
+        }
+      },
+      {
+        "name": "flip",
+        "start": 0.45,
+        "end": 0.65,
+        "easing": "linear",
+        "transforms": {
+          "translateY": [-90, -70],
+          "translateZ": [180, 200],
+          "rotateX": [2.1, 4.7],
+          "scale": [1.55, 1.6]
+        }
+      },
+      {
+        "name": "land",
+        "start": 0.65,
+        "end": 1.0,
+        "easing": "easeIn",
+        "transforms": {
+          "translateY": [-70, 0],
+          "translateZ": [200, 0],
+          "rotateX": [4.7, 6.28],
+          "scale": [1.6, 1.0]
+        }
+      }
+    ],
+    "particles": [
+      {
+        "type": "energy",
+        "at": 0.2,
+        "color": "#ffdd33",
+        "count": 18,
+        "spread": 60,
+        "speed": 200,
+        "size": 6,
+        "depth": 300
+      },
+      {
+        "type": "spark",
+        "at": 0.45,
+        "color": "#ff6633",
+        "count": 22,
+        "spread": 90,
+        "speed": 250,
+        "size": 5,
+        "depth": 280
+      },
+      {
+        "type": "blood_splatter",
+        "at": 0.46,
+        "color": "#dd0000",
+        "count": 15,
+        "spread": 70,
+        "speed": 160,
+        "size": 5
+      }
+    ],
+    "cameraShake": {
+      "at": 0.45,
+      "intensity": 5.5
+    },
+    "flash": {
+      "at": 0.45,
+      "color": "#ffffaa",
+      "intensity": 0.85,
+      "duration": 0.15
+    }
+  },
+  "laser_shot_3d": {
+    "skill_id": "laser_shot_3d",
+    "name": "Tir Laser 3D",
+    "duration": 750,
+    "phases": [
+      {
+        "name": "charge",
+        "start": 0,
+        "end": 0.25,
+        "easing": "easeIn",
+        "transforms": {
+          "scale": [1.0, 1.2],
+          "rotateY": [0, -0.15],
+          "translateZ": [0, -40]
+        }
+      },
+      {
+        "name": "fire",
+        "start": 0.25,
+        "end": 0.35,
+        "easing": "easeOut",
+        "transforms": {
+          "scale": [1.2, 0.85],
+          "rotateY": [-0.15, 0.1],
+          "translateZ": [-40, -100],
+          "translateX": [0, -30]
+        }
+      },
+      {
+        "name": "recoil",
+        "start": 0.35,
+        "end": 0.6,
+        "easing": "easeInOut",
+        "transforms": {
+          "scale": [0.85, 1.05],
+          "rotateY": [0.1, -0.05],
+          "translateZ": [-100, 10],
+          "translateX": [-30, 5]
+        }
+      },
+      {
+        "name": "reset",
+        "start": 0.6,
+        "end": 1.0,
+        "easing": "easeOut",
+        "transforms": {
+          "scale": [1.05, 1.0],
+          "rotateY": [-0.05, 0],
+          "translateZ": [10, 0],
+          "translateX": [5, 0]
+        }
+      }
+    ],
+    "particles": [
+      {
+        "type": "energy",
+        "at": 0.2,
+        "color": "#00ffff",
+        "count": 12,
+        "spread": 25,
+        "speed": 100,
+        "size": 5,
+        "depth": -150
+      },
+      {
+        "type": "projectile",
+        "at": 0.25,
+        "color": "#00ddff",
+        "count": 5,
+        "spread": 5,
+        "speed": 800,
+        "size": 8,
+        "depth": 600
+      },
+      {
+        "type": "muzzle_flash",
+        "at": 0.25,
+        "color": "#aaffff",
+        "count": 25,
+        "spread": 40,
+        "speed": 280,
+        "size": 6,
+        "depth": 400
+      },
+      {
+        "type": "spark",
+        "at": 0.26,
+        "color": "#ffffff",
+        "count": 15,
+        "spread": 50,
+        "speed": 200,
+        "size": 4,
+        "depth": 300
+      }
+    ],
+    "cameraShake": {
+      "at": 0.25,
+      "intensity": 4.5
+    },
+    "flash": {
+      "at": 0.25,
+      "color": "#ccffff",
+      "intensity": 1.0,
+      "duration": 0.1
+    }
+  },
+  "ground_slam_3d": {
+    "skill_id": "ground_slam_3d",
+    "name": "Frappe Sismique 3D",
+    "duration": 1000,
+    "phases": [
+      {
+        "name": "leap",
+        "start": 0,
+        "end": 0.25,
+        "easing": "easeOut",
+        "transforms": {
+          "translateY": [0, -120],
+          "translateZ": [0, 100],
+          "rotateX": [0, -1.2],
+          "rotateZ": [0, 0.4],
+          "scale": [1.0, 1.3]
+        }
+      },
+      {
+        "name": "apex",
+        "start": 0.25,
+        "end": 0.35,
+        "easing": "linear",
+        "transforms": {
+          "translateY": [-120, -125],
+          "translateZ": [100, 120],
+          "rotateX": [-1.2, -0.8],
+          "rotateZ": [0.4, 0.6],
+          "scale": [1.3, 1.4]
+        }
+      },
+      {
+        "name": "slam",
+        "start": 0.35,
+        "end": 0.5,
+        "easing": "easeIn",
+        "transforms": {
+          "translateY": [-125, 15],
+          "translateZ": [120, 0],
+          "rotateX": [-0.8, 0.5],
+          "rotateZ": [0.6, -0.3],
+          "scale": [1.4, 0.6]
+        }
+      },
+      {
+        "name": "impact",
+        "start": 0.5,
+        "end": 0.65,
+        "easing": "easeOut",
+        "transforms": {
+          "translateY": [15, 8],
+          "translateZ": [0, -20],
+          "rotateX": [0.5, 0.1],
+          "rotateZ": [-0.3, 0],
+          "scale": [0.6, 0.8]
+        }
+      },
+      {
+        "name": "recover",
+        "start": 0.65,
+        "end": 1.0,
+        "easing": "easeOut",
+        "transforms": {
+          "translateY": [8, 0],
+          "translateZ": [-20, 0],
+          "rotateX": [0.1, 0],
+          "scale": [0.8, 1.0]
+        }
+      }
+    ],
+    "particles": [
+      {
+        "type": "spark",
+        "at": 0.5,
+        "color": "#ffaa33",
+        "count": 35,
+        "spread": 360,
+        "speed": 280,
+        "size": 6,
+        "depth": 200,
+        "gravity": 150
+      },
+      {
+        "type": "blood_splatter",
+        "at": 0.51,
+        "color": "#aa6633",
+        "count": 28,
+        "spread": 180,
+        "speed": 200,
+        "size": 7,
+        "gravity": 180
+      },
+      {
+        "type": "explosion",
+        "at": 0.5,
+        "color": "#ff6600",
+        "count": 8,
+        "spread": 360,
+        "speed": 120,
+        "size": 12,
+        "depth": 0
+      }
+    ],
+    "cameraShake": {
+      "at": 0.5,
+      "intensity": 7.5
+    },
+    "flash": {
+      "at": 0.5,
+      "color": "#ffaa44",
+      "intensity": 0.95,
+      "duration": 0.18
+    }
   }
 }

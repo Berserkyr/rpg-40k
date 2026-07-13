@@ -92,13 +92,19 @@ export default function AnimatedAction({
         const t = state.transforms;
         const tx = (t.translateX || 0) * facingSign + shakeOffset.x;
         const ty = (t.translateY || 0) + shakeOffset.y;
+        const tz = t.translateZ || 0;
         const rot = (t.rotation || 0) * facingSign;
+        const rotX = (t.rotateX || 0) * facingSign;
+        const rotY = (t.rotateY || 0) * facingSign;
+        const rotZ = (t.rotateZ || 0) * facingSign;
         const scale = t.scale || 1.0;
         const opacity = t.opacity !== undefined ? t.opacity : 1.0;
 
         container.style.transform = `
-          translate(${tx}px, ${ty}px)
-          rotate(${rot}rad)
+          translate3d(${tx}px, ${ty}px, ${tz}px)
+          rotateX(${rotX}rad)
+          rotateY(${rotY}rad)
+          rotateZ(${rot + rotZ}rad)
           scale(${scale})
         `;
         container.style.opacity = opacity;
@@ -159,7 +165,12 @@ export default function AnimatedAction({
   }, [isPlaying, facingSign, onComplete]);
 
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
+    <div style={{ 
+      position: 'relative', 
+      display: 'inline-block',
+      perspective: '800px',
+      transformStyle: 'preserve-3d'
+    }}>
       {/* Canvas pour les particules (derrière) */}
       <canvas
         ref={canvasRef}
@@ -179,6 +190,7 @@ export default function AnimatedAction({
         style={{
           position: 'relative',
           zIndex: 1,
+          transformStyle: 'preserve-3d',
           transition: isPlaying ? 'none' : 'transform 0.3s ease-out, opacity 0.3s ease-out',
         }}
       >
