@@ -36,6 +36,14 @@ Incréments intégrés sur `main` en vue de la prochaine version.
   **animations de combat vectorisées** (idle, attaque, touché, mort) et
   silhouettes distinctes par archétype (nuée, bête, colosse, psyker, humanoïde,
   daemon, machine).
+- **Système d'animations procédurales générées par LLM** : génération automatique
+  d'animations pour les skills de combat via GPT-4, avec **persistance et réutilisation**
+  dans un cache JSON. Les animations sont définies par des descripteurs JSON déclaratifs
+  (phases, transforms, particules, camera shake, flash) et interprétées par un moteur
+  d'animation côté client. Composant React `AnimatedAction` réutilisable pour animer
+  n'importe quel élément. Documentation complète dans `ANIMATIONS_SYSTEM.md`.
+  Endpoints API : `/api/animations/{skill_id}`, `/api/animations/generate`,
+  `/api/animations` (liste), `/api/animations` (delete cache admin).
 
 ### Modifié
 - Barre d'en-tête enrichie (`👥 ÉQUIPE`).
@@ -45,7 +53,9 @@ Incréments intégrés sur `main` en vue de la prochaine version.
 
 ### Tests
 - Nouveaux tests unitaires : `test_combat_tactics.py`, `test_negotiation.py`,
-  `test_team.py`, `test_bestiary.py` (69 tests backend, 14 tests frontend au vert).
+  `test_team.py`, `test_bestiary.py`, `test_animations.py` (82 tests backend au vert).
+- Tests frontend : `animation_engine.test.js` avec 16 tests couvrant le moteur
+  d'animation, les particules et l'AnimationPlayer (30 tests frontend au vert).
 
 ### Documentation
 - Cahier de recettes reformaté (fonctionnel / structurel / sécurité) avec statuts exécutés.

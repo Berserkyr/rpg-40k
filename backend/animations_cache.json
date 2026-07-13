@@ -1,0 +1,228 @@
+{
+  "default_attack": {
+    "skill_id": "default_attack",
+    "name": "Attaque standard",
+    "duration": 600,
+    "phases": [
+      {
+        "name": "windup",
+        "start": 0,
+        "end": 0.25,
+        "easing": "easeOut",
+        "transforms": {
+          "scale": [
+            1.0,
+            1.08
+          ],
+          "rotation": [
+            0,
+            -0.05
+          ]
+        }
+      },
+      {
+        "name": "strike",
+        "start": 0.25,
+        "end": 0.55,
+        "easing": "easeIn",
+        "transforms": {
+          "translateX": [
+            0,
+            35
+          ],
+          "scale": [
+            1.08,
+            0.98
+          ],
+          "rotation": [
+            -0.05,
+            0.08
+          ]
+        }
+      },
+      {
+        "name": "recovery",
+        "start": 0.55,
+        "end": 1.0,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [
+            35,
+            0
+          ],
+          "scale": [
+            0.98,
+            1.0
+          ],
+          "rotation": [
+            0.08,
+            0
+          ]
+        }
+      }
+    ],
+    "particles": [],
+    "cameraShake": {
+      "at": 0.3,
+      "intensity": 2
+    }
+  },
+  "shoot": {
+    "skill_id": "shoot",
+    "name": "Tir",
+    "duration": 500,
+    "phases": [
+      {
+        "name": "aim",
+        "start": 0,
+        "end": 0.2,
+        "easing": "linear",
+        "transforms": {
+          "scale": [
+            1.0,
+            1.05
+          ]
+        }
+      },
+      {
+        "name": "fire",
+        "start": 0.2,
+        "end": 0.35,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [
+            0,
+            -8
+          ],
+          "scale": [
+            1.05,
+            0.92
+          ]
+        }
+      },
+      {
+        "name": "recoil",
+        "start": 0.35,
+        "end": 1.0,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [
+            -8,
+            0
+          ],
+          "scale": [
+            0.92,
+            1.0
+          ]
+        }
+      }
+    ],
+    "particles": [
+      {
+        "type": "muzzle_flash",
+        "at": 0.2,
+        "color": "#ffcc33",
+        "count": 6,
+        "spread": 25,
+        "speed": 80
+      },
+      {
+        "type": "projectile",
+        "at": 0.2,
+        "color": "#ff6633",
+        "count": 1,
+        "speed": 400,
+        "trajectory": "linear"
+      }
+    ],
+    "cameraShake": {
+      "at": 0.2,
+      "intensity": 1.5
+    }
+  },
+  "hurt": {
+    "skill_id": "hurt",
+    "name": "Blessé",
+    "duration": 420,
+    "phases": [
+      {
+        "name": "impact",
+        "start": 0,
+        "end": 0.15,
+        "easing": "linear",
+        "transforms": {
+          "translateX": [
+            0,
+            -15
+          ]
+        }
+      },
+      {
+        "name": "shake",
+        "start": 0.15,
+        "end": 0.7,
+        "easing": "linear",
+        "transforms": {
+          "translateX": "oscillate",
+          "oscillateFreq": 20,
+          "oscillateAmp": 8
+        }
+      },
+      {
+        "name": "recover",
+        "start": 0.7,
+        "end": 1.0,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [
+            0,
+            0
+          ]
+        }
+      }
+    ],
+    "particles": [],
+    "flash": {
+      "color": "#ff3333",
+      "intensity": 0.7,
+      "duration": 0.3
+    }
+  },
+  "death": {
+    "skill_id": "death",
+    "name": "Mort",
+    "duration": 800,
+    "phases": [
+      {
+        "name": "fall",
+        "start": 0,
+        "end": 1.0,
+        "easing": "easeIn",
+        "transforms": {
+          "rotation": [
+            0,
+            1.57
+          ],
+          "translateY": [
+            0,
+            30
+          ],
+          "opacity": [
+            1.0,
+            0.2
+          ]
+        }
+      }
+    ],
+    "particles": [
+      {
+        "type": "blood_splatter",
+        "at": 0.1,
+        "color": "#aa0000",
+        "count": 8,
+        "spread": 60,
+        "speed": 50
+      }
+    ]
+  }
+}

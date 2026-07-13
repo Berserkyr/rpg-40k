@@ -69,6 +69,10 @@ from src.relationships import (
     format_relationships_overview,
 )
 from src.persistence import GameWorld, create_new_game_world, format_world_status, generate_gm_context
+from backend.animation_generator import (
+    get_or_generate_animation, get_cached_animation, list_cached_animations,
+    clear_animation_cache, get_default_animation,
+)
 
 # ---------------------------------------------------------------------------
 # App
@@ -1309,6 +1313,72 @@ def learn_skill(req: CommandRequest, user_id: str = Depends(current_user_id)):
     session.save()
     return {"message": msg, "progression": session._progression_payload(), "state": session.full_state()}
 
+
+# ---------------------------------------------------------------------------
+# Animations
+# ---------------------------------------------------------------------------
+
+class AnimationRequest(BaseModel):
+    """Requete pour recuperer/generer une animation."""
+    skill_id: str
+    skill_name: str = ""
+    skill_description: str = ""
+    skill_category: str = "combat"
+    force_regenerate: bool = False
+
+
+@app.get("/api/animations/{skill_id}")
+def get_animation(skill_id: str):
+    """Recupere une animation depuis le cache."""
+    animation = get_cached_animation(skill_id)
+    if not animation:
+        # Retourne une animation par defaut si absente
+        animation = get_default_animation(skill_id)
+    return animation
+
+
+@app.post("/api/animations/generate")
+def generate_animation(req: AnimationRequest):
+    """
+    Genere ou recupere une animation pour un skill.
+    Genere via LLM si absente du cache, puis sauvegarde.
+    """
+    animation = get_or_generate_animation(
+        skill_id=req.skill_id,
+        skill_name=req.skill_name,
+        skill_description=req.skill_description,
+        skill_category=req.skill_category,
+        force_regenerate=req.force_regenerate
+    )
+    return animation
+
+
+@app.get("/api/animations")
+def list_animations():
+    """Liste toutes les animations en cache."""
+    cached = list_cached_animations()
+    return {"animations": cached, "count": len(cached)}
+
+
+@app.delete("/api/animations/{skill_id}")
+def delete_animation(skill_id: str, user: CurrentUser = Depends(require_admin)):
+    """Supprime une animation du cache (admin uniquement)."""
+    count = clear_animation_cache([skill_id])
+    if count == 0:
+        raise HTTPException(status_code=404, detail="Animation non trouvee")
+    return {"message": f"Animation '{skill_id}' supprimee du cache"}
+
+
+@app.delete("/api/animations")
+def clear_animations(user: CurrentUser = Depends(require_admin)):
+    """Efface tout le cache d'animations (admin uniquement)."""
+    count = clear_animation_cache()
+    return {"message": f"{count} animations supprimees du cache"}
+
+
+# ---------------------------------------------------------------------------
+# Sauvegarde et reset
+# ---------------------------------------------------------------------------
 
 @app.post("/api/save")
 def save(user_id: str = Depends(current_user_id)):
