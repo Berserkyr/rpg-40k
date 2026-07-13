@@ -165,25 +165,90 @@ export function renderParticle(ctx, particle) {
 
   // Differents types de rendu
   if (particle.type === 'spark' || particle.type === 'muzzle_flash') {
-    // Petite etoile
-    ctx.beginPath();
-    ctx.arc(particle.x, particle.y, particle.size * particle.life, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (particle.type === 'blood' || particle.type === 'blood_splatter') {
-    // Goutte de sang
-    ctx.fillRect(particle.x - 2, particle.y - 2, 4, 4);
-  } else if (particle.type === 'energy' || particle.type === 'aura') {
-    // Halo lumineux
-    const grad = ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, particle.size * 2);
+    // Étoile brillante avec halo
+    const grad = ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, particle.size * 3);
     grad.addColorStop(0, particle.color);
+    grad.addColorStop(0.5, particle.color + '88');
     grad.addColorStop(1, 'transparent');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(particle.x, particle.y, particle.size * 2 * particle.life, 0, Math.PI * 2);
+    ctx.arc(particle.x, particle.y, particle.size * 3 * particle.life, 0, Math.PI * 2);
     ctx.fill();
+    
+    // Point central brillant
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = alpha * 0.9;
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, particle.size * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (particle.type === 'blood' || particle.type === 'blood_splatter') {
+    // Goutte de sang avec éclaboussure
+    ctx.fillStyle = particle.color;
+    ctx.globalAlpha = alpha * 0.9;
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, particle.size * particle.life * 1.2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Traînée
+    ctx.fillRect(
+      particle.x - particle.size * 0.5, 
+      particle.y - particle.size * 0.5, 
+      particle.size * 0.8, 
+      particle.size * 1.5
+    );
+  } else if (particle.type === 'energy' || particle.type === 'aura') {
+    // Halo lumineux pulsant
+    const pulseSize = particle.size * (2 + Math.sin(Date.now() * 0.01) * 0.3);
+    const grad = ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, pulseSize * 2);
+    grad.addColorStop(0, particle.color + 'cc');
+    grad.addColorStop(0.3, particle.color + '88');
+    grad.addColorStop(0.6, particle.color + '33');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, pulseSize * 2 * particle.life, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (particle.type === 'projectile') {
+    // Projectile avec traînée lumineuse
+    const trailLength = 15;
+    const grad = ctx.createLinearGradient(
+      particle.x - particle.vx * 0.02,
+      particle.y - particle.vy * 0.02,
+      particle.x,
+      particle.y
+    );
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(0.5, particle.color + '88');
+    grad.addColorStop(1, particle.color);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = particle.size * 1.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(particle.x - particle.vx * 0.02, particle.y - particle.vy * 0.02);
+    ctx.lineTo(particle.x, particle.y);
+    ctx.stroke();
+    
+    // Point lumineux central
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, particle.size * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (particle.type === 'explosion') {
+    // Explosion avec cercles
+    for (let i = 0; i < 3; i++) {
+      const offset = i * 0.15;
+      const size = particle.size * (3 - i) * particle.life;
+      ctx.globalAlpha = alpha * (0.8 - i * 0.2);
+      ctx.fillStyle = i === 0 ? '#ffffff' : particle.color;
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else {
-    // Projectile ou generique
-    ctx.fillRect(particle.x - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size);
+    // Générique: carré lumineux
+    const size = particle.size * particle.life;
+    ctx.fillRect(particle.x - size / 2, particle.y - size / 2, size, size);
   }
 
   ctx.restore();

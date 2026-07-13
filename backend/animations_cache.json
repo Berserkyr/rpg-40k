@@ -1,63 +1,191 @@
 {
-  "default_attack": {
-    "skill_id": "default_attack",
-    "name": "Attaque standard",
-    "duration": 600,
+  "idle": {
+    "skill_id": "idle",
+    "name": "Repos",
+    "duration": 2000,
     "phases": [
       {
-        "name": "windup",
+        "name": "breathe",
         "start": 0,
-        "end": 0.25,
+        "end": 1.0,
+        "easing": "easeInOut",
+        "transforms": {
+          "scale": [1.0, 1.03],
+          "translateY": [0, -2]
+        }
+      }
+    ],
+    "particles": []
+  },
+  "attack": {
+    "skill_id": "attack",
+    "name": "Attaque mêlée",
+    "duration": 800,
+    "phases": [
+      {
+        "name": "anticipation",
+        "start": 0,
+        "end": 0.2,
         "easing": "easeOut",
         "transforms": {
-          "scale": [
-            1.0,
-            1.08
-          ],
-          "rotation": [
-            0,
-            -0.05
-          ]
+          "translateX": [0, -45],
+          "scale": [1.0, 0.92],
+          "rotation": [0, -0.18]
         }
       },
       {
         "name": "strike",
-        "start": 0.25,
-        "end": 0.55,
+        "start": 0.2,
+        "end": 0.35,
         "easing": "easeIn",
         "transforms": {
-          "translateX": [
-            0,
-            35
-          ],
-          "scale": [
-            1.08,
-            0.98
-          ],
-          "rotation": [
-            -0.05,
-            0.08
-          ]
+          "translateX": [-45, 120],
+          "scale": [0.92, 1.25],
+          "rotation": [-0.18, 0.3]
         }
       },
       {
-        "name": "recovery",
-        "start": 0.55,
+        "name": "impact",
+        "start": 0.35,
+        "end": 0.45,
+        "easing": "linear",
+        "transforms": {
+          "translateX": [120, 105],
+          "scale": [1.25, 0.8],
+          "rotation": [0.3, 0.2]
+        }
+      },
+      {
+        "name": "recoil",
+        "start": 0.45,
+        "end": 0.65,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [105, 15],
+          "scale": [0.8, 1.08],
+          "rotation": [0.2, -0.08]
+        }
+      },
+      {
+        "name": "settle",
+        "start": 0.65,
         "end": 1.0,
         "easing": "easeOut",
         "transforms": {
-          "translateX": [
-            35,
-            0
-          ],
-          "scale": [
-            0.98,
-            1.0
-          ],
-          "rotation": [
-            0.08,
-            0
-          ]
+          "translateX": [15, 0],
+          "scale": [1.08, 1.0],
+          "rotation": [-0.08, 0]
+        }
+      }
+    ],
+    "particles": [
+      {
+        "type": "spark",
+        "at": 0.35,
+        "color": "#ff9933",
+        "count": 12,
+        "spread": 80,
+        "speed": 180,
+        "size": 3
+      },
+      {
+        "type": "blood_splatter",
+        "at": 0.36,
+        "color": "#cc0000",
+        "count": 8,
+        "spread": 60,
+        "speed": 120,
+        "size": 4
+      }
+    ],
+    "cameraShake": {
+      "at": 0.35,
+      "intensity": 4.5
+    },
+    "flash": {
+      "at": 0.35,
+      "color": "#ffffff",
+      "intensity": 0.6,
+      "duration": 0.08
+    }
+  },
+  "default_attack": {
+    "skill_id": "default_attack",
+    "name": "Attaque standard",
+    "duration": 800,
+    "phases": [
+      {
+        "name": "anticipation",
+        "start": 0,
+        "end": 0.2,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [0, -45],
+          "scale": [1.0, 0.92],
+          "rotation": [0, -0.18]
+        }
+      },
+      {
+        "name": "strike",
+        "start": 0.2,
+        "end": 0.35,
+        "easing": "easeIn",
+        "transforms": {
+          "translateX": [-45, 120],
+          "scale": [0.92, 1.25],
+          "rotation": [-0.18, 0.3]
+        }
+      },
+      {
+        "name": "impact",
+        "start": 0.35,
+        "end": 0.45,
+        "easing": "linear",
+        "transforms": {
+          "translateX": [120, 105],
+          "scale": [1.25, 0.8],
+          "rotation": [0.3, 0.2]
+        }
+      },
+      {
+        "name": "recoil",
+        "start": 0.45,
+        "end": 0.65,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [105, 15],
+          "scale": [0.8, 1.08],
+          "rotation": [0.2, -0.08]
+        }
+      },
+      {
+        "name": "settle",
+        "start": 0.65,
+        "end": 1.0,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [15, 0],
+          "scale": [1.08, 1.0],
+          "rotation": [-0.08, 0]
+        }
+      }
+    ],
+    "particles": [
+      {
+        "type": "spark",
+        "at": 0.35,
+        "color": "#ff9933",
+        "count": 12,
+        "spread": 80,
+        "speed": 180,
+        "size": 3
+      }
+    ],
+    "cameraShake": {
+      "at": 0.35,
+      "intensity": 4.5
+    }
+  },
         }
       }
     ],
@@ -70,147 +198,339 @@
   "shoot": {
     "skill_id": "shoot",
     "name": "Tir",
-    "duration": 500,
+    "duration": 650,
     "phases": [
       {
         "name": "aim",
         "start": 0,
-        "end": 0.2,
-        "easing": "linear",
+        "end": 0.15,
+        "easing": "easeOut",
         "transforms": {
-          "scale": [
-            1.0,
-            1.05
-          ]
+          "scale": [1.0, 1.12],
+          "translateX": [0, -8]
         }
       },
       {
         "name": "fire",
-        "start": 0.2,
-        "end": 0.35,
-        "easing": "easeOut",
+        "start": 0.15,
+        "end": 0.25,
+        "easing": "easeIn",
         "transforms": {
-          "translateX": [
-            0,
-            -8
-          ],
-          "scale": [
-            1.05,
-            0.92
-          ]
+          "translateX": [-8, -35],
+          "scale": [1.12, 0.85],
+          "rotation": [0, -0.12]
         }
       },
       {
-        "name": "recoil",
-        "start": 0.35,
+        "name": "recoil_bounce",
+        "start": 0.25,
+        "end": 0.4,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [-35, 10],
+          "scale": [0.85, 1.15],
+          "rotation": [-0.12, 0.08]
+        }
+      },
+      {
+        "name": "stabilize",
+        "start": 0.4,
+        "end": 0.7,
+        "easing": "easeInOut",
+        "transforms": {
+          "translateX": [10, -3],
+          "scale": [1.15, 0.98],
+          "rotation": [0.08, -0.02]
+        }
+      },
+      {
+        "name": "return",
+        "start": 0.7,
         "end": 1.0,
         "easing": "easeOut",
         "transforms": {
-          "translateX": [
-            -8,
-            0
-          ],
-          "scale": [
-            0.92,
-            1.0
-          ]
+          "translateX": [-3, 0],
+          "scale": [0.98, 1.0],
+          "rotation": [-0.02, 0]
         }
       }
     ],
     "particles": [
       {
         "type": "muzzle_flash",
-        "at": 0.2,
-        "color": "#ffcc33",
-        "count": 6,
-        "spread": 25,
-        "speed": 80
+        "at": 0.15,
+        "color": "#ffee33",
+        "count": 18,
+        "spread": 35,
+        "speed": 220,
+        "size": 4
+      },
+      {
+        "type": "spark",
+        "at": 0.16,
+        "color": "#ff9933",
+        "count": 10,
+        "spread": 45,
+        "speed": 160,
+        "size": 3
       },
       {
         "type": "projectile",
-        "at": 0.2,
-        "color": "#ff6633",
-        "count": 1,
-        "speed": 400,
+        "at": 0.15,
+        "color": "#ffcc00",
+        "count": 3,
+        "spread": 8,
+        "speed": 600,
+        "size": 5,
         "trajectory": "linear"
       }
     ],
     "cameraShake": {
-      "at": 0.2,
-      "intensity": 1.5
+      "at": 0.15,
+      "intensity": 3.5
+    },
+    "flash": {
+      "at": 0.15,
+      "color": "#ffffaa",
+      "intensity": 0.8,
+      "duration": 0.1
     }
   },
   "hurt": {
     "skill_id": "hurt",
     "name": "Blessé",
-    "duration": 420,
+    "duration": 550,
     "phases": [
       {
         "name": "impact",
         "start": 0,
-        "end": 0.15,
-        "easing": "linear",
+        "end": 0.12,
+        "easing": "easeIn",
         "transforms": {
-          "translateX": [
-            0,
-            -15
-          ]
+          "translateX": [0, -55],
+          "scale": [1.0, 0.75],
+          "rotation": [0, -0.25]
         }
       },
       {
-        "name": "shake",
-        "start": 0.15,
-        "end": 0.7,
+        "name": "shock",
+        "start": 0.12,
+        "end": 0.25,
         "easing": "linear",
         "transforms": {
           "translateX": "oscillate",
-          "oscillateFreq": 20,
-          "oscillateAmp": 8
+          "oscillateFreq": 28,
+          "oscillateAmp": 18,
+          "scale": [0.75, 0.88],
+          "rotation": [-0.25, -0.1]
+        }
+      },
+      {
+        "name": "stagger",
+        "start": 0.25,
+        "end": 0.5,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [0, 25],
+          "scale": [0.88, 1.08],
+          "rotation": [-0.1, 0.15]
         }
       },
       {
         "name": "recover",
+        "start": 0.5,
+        "end": 1.0,
+        "easing": "easeInOut",
+        "transforms": {
+          "translateX": [25, 0],
+          "scale": [1.08, 1.0],
+          "rotation": [0.15, 0]
+        }
+      }
+    ],
+    "particles": [
+      {
+        "type": "blood_splatter",
+        "at": 0.08,
+        "color": "#dd0000",
+        "count": 15,
+        "spread": 90,
+        "speed": 140,
+        "size": 5,
+        "gravity": 180
+      },
+      {
+        "type": "spark",
+        "at": 0.1,
+        "color": "#ff6633",
+        "count": 8,
+        "spread": 70,
+        "speed": 100,
+        "size": 3
+      }
+    ],
+    "cameraShake": {
+      "at": 0.08,
+      "intensity": 3.0
+    },
+    "flash": {
+      "at": 0.05,
+      "color": "#ff3333",
+      "intensity": 0.85,
+      "duration": 0.25
+    }
+  },
+  "enemy_attack": {
+    "skill_id": "enemy_attack",
+    "name": "Attaque ennemie",
+    "duration": 700,
+    "phases": [
+      {
+        "name": "windup",
+        "start": 0,
+        "end": 0.25,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [0, 55],
+          "scale": [1.0, 0.88],
+          "rotation": [0, 0.22]
+        }
+      },
+      {
+        "name": "lunge",
+        "start": 0.25,
+        "end": 0.4,
+        "easing": "easeIn",
+        "transforms": {
+          "translateX": [55, -130],
+          "scale": [0.88, 1.35],
+          "rotation": [0.22, -0.35]
+        }
+      },
+      {
+        "name": "impact",
+        "start": 0.4,
+        "end": 0.5,
+        "easing": "linear",
+        "transforms": {
+          "translateX": [-130, -115],
+          "scale": [1.35, 0.75],
+          "rotation": [-0.35, -0.25]
+        }
+      },
+      {
+        "name": "pullback",
+        "start": 0.5,
+        "end": 0.7,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [-115, 20],
+          "scale": [0.75, 1.12],
+          "rotation": [-0.25, 0.1]
+        }
+      },
+      {
+        "name": "reset",
         "start": 0.7,
         "end": 1.0,
         "easing": "easeOut",
         "transforms": {
-          "translateX": [
-            0,
-            0
-          ]
+          "translateX": [20, 0],
+          "scale": [1.12, 1.0],
+          "rotation": [0.1, 0]
         }
       }
     ],
-    "particles": [],
+    "particles": [
+      {
+        "type": "spark",
+        "at": 0.4,
+        "color": "#ff6633",
+        "count": 15,
+        "spread": 90,
+        "speed": 200,
+        "size": 4
+      },
+      {
+        "type": "blood_splatter",
+        "at": 0.41,
+        "color": "#dd0000",
+        "count": 10,
+        "spread": 70,
+        "speed": 140,
+        "size": 5
+      },
+      {
+        "type": "energy",
+        "at": 0.25,
+        "color": "#ff3333",
+        "count": 6,
+        "spread": 40,
+        "speed": 80,
+        "size": 6
+      }
+    ],
+    "cameraShake": {
+      "at": 0.4,
+      "intensity": 5.5
+    },
     "flash": {
+      "at": 0.4,
       "color": "#ff3333",
       "intensity": 0.7,
-      "duration": 0.3
+      "duration": 0.1
     }
   },
   "death": {
     "skill_id": "death",
     "name": "Mort",
-    "duration": 800,
+    "duration": 1200,
     "phases": [
       {
-        "name": "fall",
+        "name": "stun",
         "start": 0,
-        "end": 1.0,
+        "end": 0.15,
+        "easing": "easeOut",
+        "transforms": {
+          "translateX": [0, -40],
+          "scale": [1.0, 0.7],
+          "rotation": [0, -0.3]
+        }
+      },
+      {
+        "name": "collapse_start",
+        "start": 0.15,
+        "end": 0.4,
         "easing": "easeIn",
         "transforms": {
-          "rotation": [
-            0,
-            1.57
-          ],
-          "translateY": [
-            0,
-            30
-          ],
-          "opacity": [
-            1.0,
-            0.2
-          ]
+          "translateX": [-40, 20],
+          "translateY": [0, 5],
+          "rotation": [-0.3, 0.8],
+          "scale": [0.7, 0.85]
+        }
+      },
+      {
+        "name": "fall",
+        "start": 0.4,
+        "end": 0.75,
+        "easing": "easeIn",
+        "transforms": {
+          "translateX": [20, 10],
+          "translateY": [5, 35],
+          "rotation": [0.8, 1.8],
+          "scale": [0.85, 0.9]
+        }
+      },
+      {
+        "name": "fade",
+        "start": 0.75,
+        "end": 1.0,
+        "easing": "easeOut",
+        "transforms": {
+          "translateY": [35, 42],
+          "rotation": [1.8, 1.9],
+          "opacity": [1.0, 0.15],
+          "scale": [0.9, 0.85]
         }
       }
     ],
@@ -219,10 +539,42 @@
         "type": "blood_splatter",
         "at": 0.1,
         "color": "#aa0000",
+        "count": 25,
+        "spread": 120,
+        "speed": 160,
+        "size": 6,
+        "gravity": 200
+      },
+      {
+        "type": "spark",
+        "at": 0.12,
+        "color": "#ff4444",
+        "count": 12,
+        "spread": 90,
+        "speed": 110,
+        "size": 4
+      },
+      {
+        "type": "energy",
+        "at": 0.75,
+        "color": "#4444ff",
         "count": 8,
-        "spread": 60,
-        "speed": 50
+        "spread": 360,
+        "speed": 40,
+        "size": 8,
+        "fadeOut": true,
+        "duration": 1.5
       }
-    ]
+    ],
+    "cameraShake": {
+      "at": 0.1,
+      "intensity": 5.0
+    },
+    "flash": {
+      "at": 0.08,
+      "color": "#ff0000",
+      "intensity": 0.9,
+      "duration": 0.2
+    }
   }
 }

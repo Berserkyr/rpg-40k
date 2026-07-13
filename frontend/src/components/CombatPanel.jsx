@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import './CombatPanel.css';
 import EnemySprite from './EnemySprite';
+import AnimatedAction from './AnimatedAction';
 
 function ConditionChips({ conditions }) {
   if (!conditions?.length) return null;
@@ -115,16 +116,29 @@ export default function CombatPanel({ combat, onCombatAction, onNegotiate, disab
             aria-pressed={i === safeTarget}
           >
             <div className="enemy-card-body">
-              <EnemySprite
-                faction={enemy.faction}
-                archetype={enemy.archetype}
-                threat={enemy.threat}
-                name={enemy.name}
-                dead={enemy.is_dead}
-                action={enemyFx[i]?.action || 'idle'}
-                actionSeq={enemyFx[i]?.seq || 0}
-                size={44}
-              />
+              <AnimatedAction
+                skillId={enemyFx[i]?.action || 'idle'}
+                trigger={enemyFx[i]?.seq || 0}
+                facing={i % 2 === 0 ? 'right' : 'left'}
+                onComplete={() => {
+                  if (enemyFx[i]?.action !== 'idle' && enemyFx[i]?.action !== 'death') {
+                    setEnemyFx(old => {
+                      const newFx = [...old];
+                      newFx[i] = { action: 'idle', seq: newFx[i]?.seq || 0 };
+                      return newFx;
+                    });
+                  }
+                }}
+              >
+                <EnemySprite
+                  faction={enemy.faction}
+                  archetype={enemy.archetype}
+                  threat={enemy.threat}
+                  name={enemy.name}
+                  dead={enemy.is_dead}
+                  size={44}
+                />
+              </AnimatedAction>
               <div className="enemy-card-info">
                 <div className="combatant-row">
                   <span>
