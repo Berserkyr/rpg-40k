@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './ModelGenerator.css';
+import { login as apiLogin, logout as apiLogout, getRole, isAuthenticated, generateModels } from '../api.js';
 
 const FACTIONS = ['Imperial', 'Chaos', 'Tyranid', 'Ork', 'Eldar', 'Tau', 'Necron'];
 const MODEL_TYPES = ['character', 'weapon', 'vehicle', 'structure', 'creature'];
@@ -27,10 +28,9 @@ export default function ModelGenerator() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  // Vérifier si déjà connecté
+  // Vérifier si déjà connecté en tant qu'admin
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
+    if (isAuthenticated() && getRole() === 'admin') {
       setIsLoggedIn(true);
     }
   }, []);
@@ -44,18 +44,11 @@ export default function ModelGenerator() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:8000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-
-      if (!response.ok) {
-        throw new Error('Identifiants incorrects');
+      const data = await apiLogin(username, password);
+      if (data?.user?.role !== 'admin') {
+        apiLogout();
+        throw new Error('Ce compte n\u2019est pas administrateur.');
       }
-
-      const data = await response.json();
-      localStorage.setItem('token', data.access_token);
       setIsLoggedIn(true);
       setError(null);
     } catch (err) {
@@ -74,27 +67,12 @@ export default function ModelGenerator() {
     setResult(null);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/models/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
-        },
-        body: JSON.stringify({
-          model_types: selectedTypes,
-          faction,
-          count,
-          complexity
-        })
+      const data = await generateModels({
+        modelTypes: selectedTypes,
+        faction,
+        count,
+        complexity,
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || 'Erreur de génération');
-      }
-
-      const data = await response.json();
       setResult(data);
     } catch (err) {
       setError(err.message);
@@ -162,7 +140,7 @@ export default function ModelGenerator() {
         <button 
           className="logout-btn"
           onClick={() => {
-            localStorage.removeItem('token');
+            apiLogout();
             setIsLoggedIn(false);
           }}
         >

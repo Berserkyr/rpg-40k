@@ -126,6 +126,20 @@ export async function dismissCompanion(templateId) {
   return postAction('/team/dismiss', { template_id: templateId });
 }
 
+export async function generateModels({ modelTypes, faction, count, complexity }) {
+  const r = await fetch(`${BASE}/models/generate`, {
+    method: 'POST',
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({
+      model_types: modelTypes,
+      faction,
+      count,
+      complexity,
+    }),
+  });
+  return parseResponse(r);
+}
+
 export function streamSSE(path, body, onToken, onDone, onError) {
   let cancelled = false;
 
