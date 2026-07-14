@@ -8,30 +8,40 @@
 import * as THREE from 'three';
 
 /**
- * Crée un voxel (cube) avec couleur
+ * Crée un voxel (cube) avec couleur et options
  */
-export function createVoxel(color = 0xffffff, size = 1) {
+export function createVoxel(color = 0xffffff, size = 1, options = {}) {
   const geometry = new THREE.BoxGeometry(size, size, size);
-  const material = new THREE.MeshLambertMaterial({ 
+  const material = new THREE.MeshPhongMaterial({ 
     color,
-    flatShading: true // Style pixel art
+    flatShading: true,
+    shininess: options.shininess || 30,
+    emissive: options.emissive || 0x000000,
+    emissiveIntensity: options.emissiveIntensity || 0,
+    specular: options.specular || 0x444444
   });
-  return new THREE.Mesh(geometry, material);
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
 }
 
 /**
  * Palette de couleurs pixel art
  */
 export const PALETTES = {
-  skin: [0xffdbac, 0xf1c27d, 0xe0ac69, 0xc68642],
-  metal: [0xcccccc, 0x999999, 0x666666, 0x333333],
-  gold: [0xffeb3b, 0xffc107, 0xff9800, 0xf57c00],
+  skin: [0xffd5a6, 0xffb380, 0xff9966, 0xd97a4d],
+  metal: [0xf0f0f0, 0xcccccc, 0x999999, 0x666666],
+  gold: [0xffd700, 0xffaa00, 0xff8800, 0xcc6600],
   blood: [0xff0000, 0xcc0000, 0x990000, 0x660000],
-  armor: [0x1565c0, 0x0d47a1, 0x01579b, 0x004d40],
-  tyranid: [0x4a148c, 0x311b92, 0x1a237e, 0x000051],
-  ork: [0x2e7d32, 0x1b5e20, 0x004d40, 0x00251a],
-  chaos: [0xb71c1c, 0x880e4f, 0x4a148c, 0x000000],
-  energy: [0x00ffff, 0x00e5ff, 0x00b8ff, 0x0091ff],
+  armor: [0x3399ff, 0x2277dd, 0x1155bb, 0x003388],
+  tyranid: [0x9933ff, 0x7711dd, 0x5500bb, 0x330088],
+  ork: [0x55dd33, 0x33bb11, 0x229900, 0x117700],
+  chaos: [0xff3333, 0xdd1111, 0xbb0000, 0x880000],
+  energy: [0x00ffff, 0x00ddff, 0x00bbff, 0x0099ff],
+  imperial_blue: [0x0055ff, 0x0044dd, 0x0033bb, 0x002288],
+  imperial_gold: [0xffdd00, 0xddbb00, 0xbb9900, 0x997700],
+  white: [0xffffff, 0xeeeeee, 0xdddddd, 0xcccccc],
 };
 
 /**
@@ -104,34 +114,53 @@ export class HumanoidVoxelBuilder {
   buildHead(palette) {
     const head = new THREE.Group();
     
-    // Crâne principal (2x2x2)
-    for (let x = -1; x <= 0; x++) {
-      for (let y = 0; y <= 1; y++) {
-        for (let z = -1; z <= 0; z++) {
-          const voxel = createVoxel(palette.skin, 1);
+    // Crâne principal (agrandi pour mieux voir)
+    for (let x = -1.2; x <= 1.2; x += 0.8) {
+      for (let y = 0; y <= 2; y += 0.8) {
+        for (let z = -1.2; z <= 0; z += 0.8) {
+          const voxel = createVoxel(palette.skin, 0.8);
           voxel.position.set(x, y, z);
           head.add(voxel);
         }
       }
     }
     
-    // Casque/heaume (style 40K)
+    // Casque/heaume massif (style Space Marine)
     const helmetVoxels = [
-      [0, 2, 0], [-1, 2, 0], [0, 2, -1], [-1, 2, -1], // Top
-      [1, 1, 0], [-2, 1, 0], // Côtés
+      // Top du casque
+      [0, 2.5, 0], [-0.8, 2.5, 0], [0.8, 2.5, 0],
+      [0, 2.5, -0.8], [-0.8, 2.5, -0.8], [0.8, 2.5, -0.8],
+      // Crête
+      [0, 3.2, -0.4],
+      // Côtés épais
+      [1.6, 1.2, 0], [1.6, 1.2, -0.8],
+      [-1.6, 1.2, 0], [-1.6, 1.2, -0.8],
+      // Mentonnière
+      [0, 0, -1.2], [-0.8, 0, -1.2], [0.8, 0, -1.2],
     ];
     
     helmetVoxels.forEach(([x, y, z]) => {
-      const voxel = createVoxel(palette.armor, 1);
+      const voxel = createVoxel(palette.armor, 0.8, { shininess: 60 });
       voxel.position.set(x, y, z);
       head.add(voxel);
     });
     
-    // Yeux (lumière)
-    const leftEye = createVoxel(0xff0000, 0.3);
-    leftEye.position.set(-0.3, 0.5, -1.1);
-    const rightEye = createVoxel(0xff0000, 0.3);
-    rightEye.position.set(-0.7, 0.5, -1.1);
+    // Détails dorés (aquila, insignes)
+    const goldDetails = [
+      [0, 1.6, -1.3], // Aquila centre
+      [-0.4, 1.6, -1.3], [0.4, 1.6, -1.3], // Ailes
+    ];
+    goldDetails.forEach(([x, y, z]) => {
+      const voxel = createVoxel(PALETTES.gold[0], 0.4, { shininess: 100 });
+      voxel.position.set(x, y, z);
+      head.add(voxel);
+    });
+    
+    // Yeux lumineux (plus gros)
+    const leftEye = createVoxel(0xff0000, 0.5, { emissive: 0xff0000, emissiveIntensity: 0.8 });
+    leftEye.position.set(-0.4, 1.2, -1.4);
+    const rightEye = createVoxel(0xff0000, 0.5, { emissive: 0xff0000, emissiveIntensity: 0.8 });
+    rightEye.position.set(0.4, 1.2, -1.4);
     head.add(leftEye, rightEye);
     
     return head;
@@ -140,35 +169,67 @@ export class HumanoidVoxelBuilder {
   buildTorso(palette, armorLevel) {
     const torso = new THREE.Group();
     
-    // Corps principal (3x4x2)
-    for (let x = -1; x <= 1; x++) {
-      for (let y = 0; y <= 3; y++) {
-        for (let z = -1; z <= 0; z++) {
-          const voxel = createVoxel(palette.armor, 1);
+    // Corps principal (plus large et détaillé)
+    for (let x = -1.5; x <= 1.5; x += 0.8) {
+      for (let y = 0; y <= 4; y += 0.8) {
+        for (let z = -1.2; z <= 0.8; z += 0.8) {
+          const depth = Math.abs(z);
+          const colorIndex = depth > 0.5 ? 0 : 1;
+          const voxel = createVoxel(palette.armor, 0.8, { shininess: 40 });
           voxel.position.set(x, y, z);
           torso.add(voxel);
         }
       }
     }
     
-    // Détails armure (épaulières, abdomen)
-    if (armorLevel === 'heavy') {
-      // Épaulières massives (style Space Marine)
+    // Plaques de plastron (détails en relief)
+    const chestPlates = [
+      // Plaques centrales
+      [-0.4, 2.5, -1.3], [0.4, 2.5, -1.3],
+      [-0.4, 3.2, -1.3], [0.4, 3.2, -1.3],
+      // Abdomen segmenté
+      [-0.6, 1.5, -1.3], [0, 1.5, -1.3], [0.6, 1.5, -1.3],
+      [-0.6, 0.8, -1.3], [0, 0.8, -1.3], [0.6, 0.8, -1.3],
+    ];
+    chestPlates.forEach(([x, y, z]) => {
+      const voxel = createVoxel(PALETTES.metal[0], 0.6, { shininess: 80 });
+      voxel.position.set(x, y, z);
+      torso.add(voxel);
+    });
+    
+    // Épaulières MASSIVES (style Space Marine)
+    if (armorLevel === 'heavy' || armorLevel === 'medium') {
       const shoulderPads = [
-        [-2, 3, 0], [-2, 3, -1], [-2, 2, 0],
-        [2, 3, 0], [2, 3, -1], [2, 2, 0],
+        // Gauche
+        [-2.5, 4, 0], [-2.5, 4, -0.8], [-2.5, 3.2, 0], [-2.5, 3.2, -0.8],
+        [-3, 3.6, -0.4], [-2.2, 4.5, -0.4],
+        // Droite  
+        [2.5, 4, 0], [2.5, 4, -0.8], [2.5, 3.2, 0], [2.5, 3.2, -0.8],
+        [3, 3.6, -0.4], [2.2, 4.5, -0.4],
       ];
       shoulderPads.forEach(([x, y, z]) => {
-        const voxel = createVoxel(palette.trim, 1);
+        const voxel = createVoxel(PALETTES.imperial_gold[0], 0.9, { shininess: 90 });
         voxel.position.set(x, y, z);
         torso.add(voxel);
       });
     }
     
-    // Badge/symbole (centre poitrine)
-    const badge = createVoxel(palette.trim, 0.6);
-    badge.position.set(0, 2.5, -1.1);
-    torso.add(badge);
+    // Aquila impériale géante (centre poitrine)
+    const aquilaVoxels = [
+      [0, 3, -1.4], // Corps
+      [-0.6, 3, -1.4], [0.6, 3, -1.4], // Ailes
+      [-0.9, 2.7, -1.4], [0.9, 2.7, -1.4], // Bout des ailes
+      [0, 3.4, -1.4], // Tête
+    ];
+    aquilaVoxels.forEach(([x, y, z]) => {
+      const voxel = createVoxel(PALETTES.gold[0], 0.5, { 
+        shininess: 100,
+        emissive: PALETTES.gold[1],
+        emissiveIntensity: 0.3
+      });
+      voxel.position.set(x, y, z);
+      torso.add(voxel);
+    });
     
     return torso;
   }

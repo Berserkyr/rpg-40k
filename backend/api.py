@@ -1377,6 +1377,57 @@ def clear_animations(user: CurrentUser = Depends(require_admin)):
 
 
 # ---------------------------------------------------------------------------
+# Générateur de modèles 3D
+# ---------------------------------------------------------------------------
+
+class ModelGenerationRequest(BaseModel):
+    model_types: list[str]  # character, weapon, vehicle, structure, creature
+    faction: str = "Imperial"
+    count: int = 5
+    complexity: str = "medium"  # simple, medium, high
+
+
+@app.post("/api/models/generate")
+def generate_models_endpoint(req: ModelGenerationRequest, user: CurrentUser = Depends(require_admin)):
+    """
+    Génère des modèles 3D voxel via LLM et les ajoute automatiquement au projet.
+    Réservé aux admins pour éviter la surcharge de génération.
+    """
+    from backend.model_generator import generate_and_save_models
+    
+    if req.count > 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 modèles par génération")
+    
+    if req.complexity not in ["simple", "medium", "high"]:
+        raise HTTPException(status_code=400, detail="Complexité invalide (simple/medium/high)")
+    
+    valid_factions = ["Imperial", "Chaos", "Tyranid", "Ork", "Eldar", "Tau", "Necron"]
+    if req.faction not in valid_factions:
+        raise HTTPException(status_code=400, detail=f"Faction invalide. Valides: {valid_factions}")
+    
+    valid_types = ["character", "weapon", "vehicle", "structure", "creature"]
+    if not all(t in valid_types for t in req.model_types):
+        raise HTTPException(status_code=400, detail=f"Types invalides. Valides: {valid_types}")
+    
+    result = generate_and_save_models(
+        model_types=req.model_types,
+        faction=req.faction,
+        count=req.count,
+        complexity=req.complexity
+    )
+    
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["message"])
+    
+    return {
+        "success": True,
+        "message": result["message"],
+        "file": result["file"],
+        "preview": result["code"][:500] + "..." if len(result["code"]) > 500 else result["code"]
+    }
+
+
+# ---------------------------------------------------------------------------
 # Sauvegarde et reset
 # ---------------------------------------------------------------------------
 

@@ -33,19 +33,19 @@ export class CombatScene3D {
   init() {
     // Scène
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x1a1a2e);
-    this.scene.fog = new THREE.Fog(0x1a1a2e, 30, 60);
+    this.scene.background = new THREE.Color(0x2a2a3e);
+    this.scene.fog = new THREE.Fog(0x2a2a3e, 40, 80);
 
-    // Caméra orthographique (style pixel art)
+    // Caméra orthographique (style pixel art) - plus proche pour mieux voir
     const aspect = window.innerWidth / window.innerHeight;
-    const viewSize = 20;
+    const viewSize = 15;
     this.camera = new THREE.OrthographicCamera(
       -viewSize * aspect, viewSize * aspect,
       viewSize, -viewSize,
       0.1, 1000
     );
-    this.camera.position.set(15, 20, 15);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.position.set(12, 18, 12);
+    this.camera.lookAt(0, 3, 0);
 
     // Renderer
     this.renderer = new THREE.WebGLRenderer({
@@ -75,35 +75,48 @@ export class CombatScene3D {
    * Configure l'éclairage
    */
   setupLights() {
-    // Lumière ambiante (faible)
-    const ambient = new THREE.AmbientLight(0x404060, 0.4);
+    // Lumière ambiante FORTE pour bien voir
+    const ambient = new THREE.AmbientLight(0xa0a0c0, 0.8);
     this.scene.add(ambient);
     this.lights.push(ambient);
 
-    // Lumière directionnelle principale (soleil)
-    const directional = new THREE.DirectionalLight(0xffffff, 0.8);
-    directional.position.set(10, 20, 10);
+    // Lumière directionnelle principale (soleil) TRÈS FORTE
+    const directional = new THREE.DirectionalLight(0xffffff, 1.5);
+    directional.position.set(15, 25, 15);
     directional.castShadow = true;
-    directional.shadow.camera.left = -30;
-    directional.shadow.camera.right = 30;
-    directional.shadow.camera.top = 30;
-    directional.shadow.camera.bottom = -30;
-    directional.shadow.mapSize.width = 1024;
-    directional.shadow.mapSize.height = 1024;
+    directional.shadow.camera.left = -40;
+    directional.shadow.camera.right = 40;
+    directional.shadow.camera.top = 40;
+    directional.shadow.camera.bottom = -40;
+    directional.shadow.mapSize.width = 2048;
+    directional.shadow.mapSize.height = 2048;
+    directional.shadow.bias = -0.001;
     this.scene.add(directional);
     this.lights.push(directional);
 
-    // Lumière d'accentuation (couleur d'ambiance)
-    const accent = new THREE.PointLight(0xff4444, 0.5, 30);
-    accent.position.set(-10, 5, -10);
+    // Lumière d'accentuation avant (éclaire les personnages)
+    const frontLight = new THREE.DirectionalLight(0xffffee, 0.8);
+    frontLight.position.set(0, 15, 20);
+    this.scene.add(frontLight);
+    this.lights.push(frontLight);
+
+    // Lumière d'accentuation rouge (dramati)
+    const accent = new THREE.PointLight(0xff6644, 1.2, 40);
+    accent.position.set(-12, 8, -8);
     this.scene.add(accent);
     this.lights.push(accent);
 
-    // Lumière de remplissage
-    const fill = new THREE.PointLight(0x4444ff, 0.3, 30);
-    fill.position.set(10, 5, -10);
+    // Lumière de remplissage bleue
+    const fill = new THREE.PointLight(0x6688ff, 0.8, 40);
+    fill.position.set(12, 8, -8);
     this.scene.add(fill);
     this.lights.push(fill);
+    
+    // Lumière arrière (rim light)
+    const rim = new THREE.DirectionalLight(0xaaccff, 0.6);
+    rim.position.set(-10, 10, -15);
+    this.scene.add(rim);
+    this.lights.push(rim);
   }
 
   /**
