@@ -23,11 +23,36 @@ export default function ModelGenerator() {
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
   const toggleType = (type) => {
     setSelectedTypes(prev =>
       prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
     );
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (!response.ok) {
+        throw new Error('Identifiants incorrects');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.access_token);
+      setIsLoggedIn(true);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const handleGenerate = async () => {
@@ -48,11 +73,79 @@ export default function ModelGenerator() {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : ''
         },
-        body: JSON.stringify({
-          model_types: selectedTypes,
-          faction,
-          count,
-          complexity
+  // Vérifier si déjà connecté
+  React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  // Formulaire de connexion si pas connecté
+  if (!isLoggedIn) {
+    return (
+      <div className="model-generator">
+        <div className="generator-header">
+          <h1>🎨 Générateur de Modèles 3D IA</h1>
+          <p className="subtitle">Connexion admin requise</p>
+        </div>
+
+        <div className="login-panel">
+          <form onSubmit={handleLogin} className="login-form">
+            <h2>🔐 Connexion Administrateur</h2>
+            
+            {error && <div className="error-box"><p>{error}</p></div>}
+            
+            <div className="form-group">
+              <label>Nom d'utilisateur</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="admin"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Mot de passe</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="admin123"
+                required
+              />
+            </div>
+
+            <button type="submit" className="login-btn">
+              Se connecter
+            </button>
+
+            <div className="login-hint">
+              <p>💡 <strong>Compte par défaut:</strong></p>
+              <code>admin / admin123</code>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="model-generator">
+      <div className="generator-header">
+        <h1>🎨 Générateur de Modèles 3D IA</h1>
+        <p className="subtitle">Créez automatiquement des bibliothèques de voxels Warhammer 40K avec GPT</p>
+        <button 
+          className="logout-btn"
+          onClick={() => {
+            localStorage.removeItem('token');
+            setIsLoggedIn(false);
+          }}
+        >
+          Déconnexion
+        </button
         })
       });
 
