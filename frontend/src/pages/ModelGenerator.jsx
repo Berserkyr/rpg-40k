@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ModelGenerator.css';
 
 const FACTIONS = ['Imperial', 'Chaos', 'Tyranid', 'Ork', 'Eldar', 'Tau', 'Necron'];
@@ -26,6 +26,14 @@ export default function ModelGenerator() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  // Vérifier si déjà connecté
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   const toggleType = (type) => {
     setSelectedTypes(prev =>
@@ -73,13 +81,27 @@ export default function ModelGenerator() {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : ''
         },
-  // Vérifier si déjà connecté
-  React.useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      setIsLoggedIn(true);
+        body: JSON.stringify({
+          model_types: selectedTypes,
+          faction,
+          count,
+          complexity
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || 'Erreur de génération');
+      }
+
+      const data = await response.json();
+      setResult(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGenerating(false);
     }
-  }, []);
+  };
 
   // Formulaire de connexion si pas connecté
   if (!isLoggedIn) {
@@ -145,29 +167,7 @@ export default function ModelGenerator() {
           }}
         >
           Déconnexion
-        </button
-        })
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || 'Erreur de génération');
-      }
-
-      const data = await response.json();
-      setResult(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  return (
-    <div className="model-generator">
-      <div className="generator-header">
-        <h1>🎨 Générateur de Modèles 3D IA</h1>
-        <p className="subtitle">Créez automatiquement des bibliothèques de voxels Warhammer 40K avec GPT</p>
+        </button>
       </div>
 
       <div className="generator-content">
