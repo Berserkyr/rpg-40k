@@ -1,23 +1,21 @@
-import { StrictMode } from 'react';
+import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.jsx';
-import Combat3DDemo from './pages/Combat3DDemo.jsx';
-import ModelGenerator from './pages/ModelGenerator.jsx';
+
+const Combat3DDemo = lazy(() => import('./pages/Combat3DDemo.jsx'));
+const ModelGenerator = lazy(() => import('./pages/ModelGenerator.jsx'));
+const ModelViewer = lazy(() => import('./pages/ModelViewer.jsx'));
 
 // Routing simple basé sur le pathname
 const AppRouter = () => {
   const path = window.location.pathname;
   
-  if (path === '/combat3d' || path === '/combat3d/') {
-    return <Combat3DDemo />;
-  }
-  
-  if (path === '/generator' || path === '/generator/') {
-    return <ModelGenerator />;
-  }
-  
-  return <App />;
+  let page = <App />;
+  if (path === '/combat3d' || path === '/combat3d/') page = <Combat3DDemo />;
+  if (path === '/generator' || path === '/generator/') page = <ModelGenerator />;
+  if (path === '/viewer' || path === '/viewer/') page = <ModelViewer />;
+  return <Suspense fallback={<div className="route-loading">Chargement du module graphique…</div>}>{page}</Suspense>;
 };
 
 createRoot(document.getElementById('root')).render(

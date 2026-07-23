@@ -21,8 +21,13 @@ export class CombatScene3D {
     this.environment = null;
     this.lights = [];
     this.particles = [];
+    this.particleResources = new Map();
     this.lastTime = 0;
-    this.pixelationEnabled = true;
+    this.frameId = null;
+    this.running = false;
+    this.cameraShake = { intensity: 0, duration: 0, elapsed: 0 };
+    this.flash = null;
+    this.onResize = this.onResize.bind(this);
     
     this.init();
   }
@@ -33,30 +38,35 @@ export class CombatScene3D {
   init() {
     // Scène
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x2a2a3e);
-    this.scene.fog = new THREE.Fog(0x2a2a3e, 40, 80);
+    this.scene.background = new THREE.Color(0x080b14);
+    this.scene.fog = new THREE.FogExp2(0x080b14, 0.028);
 
     // Caméra orthographique (style pixel art) - plus proche pour mieux voir
-    const aspect = window.innerWidth / window.innerHeight;
-    const viewSize = 15;
+    const { width, height } = this.getViewportSize();
+    const aspect = width / height;
+    const viewSize = 13;
     this.camera = new THREE.OrthographicCamera(
       -viewSize * aspect, viewSize * aspect,
       viewSize, -viewSize,
       0.1, 1000
     );
-    this.camera.position.set(12, 18, 12);
-    this.camera.lookAt(0, 3, 0);
+    this.camera.position.set(15, 17, 18);
+    this.camera.lookAt(0, 3.5, 0);
 
     // Renderer
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
-      antialias: false, // Pixel art
-      powerPreference: 'high-performance'
+      antialias: true,
+      powerPreference: 'high-performance',
+      alpha: false,
     });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(1); // Pas de HD pour style pixel
+    this.renderer.setSize(width, height, false);
+    this.renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 1.5));
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.15;
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
 
     // Lumières
     this.setupLights();
@@ -65,55 +75,63 @@ export class CombatScene3D {
     this.createEnvironment();
 
     // Redimensionnement
-    window.addEventListener('resize', () => this.onResize());
+    window.addEventListener('resize', this.onResize);
 
     // Démarrer la boucle de rendu
+    this.running = true;
     this.animate();
+  }
+
+  getViewportSize() {
+    const rect = this.canvas.getBoundingClientRect();
+    return {
+      width: Math.max(1, Math.floor(rect.width || window.innerWidth)),
+      height: Math.max(1, Math.floor(rect.height || window.innerHeight)),
+    };
   }
 
   /**
    * Configure l'éclairage
    */
   setupLights() {
-    // Lumière ambiante FORTE pour bien voir
-    const ambient = new THREE.AmbientLight(0xa0a0c0, 0.8);
-    this.scene.add(ambient);
-    this.lights.push(ambient);
+    const hemisphere = new THREE.HemisphereLight(0x9bbcff, 0x130c10, 1.6);
+    this.scene.add(hemisphere);
+    this.lights.push(hemisphere);
 
     // Lumière directionnelle principale (soleil) TRÈS FORTE
-    const directional = new THREE.DirectionalLight(0xffffff, 1.5);
+    const directional = new THREE.DirectionalLight(0xffe4c2, 2.7);
     directional.position.set(15, 25, 15);
     directional.castShadow = true;
     directional.shadow.camera.left = -40;
     directional.shadow.camera.right = 40;
     directional.shadow.camera.top = 40;
     directional.shadow.camera.bottom = -40;
-    directional.shadow.mapSize.width = 2048;
-    directional.shadow.mapSize.height = 2048;
+    directional.shadow.mapSize.width = 1024;
+    directional.shadow.mapSize.height = 1024;
     directional.shadow.bias = -0.001;
     this.scene.add(directional);
     this.lights.push(directional);
 
     // Lumière d'accentuation avant (éclaire les personnages)
-    const frontLight = new THREE.DirectionalLight(0xffffee, 0.8);
+    const frontLight = new THREE.DirectionalLight(0xa8c5ff, 1.1);
     frontLight.position.set(0, 15, 20);
     this.scene.add(frontLight);
     this.lights.push(frontLight);
 
     // Lumière d'accentuation rouge (dramati)
-    const accent = new THREE.PointLight(0xff6644, 1.2, 40);
+    const accent = new THREE.PointLight(0xff3d55, 22, 26, 2);
     accent.position.set(-12, 8, -8);
     this.scene.add(accent);
     this.lights.push(accent);
 
     // Lumière de remplissage bleue
-    const fill = new THREE.PointLight(0x6688ff, 0.8, 40);
+    const fill = new THREE.PointLight(0x4a88ff, 16, 24, 2);
     fill.position.set(12, 8, -8);
     this.scene.add(fill);
     this.lights.push(fill);
     
     // Lumière arrière (rim light)
-    const rim = new THREE.DirectionalLight(0xaaccff, 0.6);
+    const rim = new THREE.DirectionalLight(0x63e6ff, 1.4);
     rim.position.set(-10, 10, -15);
     this.scene.add(rim);
     this.lights.push(rim);
@@ -281,10 +299,15 @@ export class CombatScene3D {
     };
 
     const color = colors[type] || colors.spark;
+    if (!this.particleResources.has(type)) {
+      this.particleResources.set(type, {
+        geometry: new THREE.BoxGeometry(0.18, 0.18, 0.18),
+        material: new THREE.MeshBasicMaterial({ color, transparent: true, depthWrite: false }),
+      });
+    }
+    const { geometry, material } = this.particleResources.get(type);
 
     for (let i = 0; i < count; i++) {
-      const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-      const material = new THREE.MeshBasicMaterial({ color });
       const particle = new THREE.Mesh(geometry, material);
 
       particle.position.copy(position);
@@ -296,7 +319,7 @@ export class CombatScene3D {
         (Math.random() - 0.5) * 10
       );
       
-      particle.life = 1.0;
+      particle.life = 0.7 + Math.random() * 0.35;
       particle.gravity = type === 'energy' ? -2 : -15;
 
       this.scene.add(particle);
@@ -313,7 +336,7 @@ export class CombatScene3D {
       
       // Physique
       particle.velocity.y += particle.gravity * deltaTime;
-      particle.position.add(particle.velocity.clone().multiplyScalar(deltaTime));
+      particle.position.addScaledVector(particle.velocity, deltaTime);
       
       // Vie
       particle.life -= deltaTime;
@@ -332,57 +355,34 @@ export class CombatScene3D {
    * Secoue la caméra
    */
   shakeCamera(intensity = 1.0, duration = 0.3) {
-    const originalPos = this.camera.position.clone();
-    const startTime = Date.now();
-
-    const shake = () => {
-      const elapsed = (Date.now() - startTime) / 1000;
-      if (elapsed < duration) {
-        const progress = 1 - elapsed / duration;
-        const shakeAmount = intensity * progress;
-        
-        this.camera.position.x = originalPos.x + (Math.random() - 0.5) * shakeAmount;
-        this.camera.position.y = originalPos.y + (Math.random() - 0.5) * shakeAmount;
-        this.camera.position.z = originalPos.z + (Math.random() - 0.5) * shakeAmount;
-        
-        requestAnimationFrame(shake);
-      } else {
-        this.camera.position.copy(originalPos);
-      }
-    };
-
-    shake();
+    this.cameraShake = { intensity, duration, elapsed: 0 };
   }
 
   /**
    * Flash d'écran
    */
   flashScreen(color = 0xffffff, intensity = 0.5, duration = 0.1) {
-    const flash = new THREE.Mesh(
-      new THREE.PlaneGeometry(1000, 1000),
-      new THREE.MeshBasicMaterial({
-        color,
-        transparent: true,
-        opacity: intensity,
-        depthTest: false
-      })
-    );
-    flash.position.copy(this.camera.position);
-    flash.position.z -= 5;
-    flash.lookAt(this.camera.position);
-    this.scene.add(flash);
-
-    setTimeout(() => {
-      this.scene.remove(flash);
-    }, duration * 1000);
+    if (!this.flash) {
+      this.flash = new THREE.Mesh(
+        new THREE.PlaneGeometry(2, 2),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthTest: false, depthWrite: false }),
+      );
+      this.flash.position.set(0, 0, -1);
+      this.camera.add(this.flash);
+    }
+    this.flash.material.color.setHex(color);
+    this.flash.material.opacity = intensity;
+    this.flash.userData.remaining = duration;
+    this.flash.scale.set(this.camera.right - this.camera.left, this.camera.top - this.camera.bottom, 1);
   }
 
   /**
    * Gestion du redimensionnement
    */
   onResize() {
-    const aspect = window.innerWidth / window.innerHeight;
-    const viewSize = 20;
+    const { width, height } = this.getViewportSize();
+    const aspect = width / height;
+    const viewSize = 13;
     
     this.camera.left = -viewSize * aspect;
     this.camera.right = viewSize * aspect;
@@ -390,14 +390,15 @@ export class CombatScene3D {
     this.camera.bottom = -viewSize;
     this.camera.updateProjectionMatrix();
 
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(width, height, false);
   }
 
   /**
    * Boucle d'animation principale
    */
   animate(currentTime = 0) {
-    requestAnimationFrame((time) => this.animate(time));
+    if (!this.running) return;
+    this.frameId = requestAnimationFrame((time) => this.animate(time));
 
     const deltaTime = this.lastTime ? (currentTime - this.lastTime) / 1000 : 0;
     this.lastTime = currentTime;
@@ -412,6 +413,26 @@ export class CombatScene3D {
     // Update les particules
     this.updateParticles(deltaTime);
 
+    if (this.cameraShake.elapsed < this.cameraShake.duration) {
+      this.cameraShake.elapsed += deltaTime;
+      const strength = this.cameraShake.intensity * Math.max(0, 1 - this.cameraShake.elapsed / this.cameraShake.duration);
+      this.camera.position.set(15, 17, 18).add(new THREE.Vector3(
+        (Math.random() - 0.5) * strength,
+        (Math.random() - 0.5) * strength,
+        (Math.random() - 0.5) * strength,
+      ));
+      this.camera.lookAt(0, 3.5, 0);
+    } else if (this.cameraShake.duration > 0) {
+      this.camera.position.set(15, 17, 18);
+      this.camera.lookAt(0, 3.5, 0);
+      this.cameraShake.duration = 0;
+    }
+
+    if (this.flash?.userData.remaining > 0) {
+      this.flash.userData.remaining -= deltaTime;
+      this.flash.material.opacity = Math.max(0, this.flash.material.opacity - deltaTime * 5);
+    }
+
     // Rendu
     this.renderer.render(this.scene, this.camera);
   }
@@ -420,6 +441,9 @@ export class CombatScene3D {
    * Nettoie la scène
    */
   dispose() {
+    this.running = false;
+    if (this.frameId) cancelAnimationFrame(this.frameId);
+    window.removeEventListener('resize', this.onResize);
     this.entities.forEach(entity => {
       this.scene.remove(entity.model);
     });
@@ -429,11 +453,17 @@ export class CombatScene3D {
       this.scene.remove(particle);
     });
     this.particles = [];
+    this.particleResources.forEach(({ geometry, material }) => {
+      geometry.dispose();
+      material.dispose();
+    });
+    this.particleResources.clear();
     
     if (this.environment) {
       this.scene.remove(this.environment);
     }
-    
+    this.flash?.geometry.dispose();
+    this.flash?.material.dispose();
     this.renderer.dispose();
   }
 }

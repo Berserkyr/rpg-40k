@@ -40,3 +40,14 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# RNCP working documents
+docs/rncp/
+
+# RNCP / Bloc2 helper scripts
+scripts/*rncp*
+scripts/*bloc2*
+scripts/create_rncp_professional_docx.py
+scripts/format_rncp_docx.py
+scripts/format_rncp_docx_sobre.py
+scripts/capture_rncp_screenshots.mjs

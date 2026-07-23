@@ -25,8 +25,6 @@ import { createVoxel, PALETTES } from './VoxelEngine.js';
 // Généré le 14/07/2026
 // ============================================================================
 
-import * as THREE from 'three';
-
 export function buildSpaceMarine(scale = 1) {
   const model = new THREE.Group();
   
@@ -44,7 +42,7 @@ export function buildSpaceMarine(scale = 1) {
   // Détails lumineux pour les yeux
   const eyeGlow = createVoxel(PALETTES.energy[0], 0.2 * scale, {
     emissive: PALETTES.energy[1],
-    emissiveIntensity: 1.0
+    emissiveIntensity: 1
   });
   eyeGlow.position.set(0, 2 * scale, 0.4 * scale);
   model.add(eyeGlow);
@@ -127,7 +125,7 @@ export function buildImperialVehicle(scale = 1) {
   // Détails de lumière sur le véhicule
   const lightDetail = createVoxel(PALETTES.energy[0], 0.4 * scale, {
     emissive: PALETTES.energy[1],
-    emissiveIntensity: 1.0
+    emissiveIntensity: 1
   });
   lightDetail.position.set(0, 1 * scale, 0);
   model.add(lightDetail);

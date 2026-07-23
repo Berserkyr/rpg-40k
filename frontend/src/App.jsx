@@ -12,6 +12,7 @@ import MapExplorerPage from './components/MapExplorerPage';
 import SkillsPanel from './components/SkillsPanel';
 import TeamPanel from './components/TeamPanel';
 import LevelUpOverlay from './components/LevelUpOverlay';
+import TacticalCombatArena from './components/TacticalCombatArena';
 import { useSSEChat } from './hooks/useSSEChat';
 import { allocateAttribute, combatAction, dismissCompanion, equipItem, getCurrentUserId, getState, isAuthenticated, learnSkill, logout, negotiate, postAction, recruitCompanion, unequipItem, useConsumable as consumeItem } from './api';
 import './App.css';
@@ -35,6 +36,7 @@ export default function App() {
   const [skillsOpen, setSkillsOpen] = useState(false);
   const [teamOpen, setTeamOpen] = useState(false);
   const [levelUpInfo, setLevelUpInfo] = useState(null);
+  const [combatVisualAction, setCombatVisualAction] = useState(null);
   const prevLevelRef = useRef(null);
   const [reducedEffects, setReducedEffects] = useState(() => {
     if (typeof globalThis === 'undefined' || !globalThis.localStorage) return false;
@@ -145,6 +147,13 @@ export default function App() {
   };
 
   const handleCombatAction = async (command, opts = {}) => {
+    if (command === 'attack' || command === 'ability') {
+      setCombatVisualAction({
+        id: `${command}-${Date.now()}`,
+        kind: command === 'attack' ? 'shot' : 'hit',
+        targetIndex: opts.target ?? 0,
+      });
+    }
     const result = await applyAction('COMBAT', () => combatAction(command, opts));
     for (const entry of result.log || []) addLine(entry, command === 'defend' ? 'system' : 'danger');
     if (result.ended) addLine(result.victory ? 'Combat terminé: victoire.' : 'Combat terminé: repli.', result.victory ? 'loot' : 'system');
@@ -291,6 +300,9 @@ export default function App() {
             </div>
           ) : (
             <>
+              {combat?.active && (
+                <TacticalCombatArena combat={combat} visualAction={combatVisualAction} />
+              )}
               <Terminal lines={lines} streaming={streaming} />
               <ActionPanel
                 state={gameState}

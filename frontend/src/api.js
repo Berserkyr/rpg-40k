@@ -72,6 +72,13 @@ export async function register(username, password, displayName) {
   return storeSession(await parseResponse(r));
 }
 
+// Crée un compte temporaire unique afin de lancer une démonstration sans
+// modifier les sauvegardes existantes.
+export async function startJuryDemo() {
+  const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  return register(`jury_${suffix}`, `Demo!${suffix}`, 'Visiteur jury');
+}
+
 export async function login(username, password) {
   const r = await fetch(`${BASE}/auth/login`, {
     method: 'POST',

@@ -23,4 +23,15 @@ test('parcours joueur principal: inscription, démarrage, jet de dés et rencont
 
   await page.getByLabel('Déclencher une rencontre hostile').click();
   await expect(page.getByText(/COMBAT · TOUR/)).toBeVisible();
+  await expect(page.getByLabel('Champ de bataille tactique')).toBeVisible();
+});
+
+test('parcours jury: création de session isolée en un clic', async ({ page }) => {
+  await page.goto('/');
+
+  await page.getByRole('button', { name: /LANCER LA DÉMO IMMÉDIATE/ }).click();
+  await expect(page.getByText('RUCHES DE KHARAD-RHO')).toBeVisible();
+
+  await page.getByLabel('Initialiser la connexion et démarrer la partie').click();
+  await expect(page.getByLabel('Lancer deux dés à six faces')).toBeEnabled({ timeout: 30_000 });
 });

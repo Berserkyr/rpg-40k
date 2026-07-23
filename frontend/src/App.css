@@ -1,5 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
+.route-loading,
+.combat-3d-placeholder {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  color: var(--cyan, #00ffff);
+  background: radial-gradient(circle at 50% 30%, #172a4b, #070a12 68%);
+  border: 1px solid rgba(0, 255, 255, 0.35);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.08em;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -151,6 +163,18 @@ body.reduced-effects *::after {
   text-align: center;
 }
 
+.demo-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; }
+.demo-link {
+  padding: 0.55rem 0.8rem;
+  color: #8fbdff;
+  border: 1px solid #285278;
+  background: rgba(40, 82, 120, 0.12);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+.demo-link:hover { color: var(--text); border-color: #8fbdff; }
+
 .player-id-label {
   color: var(--amber);
   font-size: 0.65rem;
@@ -261,6 +285,31 @@ body.reduced-effects *::after {
 }
 
 .auth-submit:hover:not(:disabled) { background: var(--green); color: var(--dark); }
+
+.auth-demo {
+  width: min(360px, 90vw);
+  margin-top: 1rem;
+  padding: 0.9rem;
+  border: 1px solid #805d15;
+  background: rgba(255, 165, 0, 0.06);
+  display: grid;
+  gap: 0.55rem;
+  text-align: center;
+  color: var(--amber);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+.auth-demo small { color: var(--muted); letter-spacing: normal; }
+.auth-demo-btn {
+  padding: 0.7rem;
+  border: 1px solid var(--amber);
+  background: transparent;
+  color: var(--amber);
+  font: inherit;
+  cursor: pointer;
+  letter-spacing: 0.1em;
+}
+.auth-demo-btn:hover:not(:disabled) { background: var(--amber); color: var(--dark); }
 
 .auth-switch {
   background: none;

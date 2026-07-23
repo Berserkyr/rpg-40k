@@ -306,6 +306,12 @@ export async function fetchAnimation(skillId, skillInfo = {}) {
     return CLIENT_ANIMATION_CACHE.get(skillId);
   }
 
+  // Les tests Vitest/jsdom résolvent `fetch` avec Node, qui refuse les URL
+  // relatives. Le fallback local garde les animations testables sans bruit réseau.
+  if (import.meta.env.MODE === 'test' || typeof globalThis.location === 'undefined' || globalThis.location.protocol === 'about:') {
+    return createFallbackAnimation(skillId);
+  }
+
   // Tenter de recuperer depuis l'API
   try {
     // D'abord essayer de recuperer depuis le cache serveur
@@ -332,8 +338,12 @@ export async function fetchAnimation(skillId, skillInfo = {}) {
     return animation;
   } catch (err) {
     console.warn(`Erreur fetch animation ${skillId}:`, err);
-    // Fallback: animation minimale cote client
-    return {
+    return createFallbackAnimation(skillId);
+  }
+}
+
+function createFallbackAnimation(skillId) {
+  return {
       skill_id: skillId,
       duration: 600,
       phases: [
@@ -353,8 +363,7 @@ export async function fetchAnimation(skillId, skillInfo = {}) {
         },
       ],
       particles: [],
-    };
-  }
+  };
 }
 
 /**

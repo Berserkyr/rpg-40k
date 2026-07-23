@@ -15,21 +15,23 @@ export default function Combat3DView({
   playerData = {},
   enemies = [],
   onAnimationComplete = null,
-  currentAction = null // { type: 'attack', entityId: 'player', targetId: 'enemy1', animName: 'attack_melee' }
+  currentAction = null,
+  compact = false,
 }) {
   const canvasRef = useRef(null);
   const sceneRef = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const enemySignature = enemies.map((enemy) => `${enemy.type}:${enemy.faction}:${enemy.scale}`).join('|');
 
   // Initialisation de la scène
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    const scene = new CombatScene3D(canvasRef.current);
-    sceneRef.current = scene;
+    const combatScene = new CombatScene3D(canvasRef.current);
+    sceneRef.current = combatScene;
 
     // Ajouter le joueur
-    scene.addPlayer('player', {
+    combatScene.addPlayer('player', {
       faction: playerData.faction || 'imperial',
       armorLevel: playerData.armorLevel || 'medium',
       weapon: playerData.weapon || 'bolter',
@@ -37,7 +39,7 @@ export default function Combat3DView({
 
     // Ajouter les ennemis
     enemies.forEach((enemy, index) => {
-      scene.addEnemy(`enemy${index}`, {
+      combatScene.addEnemy(`enemy${index}`, {
         type: enemy.type || 'enemy',
         faction: enemy.faction || 'chaos',
         bodyType: enemy.bodyType || 'human',
@@ -50,9 +52,8 @@ export default function Combat3DView({
     setIsLoaded(true);
 
     return () => {
-      if (sceneRef.current) {
-        sceneRef.current.dispose();
-      }
+      combatScene.dispose();
+      if (sceneRef.current === combatScene) sceneRef.current = null;
     };
   }, []);
 
@@ -78,7 +79,7 @@ export default function Combat3DView({
         scale: enemy.scale || 1.2
       });
     });
-  }, [enemies, isLoaded]);
+  }, [enemySignature, isLoaded]);
 
   // Exécution des actions/animations
   useEffect(() => {
@@ -140,7 +141,7 @@ export default function Combat3DView({
   }, [currentAction, isLoaded, onAnimationComplete]);
 
   return (
-    <div className="combat-3d-container">
+    <div className={`combat-3d-container ${compact ? 'combat-3d-compact' : ''}`}>
       <canvas 
         ref={canvasRef}
         className="combat-3d-canvas"
@@ -153,7 +154,7 @@ export default function Combat3DView({
         </div>
       )}
 
-      <div className="combat-3d-controls">
+      {!compact && <div className="combat-3d-controls">
         <button 
           onClick={() => sceneRef.current?.createEnvironment('industrial')}
           className="env-btn"
@@ -172,9 +173,9 @@ export default function Combat3DView({
         >
           🏜️ Wasteland
         </button>
-      </div>
+      </div>}
 
-      <div className="combat-3d-info">
+      {!compact && <div className="combat-3d-info">
         <div className="info-badge">
           🎮 Moteur 3D Voxel
         </div>
@@ -184,7 +185,7 @@ export default function Combat3DView({
         <div className="info-badge">
           {sceneRef.current?.particles.length || 0} particules
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

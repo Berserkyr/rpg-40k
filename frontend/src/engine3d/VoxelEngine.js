@@ -7,20 +7,37 @@
 
 import * as THREE from 'three';
 
+const voxelGeometryCache = new Map();
+const voxelMaterialCache = new Map();
+
+function getVoxelGeometry(size) {
+  if (!voxelGeometryCache.has(size)) {
+    voxelGeometryCache.set(size, new THREE.BoxGeometry(size, size, size));
+  }
+  return voxelGeometryCache.get(size);
+}
+
+function getVoxelMaterial(color, options) {
+  const { shininess = 30, emissive = 0x000000, emissiveIntensity = 0, specular = 0x444444 } = options;
+  const key = `${color}:${shininess}:${emissive}:${emissiveIntensity}:${specular}`;
+  if (!voxelMaterialCache.has(key)) {
+    voxelMaterialCache.set(key, new THREE.MeshPhongMaterial({
+      color,
+      flatShading: true,
+      shininess,
+      emissive,
+      emissiveIntensity,
+      specular,
+    }));
+  }
+  return voxelMaterialCache.get(key);
+}
+
 /**
  * Crée un voxel (cube) avec couleur et options
  */
 export function createVoxel(color = 0xffffff, size = 1, options = {}) {
-  const geometry = new THREE.BoxGeometry(size, size, size);
-  const material = new THREE.MeshPhongMaterial({ 
-    color,
-    flatShading: true,
-    shininess: options.shininess || 30,
-    emissive: options.emissive || 0x000000,
-    emissiveIntensity: options.emissiveIntensity || 0,
-    specular: options.specular || 0x444444
-  });
-  const mesh = new THREE.Mesh(geometry, material);
+  const mesh = new THREE.Mesh(getVoxelGeometry(size), getVoxelMaterial(color, options));
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   return mesh;
@@ -173,8 +190,6 @@ export class HumanoidVoxelBuilder {
     for (let x = -1.5; x <= 1.5; x += 0.8) {
       for (let y = 0; y <= 4; y += 0.8) {
         for (let z = -1.2; z <= 0.8; z += 0.8) {
-          const depth = Math.abs(z);
-          const colorIndex = depth > 0.5 ? 0 : 1;
           const voxel = createVoxel(palette.armor, 0.8, { shininess: 40 });
           voxel.position.set(x, y, z);
           torso.add(voxel);
@@ -236,7 +251,6 @@ export class HumanoidVoxelBuilder {
 
   buildArm(palette, side, weapon = null) {
     const arm = new THREE.Group();
-    const sign = side === 'left' ? -1 : 1;
     
     // Bras (1x4x1)
     for (let y = 0; y <= 3; y++) {
@@ -357,8 +371,6 @@ export class MonsterVoxelBuilder {
     variant = 0,
     scale = 1.5
   } = {}) {
-    const group = new THREE.Group();
-    
     if (type.startsWith('tyranid')) {
       return this.buildTyranid(variant, scale);
     } else if (type.startsWith('ork')) {
@@ -512,8 +524,14 @@ export class MonsterVoxelBuilder {
   }
 
   buildOrk(variant, scale) {
-    // TODO: Orques musclés et brutaux
-    return this.buildGenericMonster(scale);
+    const builder = new HumanoidVoxelBuilder();
+    return builder.build({
+      faction: 'ork',
+      bodyType: variant % 2 === 0 ? 'brute' : 'human',
+      armorLevel: 'heavy',
+      weapon: 'chainsword',
+      scale,
+    });
   }
 
   buildGenericMonster(scale) {
@@ -551,27 +569,29 @@ export class EnvironmentBuilder {
   buildFloor(width, depth, theme) {
     const floor = new THREE.Group();
     const colors = this.getThemeColors(theme);
-    
+    const evenTiles = [];
+    const oddTiles = [];
+
     for (let x = -width/2; x < width/2; x++) {
       for (let z = -depth/2; z < depth/2; z++) {
-        // Variation de couleur (damier)
-        const colorIndex = (x + z) % 2 === 0 ? 0 : 1;
-        const voxel = createVoxel(colors.floor[colorIndex], 1);
-        voxel.position.set(x, -0.5, z);
-        floor.add(voxel);
-        
-        // Ajouter quelques détails aléatoires
-        if (Math.random() < 0.05) {
-          const detail = createVoxel(colors.detail, 0.3);
-          detail.position.set(
-            x + Math.random() * 0.6 - 0.3,
-            0,
-            z + Math.random() * 0.6 - 0.3
-          );
-          floor.add(detail);
-        }
+        ((x + z) % 2 === 0 ? evenTiles : oddTiles).push([x, -0.5, z]);
       }
     }
+
+    floor.add(
+      this.createInstancedBlocks(evenTiles, 1, colors.floor[0]),
+      this.createInstancedBlocks(oddTiles, 1, colors.floor[1]),
+    );
+
+    const details = [];
+    for (let i = 0; i < Math.floor(width * depth * 0.045); i++) {
+      details.push([
+        Math.random() * width - width / 2,
+        0,
+        Math.random() * depth - depth / 2,
+      ]);
+    }
+    floor.add(this.createInstancedBlocks(details, 0.25, colors.detail, { emissive: colors.detail, emissiveIntensity: 0.2 }));
     
     return floor;
   }
@@ -579,38 +599,20 @@ export class EnvironmentBuilder {
   buildWalls(width, depth, theme) {
     const walls = new THREE.Group();
     const colors = this.getThemeColors(theme);
-    
     const wallHeight = 8;
-    
-    // Murs nord/sud
+    const blocks = [];
+
     for (let x = -width/2; x < width/2; x += 2) {
       for (let y = 0; y < wallHeight; y++) {
-        // Mur nord
-        const northWall = createVoxel(colors.wall, 2);
-        northWall.position.set(x, y * 2, -depth/2 - 1);
-        walls.add(northWall);
-        
-        // Mur sud
-        const southWall = createVoxel(colors.wall, 2);
-        southWall.position.set(x, y * 2, depth/2 + 1);
-        walls.add(southWall);
+        blocks.push([x, y * 2, -depth / 2 - 1], [x, y * 2, depth / 2 + 1]);
       }
     }
-    
-    // Murs est/ouest
     for (let z = -depth/2; z < depth/2; z += 2) {
       for (let y = 0; y < wallHeight; y++) {
-        // Mur est
-        const eastWall = createVoxel(colors.wall, 2);
-        eastWall.position.set(width/2 + 1, y * 2, z);
-        walls.add(eastWall);
-        
-        // Mur ouest
-        const westWall = createVoxel(colors.wall, 2);
-        westWall.position.set(-width/2 - 1, y * 2, z);
-        walls.add(westWall);
+        blocks.push([width / 2 + 1, y * 2, z], [-width / 2 - 1, y * 2, z]);
       }
     }
+    walls.add(this.createInstancedBlocks(blocks, 2, colors.wall));
     
     return walls;
   }
@@ -618,45 +620,50 @@ export class EnvironmentBuilder {
   buildObstacles(width, depth, theme) {
     const obstacles = new THREE.Group();
     const colors = this.getThemeColors(theme);
-    
-    // Caisses, barils, couvertures
     const obstacleCount = Math.floor((width * depth) / 50);
-    
+    const crates = [];
+    const columns = [];
+    const debris = [];
+
     for (let i = 0; i < obstacleCount; i++) {
       const x = Math.random() * width - width/2;
       const z = Math.random() * depth - depth/2;
-      
-      // Ne pas placer trop près du centre
       if (Math.abs(x) < 5 && Math.abs(z) < 5) continue;
-      
       const type = Math.random();
-      
       if (type < 0.5) {
-        // Caisse
-        const box = createVoxel(colors.obstacle, 2);
-        box.position.set(x, 1, z);
-        obstacles.add(box);
+        crates.push([x, 1, z]);
       } else if (type < 0.8) {
-        // Colonne
         for (let y = 0; y < 4; y++) {
-          const segment = createVoxel(colors.wall, 1.5);
-          segment.position.set(x, y * 1.5, z);
-          obstacles.add(segment);
+          columns.push([x, y * 1.5, z]);
         }
       } else {
-        // Débris
-        const debris = createVoxel(colors.detail, 1);
-        debris.rotation.set(
-          Math.random() * Math.PI,
-          Math.random() * Math.PI,
-          Math.random() * Math.PI
-        );
-        debris.position.set(x, 0.5, z);
-        obstacles.add(debris);
+        debris.push([x, 0.5, z]);
       }
     }
-    
+    obstacles.add(
+      this.createInstancedBlocks(crates, 2, colors.obstacle),
+      this.createInstancedBlocks(columns, 1.5, colors.wall),
+      this.createInstancedBlocks(debris, 1, colors.detail, { emissive: colors.detail, emissiveIntensity: 0.15 }),
+    );
     return obstacles;
+  }
+
+  createInstancedBlocks(positions, size, color, options = {}) {
+    const mesh = new THREE.InstancedMesh(
+      getVoxelGeometry(size),
+      getVoxelMaterial(color, options),
+      Math.max(positions.length, 1),
+    );
+    const matrix = new THREE.Matrix4();
+    positions.forEach(([x, y, z], index) => {
+      matrix.makeTranslation(x, y, z);
+      mesh.setMatrixAt(index, matrix);
+    });
+    mesh.count = positions.length;
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.castShadow = false;
+    mesh.receiveShadow = true;
+    return mesh;
   }
 
   getThemeColors(theme) {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { login, register } from '../api';
+import { login, register, startJuryDemo } from '../api';
 
 export default function AuthPanel({ onAuthenticated }) {
   const [mode, setMode] = useState('login');
@@ -22,6 +22,19 @@ export default function AuthPanel({ onAuthenticated }) {
       onAuthenticated(data.user);
     } catch (err) {
       setError(err.message || 'Échec de l’authentification.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const launchJuryDemo = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      const data = await startJuryDemo();
+      onAuthenticated(data.user);
+    } catch (err) {
+      setError(err.message || 'Impossible de préparer la session de démonstration.');
     } finally {
       setBusy(false);
     }
@@ -77,6 +90,14 @@ export default function AuthPanel({ onAuthenticated }) {
           {busy ? '...' : isRegister ? '[ CRÉER LE COMPTE ]' : '[ SE CONNECTER ]'}
         </button>
       </form>
+
+      <div className="auth-demo" aria-label="Accès démonstration">
+        <span>VISITE JURY · PARCOURS PRÉCONFIGURÉ</span>
+        <button className="auth-demo-btn" type="button" onClick={launchJuryDemo} disabled={busy}>
+          ✦ LANCER LA DÉMO IMMÉDIATE
+        </button>
+        <small>Crée une session isolée sans modifier les sauvegardes existantes.</small>
+      </div>
 
       <button
         className="auth-switch"
