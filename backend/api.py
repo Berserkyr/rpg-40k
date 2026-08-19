@@ -23,6 +23,7 @@ from backend.database import (
     DATABASE_PATH, create_account, ensure_user, get_account, init_db,
     list_users, normalize_user_id, record_event, touch_last_seen,
 )
+from backend.version import get_version
 from backend.auth import (
     CurrentUser, ROLE_ADMIN, ROLE_PLAYER, create_access_token,
     get_current_user, hash_password, require_admin, verify_password,
@@ -84,7 +85,14 @@ from backend.monitoring import (
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
-app = FastAPI(title="Survivant de Ruche API", version="1.0.0", debug=True)
+# La version provient du fichier VERSION (source unique de verite) et non plus
+# d'une constante en dur : /api/health identifie ainsi la version reellement
+# deployee. Le mode debug est pilote par l'environnement (recommandation R6).
+app = FastAPI(
+    title="Survivant de Ruche API",
+    version=get_version(),
+    debug=os.getenv("API_DEBUG", "").lower() in ("1", "true", "yes"),
+)
 init_db()
 
 

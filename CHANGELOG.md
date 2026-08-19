@@ -12,7 +12,112 @@ Ce journal matérialise la **traçabilité des versions** attendue par la grille
 
 ## [Non publié]
 
-Incréments intégrés sur `main` en vue de la prochaine version.
+Aucun incrément en attente.
+
+---
+
+## [1.3.0] — Maintien en condition opérationnelle — 19/08/2026
+
+Réf. branche : `fix/ANO-2026-001-marqueurs-etat`.
+
+Cette version regroupe la refonte gameplay V3 et la mise en place du dispositif
+de maintien en condition opérationnelle (bloc 4) : supervision, gestion des
+dépendances, traitement d'anomalie et durcissement du déploiement.
+
+### Corrigé
+
+- **ANO-2026-001 — Perte de la progression sur un marqueur d'état invalide**
+  *(gravité : majeure, perte de données)*
+
+  Le parseur des marqueurs `[ETAT: ...]` produits par le maître du jeu
+  convertissait la valeur d'une ressource par `int()` sans protection. Le texte
+  provenant d'un LLM, une valeur non numérique (`rations=aucune`,
+  `munitions=+`) levait une `ValueError`. Levée dans le générateur SSE **après**
+  l'envoi de la narration mais **avant** `session.save()`, l'exception
+  interrompait le flux sans événement `done` — le client restait bloqué — et la
+  scène jouée n'était jamais sauvegardée.
+
+  *Correctif* : interception de la valeur non exploitable dans `src/state.py`
+  (alignement sur la branche `tracks` qui traitait déjà ce cas), et confinement
+  dans `backend/api.py` afin qu'aucune erreur de parsing ne puisse plus empêcher
+  la clôture de la scène. 18 tests de non-régression, dont 16 en échec sur le
+  code antérieur. Fiche complète : `docs/bloc4/03_collecte_consignation_anomalies.md`.
+
+- **Version du logiciel incorrectement rapportée.** `backend/api.py` déclarait
+  `version="1.0.0"` en dur alors que le journal était à `1.2.0` : `/api/health`
+  identifiait donc mal la version en service, rendant impossible le
+  rattachement fiable d'une anomalie à une version. La version est désormais
+  lue depuis le fichier `VERSION`, source unique de vérité, et un test vérifie
+  sa cohérence avec ce journal.
+
+- **Documentation du déploiement contredite par le code.**
+  `docs/gestion_projet/strategie_git.md` affirmait un déploiement
+  « volontairement manuel », alors que `deploy-vps.yml` déclenche un
+  déploiement automatique par `workflow_run` sur CI verte.
+
+### Sécurité
+
+- **Mode debug désactivé par défaut** *(recommandation R6)*. `FastAPI(debug=True)`
+  était écrit en dur : toute exception non gérée exposait la trace d'exécution
+  et des extraits de code source en production. Le mode est désormais piloté par
+  la variable d'environnement `API_DEBUG`, absente par défaut.
+- **Garde-fou sur `JWT_SECRET` au déploiement.** Le déploiement créait `.env`
+  par copie de `.env.example` lorsqu'il était absent, ce qui signait les jetons
+  de production avec le secret d'exemple public du dépôt. Le déploiement échoue
+  désormais explicitement si `JWT_SECRET` est absent, trop court, ou laissé à sa
+  valeur d'exemple.
+- **Sonde de tentatives d'authentification** (`rpg40k_auth_attempts_total`) et
+  alerte au-delà de 10 échecs par minute.
+
+### Ajouté — Supervision et alerte (C4.1.2)
+
+- **`backend/monitoring.py`** : sondes Prometheus, middleware HTTP (trafic,
+  latence, erreurs), journalisation structurée pilotée par `LOG_LEVEL`.
+- **Sonde d'aptitude `/api/health/ready`** : interroge réellement SQLite,
+  vérifie les fichiers de jeu et l'accès en écriture, et renvoie `503` si une
+  dépendance est indisponible. L'ancienne route `/api/health` répondait « ok »
+  sans jamais interroger la base.
+- **Point de collecte `/api/metrics`** au format d'exposition Prometheus.
+- **Sonde `rpg40k_gm_generations_total{mode}`** : rend visible la bascule
+  silencieuse vers le narrateur local lors d'une panne du fournisseur LLM —
+  situation où l'application répond `200 OK` tout en rendant un service dégradé.
+- **13 règles d'alerte** réparties en 5 groupes (disponibilité, qualité de
+  service, dépendance LLM, sécurité, capacité), avec routage Alertmanager par
+  sévérité, groupement et inhibition.
+- **Tableau de bord Grafana** (13 panneaux) provisionné depuis le dépôt.
+- **Pile de supervision** déployable en surcouche
+  (`docker-compose.monitoring.yml`), sans modifier la pile applicative.
+
+### Ajouté — Gestion des dépendances (C4.1.1)
+
+- **`.github/dependabot.yml`** : détection hebdomadaire sur les 4 écosystèmes
+  (pip, npm, Docker, GitHub Actions). Les versions mineures et correctives sont
+  groupées, les majeures isolées en pull request individuelle.
+- **Bornes hautes `<N.0.0`** sur les 12 dépendances backend. Les contraintes ne
+  déclaraient que des planchers : une installation propre récupérait `openai`
+  3.3.0 pour un plancher déclaré à 1.51.0, soit deux versions majeures d'écart
+  sans décision ni évaluation d'impact.
+- **`scripts/check_updates.py`** : rapport de veille classant les obsolescences
+  selon la politique de mise à jour, intégré au job `security-audit`.
+
+### Ajouté — Déploiement (C4.2.2)
+
+- **`scripts/smoke_test.sh`** : 5 contrôles post-déploiement — disponibilité,
+  aptitude des dépendances, exposition des sondes, refus d'accès non
+  authentifié, livraison de l'interface.
+- **Retour arrière automatique** : le commit en service est mémorisé avant
+  déploiement ; en cas d'échec du test de fumée, la version précédente est
+  restaurée. Le déploiement se terminait auparavant sur un simple `curl` de la
+  sonde de vivacité, qui répond « ok » dès le démarrage du processus.
+
+### Ajouté — Qualité et suivi (C4.2.1, C4.3.1, C4.3.2)
+
+- **Formulaires de consignation structurés** (`.github/ISSUE_TEMPLATE/`) :
+  anomalie (10 champs obligatoires), incident de supervision, retour
+  d'expérience utilisateur. La saisie libre est désactivée.
+- **`scripts/benchmark.py`** : mesure de la latence des routes, du poids livré
+  au navigateur, de la croissance du contexte LLM et de la volumétrie SQLite.
+- **Fichier `VERSION`** : source unique de vérité pour le numéro de version.
 
 ### Ajouté — Refonte gameplay V3 (combats tactiques & équipe)
 - **Combat tactique** : conditions temporaires (saignement, étourdi, supprimé,
@@ -53,7 +158,12 @@ Incréments intégrés sur `main` en vue de la prochaine version.
 
 ### Tests
 - Nouveaux tests unitaires : `test_combat_tactics.py`, `test_negotiation.py`,
-  `test_team.py`, `test_bestiary.py`, `test_animations.py` (82 tests backend au vert).
+  `test_team.py`, `test_bestiary.py`, `test_animations.py`.
+- `test_monitoring.py` (20 tests) : sondes, middleware, détection réelle d'une
+  base corrompue par la sonde d'aptitude.
+- `test_state_markers.py` (18 tests) : non-régression de l'anomalie ANO-2026-001.
+- `test_version.py` (7 tests) : cohérence entre le fichier `VERSION`, l'API et ce journal.
+- **Total : 82 → 127 tests backend au vert.**
 - Tests frontend : `animation_engine.test.js` avec 16 tests couvrant le moteur
   d'animation, les particules et l'AnimationPlayer (30 tests frontend au vert).
 
@@ -125,6 +235,7 @@ Réf. tag : `v1.0.0-rncp`.
 
 | Version | Tag / commit | Preuve de fonctionnement |
 |---|---|---|
+| 1.3.0 | `fix/ANO-2026-001-marqueurs-etat` | CI locale verte (127 backend + 30 frontend), test de fumée exécuté |
 | 1.2.0 | `7d9bf12` | CI verte + déploiement VPS |
 | 1.1.0 | `b565b39` | CI verte + déploiement VPS |
 | 1.0.1 | `5b1164d` | CI verte |
