@@ -77,8 +77,8 @@ from backend.animation_generator import (
 from backend.monitoring import (
     ACTIVE_SESSIONS, AUTH_ATTEMPTS, BUILD_INFO, COMBATS_STARTED,
     GM_CONTEXT_MESSAGES, GM_DURATION, GM_ERRORS, GM_GENERATIONS,
-    SSE_STREAMS_ACTIVE, configure_logging, metrics_middleware,
-    probe_dependencies, render_metrics,
+    SSE_STREAMS_ACTIVE, STATE_MARKERS_REJECTED, STATE_PARSE_FAILURES,
+    configure_logging, metrics_middleware, probe_dependencies, render_metrics,
 )
 
 # ---------------------------------------------------------------------------
@@ -545,7 +545,24 @@ async def _gm_stream(session: Session, user_message: str, opening: bool = False)
 
     session.messages.append({"role": "assistant", "content": full_text})
     session.world.advance_scene()
-    changes = session.character.apply_updates_from_text(full_text)
+
+    # Defense en profondeur (anomalie ANO-2026-001) : le texte du MJ provient
+    # d'un LLM et n'est pas structurellement fiable. Une exception levee ici
+    # interromprait le flux SSE avant l'evenement "done" ET avant la
+    # sauvegarde : le joueur perdrait la progression de la scene qu'il vient
+    # de lire. L'application de l'etat ne peut donc jamais faire echouer la
+    # cloture de la scene.
+    changes: list[str] = []
+    try:
+        changes = session.character.apply_updates_from_text(full_text)
+    except Exception as exc:
+        STATE_PARSE_FAILURES.labels(reason=type(exc).__name__).inc()
+        log.exception("Echec d'application des marqueurs d'etat : %s", exc)
+
+    for rejected in getattr(session.character, "rejected_updates", []):
+        STATE_MARKERS_REJECTED.inc()
+        log.warning("Marqueur d'etat rejete : %s", rejected)
+
     expired = session.quest_log.advance_all_timers()
     session.save()
     yield json.dumps({

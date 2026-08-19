@@ -7,7 +7,10 @@ from pathlib import Path
 from typing import Dict, List
 
 import json
+import logging
 import yaml
+
+_logger = logging.getLogger("rpg40k.state")
 
 
 @dataclass
@@ -21,6 +24,9 @@ class CharacterState:
     tracks: Dict[str, str | int]
     notes: List[str] = field(default_factory=list)
     source_path: Path | None = None
+    # Marqueurs d'etat rejetes lors du dernier parsing (valeur non exploitable).
+    # Consultes par la couche API pour alimenter la sonde de supervision.
+    rejected_updates: List[str] = field(default_factory=list)
 
     @classmethod
     def from_file(cls, path: str | Path) -> "CharacterState":
@@ -133,8 +139,9 @@ class CharacterState:
         Returns list of changes applied.
         """
         import re
-        
+
         changes = []
+        self.rejected_updates = []
         pattern = r'\[ETAT:\s*([^\]]+)\]'
         match = re.search(pattern, text, re.IGNORECASE)
         
@@ -166,12 +173,24 @@ class CharacterState:
             
             # Handle resources with delta or absolute
             elif key in ('rations', 'acces_vox', 'contacts', 'munitions'):
-                if value.startswith(('+', '-')):
-                    delta = int(value)
-                    self.update_resource(key, delta)
-                    changes.append(f"{key} {value}")
-                else:
-                    self.set_resource(key, int(value))
-                    changes.append(f"{key} = {value}")
-        
+                # Le texte provient d'un LLM : la valeur n'est pas garantie
+                # numerique ("aucune", "quelques-unes", "+"). Un marqueur mal
+                # forme est ignore et consigne, jamais propage en exception :
+                # il ne doit pas interrompre la scene ni empecher la
+                # sauvegarde de la partie (anomalie ANO-2026-001).
+                try:
+                    if value.startswith(('+', '-')):
+                        delta = int(value)
+                        self.update_resource(key, delta)
+                        changes.append(f"{key} {value}")
+                    else:
+                        self.set_resource(key, int(value))
+                        changes.append(f"{key} = {value}")
+                except ValueError:
+                    self.rejected_updates.append(f"{key}={value}")
+                    _logger.warning(
+                        "Marqueur d'etat ignore : valeur non numerique pour "
+                        "la ressource '%s' (recu : %r)", key, value,
+                    )
+
         return changes

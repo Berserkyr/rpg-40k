@@ -1,0 +1,57 @@
+# Consignation d'une anomalie detectee par la supervision (C4.1.2 -> C4.2.1).
+# Les alertes Prometheus n'ont pas de "signalement utilisateur" : ce formulaire
+# assure leur tracabilite dans le meme registre que les remontees joueurs.
+name: "Incident detecte par la supervision"
+description: "Consigner une alerte Prometheus / Alertmanager"
+title: "[INC] "
+labels: ["anomalie", "supervision"]
+body:
+  - type: input
+    id: alerte
+    attributes:
+      label: Nom de la règle d'alerte
+      placeholder: "ModeDegradeNarration"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severite
+    attributes:
+      label: Sévérité
+      options: ["critique", "majeure", "mineure"]
+    validations:
+      required: true
+
+  - type: input
+    id: declenchement
+    attributes:
+      label: Date et heure de déclenchement
+    validations:
+      required: true
+
+  - type: input
+    id: duree
+    attributes:
+      label: Durée avant retour à la normale
+      placeholder: "18 minutes"
+
+  - type: textarea
+    id: metriques
+    attributes:
+      label: Valeurs des sondes au moment de l'incident
+      description: Extrait de /api/metrics ou capture du tableau de bord Grafana.
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact utilisateur constaté
+      description: Le service était-il indisponible, ou dégradé de façon invisible ?
+    validations:
+      required: true
+
+  - type: textarea
+    id: journaux
+    attributes:
+      label: Extrait des journaux applicatifs

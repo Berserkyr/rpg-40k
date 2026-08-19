@@ -1,0 +1,3 @@
+# Le signalement libre est desactive : toute anomalie passe par le formulaire
+# structure, garantissant la presence des informations de reproduction.
+blank_issues_enabled: false

@@ -1,0 +1,129 @@
+# Fiche de consignation d'anomalie (C4.2.1).
+#
+# Le formulaire rend obligatoires les informations sans lesquelles une anomalie
+# n'est pas reproductible. Un signalement libre en prose omet presque toujours
+# la version, l'environnement ou les etapes exactes : le champ contraint
+# supprime l'aller-retour de qualification.
+name: "Anomalie (bogue)"
+description: "Signaler un dysfonctionnement du jeu ou de l'API"
+title: "[ANO] "
+labels: ["anomalie", "a-qualifier"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de signaler cette anomalie. Les champs marqués d'une astérisque
+        sont indispensables pour **reproduire** le problème : sans eux, la
+        correction ne peut pas être engagée.
+
+  - type: input
+    id: resume
+    attributes:
+      label: Résumé
+      description: Une phrase décrivant le symptôme observé.
+      placeholder: "La scène se fige après la narration et le jeu ne répond plus"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: gravite
+    attributes:
+      label: Gravité constatée
+      options:
+        - "Bloquante — le jeu est inutilisable"
+        - "Majeure — une fonctionnalité est inutilisable ou des données sont perdues"
+        - "Mineure — gêne sans perte de données"
+        - "Cosmétique — affichage uniquement"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: perimetre
+    attributes:
+      label: Périmètre concerné
+      options:
+        - "Narration / maître du jeu"
+        - "Combat"
+        - "Inventaire / équipement"
+        - "Progression / compétences"
+        - "Carte / déplacement"
+        - "Authentification / compte"
+        - "Sauvegarde"
+        - "Interface (affichage)"
+        - "Autre / inconnu"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Étapes de reproduction
+      description: Numérotez les actions, de la connexion jusqu'au symptôme.
+      value: |
+        1. Se connecter avec un compte joueur
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Comportement attendu
+    validations:
+      required: true
+
+  - type: textarea
+    id: constate
+    attributes:
+      label: Comportement constaté
+      description: Message d'erreur exact si disponible.
+    validations:
+      required: true
+
+  - type: input
+    id: frequence
+    attributes:
+      label: Fréquence
+      description: Systématique, intermittente, observée une seule fois ?
+      placeholder: "Intermittente — environ 1 scène sur 20"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version du logiciel
+      description: Tag Git ou valeur du champ "version" retourné par /api/health.
+      placeholder: "v1.0.0-rncp"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environnement
+    attributes:
+      label: Environnement
+      options: ["Production (VPS)", "Développement local", "Inconnu"]
+    validations:
+      required: true
+
+  - type: input
+    id: navigateur
+    attributes:
+      label: Navigateur et système
+      placeholder: "Firefox 141 / Windows 11"
+
+  - type: input
+    id: horodatage
+    attributes:
+      label: Date et heure approximatives
+      description: Permet de retrouver les journaux et les métriques correspondants.
+      placeholder: "19/08/2026 vers 14h30"
+    validations:
+      required: true
+
+  - type: textarea
+    id: elements
+    attributes:
+      label: Éléments joints
+      description: Capture d'écran, extrait de journal, contenu de la console du navigateur.
