@@ -87,7 +87,38 @@ jobs:
           grep -q '^RPG40K_HTTP_PORT=' .env && sed -i "s/^RPG40K_HTTP_PORT=.*/RPG40K_HTTP_PORT=$RPG40K_HTTP_PORT/" .env || echo "RPG40K_HTTP_PORT=$RPG40K_HTTP_PORT" >> .env
           grep -q '^VITE_API_BASE=' .env && sed -i 's#^VITE_API_BASE=.*#VITE_API_BASE=/api#' .env || echo 'VITE_API_BASE=/api' >> .env
 
+          # Garde-fou de securite : refuse de demarrer la production avec le
+          # secret JWT d'exemple, qui est public dans le depot. Sans ce
+          # controle, un premier deploiement signerait ses jetons avec une
+          # valeur connue de tous.
+          if grep -q '^JWT_SECRET=change-me' .env || ! grep -q '^JWT_SECRET=.\{16,\}' .env; then
+            echo "ERREUR : JWT_SECRET absent ou laisse a sa valeur d'exemple dans $APP_DIR/.env"
+            echo "Definir un secret aleatoire d'au moins 16 caracteres avant de deployer."
+            exit 1
+          fi
+
+          # Version actuellement en service, conservee pour un retour arriere.
+          VERSION_PRECEDENTE="$(git -C "$APP_DIR" rev-parse HEAD)"
+          echo "Version deployee precedemment : $VERSION_PRECEDENTE"
+
           docker compose -p rpg40k up -d --build
           docker compose -p rpg40k ps
-          curl -fsS "http://127.0.0.1:$RPG40K_HTTP_PORT/api/health"
+
+          # Verification post-deploiement : un conteneur demarre n'est pas un
+          # service operationnel. En cas d'echec, retour automatique a la
+          # version precedente plutot que maintien d'une production degradee.
+          chmod +x scripts/smoke_test.sh
+          if ! ./scripts/smoke_test.sh "http://127.0.0.1:$RPG40K_HTTP_PORT"; then
+            echo "::error::Test de fumee en echec — retour a $VERSION_PRECEDENTE"
+            git -C "$APP_DIR" checkout --force "$VERSION_PRECEDENTE"
+            docker compose -p rpg40k up -d --build
+            if ./scripts/smoke_test.sh "http://127.0.0.1:$RPG40K_HTTP_PORT"; then
+              echo "Rollback reussi : la version precedente est de nouveau en service."
+            else
+              echo "::error::Rollback en echec — intervention manuelle requise."
+            fi
+            exit 1
+          fi
+
+          echo "Deploiement valide par le test de fumee."
           REMOTE
