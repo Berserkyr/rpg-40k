@@ -167,6 +167,22 @@ describe('Animation Engine', () => {
   describe('AnimationPlayer', () => {
     let descriptor;
 
+    // start() renseigne startTime avec performance.now(), un flottant de haute
+    // precision. L'expression (startTime + duree) - startTime ne redonne alors
+    // pas exactement la duree : on obtient par exemple 599.9999999999709 pour
+    // 600, soit une progression de 0.9999999999999515 qui echoue au test
+    // progress >= 1.0. Le phenomene depend de l'ordre de grandeur de l'horloge
+    // et rendait la suite intermittente (anomalie ANO-2026-003).
+    //
+    // Fixer un startTime entier rend l'arithmetique exacte et les tests
+    // deterministes, sans rien changer au comportement du lecteur.
+    const demarrerA = (desc, startTime = 1000) => {
+      const player = new AnimationPlayer(desc);
+      player.start();
+      player.startTime = startTime;
+      return player;
+    };
+
     beforeEach(() => {
       descriptor = {
         skill_id: 'test_skill',
@@ -218,9 +234,8 @@ describe('Animation Engine', () => {
     });
 
     it('progresse au fil du temps', () => {
-      const player = new AnimationPlayer(descriptor);
-      player.start();
-      
+      const player = demarrerA(descriptor);
+
       const now = player.startTime + 300; // 50% progression
       const state = player.update(now);
       
@@ -229,9 +244,8 @@ describe('Animation Engine', () => {
     });
 
     it('se termine à la fin de la durée', () => {
-      const player = new AnimationPlayer(descriptor);
-      player.start();
-      
+      const player = demarrerA(descriptor);
+
       const now = player.startTime + 600; // 100% progression
       const state = player.update(now);
       
@@ -239,9 +253,8 @@ describe('Animation Engine', () => {
     });
 
     it('émet des particules au bon moment', () => {
-      const player = new AnimationPlayer(descriptor);
-      player.start();
-      
+      const player = demarrerA(descriptor);
+
       // Avant le moment d'émission
       let state = player.update(player.startTime + 100);
       expect(state.particles.length).toBe(0);
@@ -252,9 +265,8 @@ describe('Animation Engine', () => {
     });
 
     it('déclenche camera shake au bon moment', () => {
-      const player = new AnimationPlayer(descriptor);
-      player.start();
-      
+      const player = demarrerA(descriptor);
+
       // Avant le shake
       let state = player.update(player.startTime + 100);
       expect(state.cameraShake).toBeNull();
@@ -269,8 +281,7 @@ describe('Animation Engine', () => {
     });
 
     it('se réinitialise correctement', () => {
-      const player = new AnimationPlayer(descriptor);
-      player.start();
+      const player = demarrerA(descriptor);
       player.update(player.startTime + 300);
       
       player.reset();
