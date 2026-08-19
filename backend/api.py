@@ -8,11 +8,12 @@ import asyncio
 import json
 import os
 import random
+import time
 from pathlib import Path
 from typing import AsyncIterator, Optional
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from openai import AsyncOpenAI
 from pydantic import BaseModel
@@ -73,6 +74,12 @@ from backend.animation_generator import (
     get_or_generate_animation, get_cached_animation, list_cached_animations,
     clear_animation_cache, get_default_animation,
 )
+from backend.monitoring import (
+    ACTIVE_SESSIONS, AUTH_ATTEMPTS, BUILD_INFO, COMBATS_STARTED,
+    GM_CONTEXT_MESSAGES, GM_DURATION, GM_ERRORS, GM_GENERATIONS,
+    SSE_STREAMS_ACTIVE, configure_logging, metrics_middleware,
+    probe_dependencies, render_metrics,
+)
 
 # ---------------------------------------------------------------------------
 # App
@@ -101,6 +108,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------------------------
+# Supervision (C4.1.2)
+# ---------------------------------------------------------------------------
+log = configure_logging()
+BUILD_INFO.info({"version": app.version, "service": "survivant-de-ruche-api"})
+app.middleware("http")(metrics_middleware)
 
 # ---------------------------------------------------------------------------
 # Sessions utilisateurs en memoire, avec sauvegardes isolees par utilisateur
@@ -479,34 +493,55 @@ async def _yield_text_as_sse(text: str) -> AsyncIterator[str]:
 
 
 async def _gm_stream(session: Session, user_message: str, opening: bool = False) -> AsyncIterator[str]:
-    """Stream OpenAI si disponible, sinon fallback local jouable."""
+    """Stream OpenAI si disponible, sinon fallback local jouable.
+
+    Instrumente (C4.1.2) : le mode de production reellement utilise est compte,
+    afin que la bascule silencieuse vers le narrateur local soit visible en
+    supervision. Sans cette sonde, une panne du fournisseur LLM se traduirait
+    par un service « vert » rendant une experience degradee.
+    """
     key = os.getenv("OPENAI_API_KEY", "")
     full_text = ""
+    mode = "openai" if key else "local_no_key"
+    started = time.perf_counter()
 
-    if not key:
-        full_text = _offline_gm_text(session, user_message, opening=opening)
-        async for event in _yield_text_as_sse(full_text):
-            yield event
-    else:
-        try:
-            client = AsyncOpenAI(api_key=key)
-            stream = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=session.messages,
-                stream=True,
-            )
-            async for chunk in stream:
-                delta = chunk.choices[0].delta.content or ""
-                if delta:
-                    full_text += delta
-                    yield json.dumps({"type": "token", "content": delta})
-        except Exception as exc:
-            full_text = (
-                f"[MODE MJ LOCAL — OpenAI indisponible: {exc}]\n\n"
-                + _offline_gm_text(session, user_message, opening=opening, missing_key_notice=False)
-            )
+    SSE_STREAMS_ACTIVE.inc()
+    GM_CONTEXT_MESSAGES.observe(len(session.messages))
+    try:
+        if not key:
+            full_text = _offline_gm_text(session, user_message, opening=opening)
             async for event in _yield_text_as_sse(full_text):
                 yield event
+        else:
+            try:
+                client = AsyncOpenAI(api_key=key)
+                stream = await client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=session.messages,
+                    stream=True,
+                )
+                async for chunk in stream:
+                    delta = chunk.choices[0].delta.content or ""
+                    if delta:
+                        full_text += delta
+                        yield json.dumps({"type": "token", "content": delta})
+            except Exception as exc:
+                mode = "local_fallback"
+                GM_ERRORS.labels(reason=type(exc).__name__).inc()
+                log.error(
+                    "Bascule en mode degrade : fournisseur LLM indisponible (%s: %s)",
+                    type(exc).__name__, exc,
+                )
+                full_text = (
+                    f"[MODE MJ LOCAL — OpenAI indisponible: {exc}]\n\n"
+                    + _offline_gm_text(session, user_message, opening=opening, missing_key_notice=False)
+                )
+                async for event in _yield_text_as_sse(full_text):
+                    yield event
+    finally:
+        SSE_STREAMS_ACTIVE.dec()
+        GM_GENERATIONS.labels(mode=mode).inc()
+        GM_DURATION.labels(mode=mode).observe(time.perf_counter() - started)
 
     session.messages.append({"role": "assistant", "content": full_text})
     session.world.advance_scene()
@@ -638,13 +673,58 @@ class LoginRequest(BaseModel):
 
 @app.get("/api/health")
 def health_check():
-    """Retourne l'etat de sante minimal de l'API."""
+    """Sonde de VIVACITE (liveness).
+
+    Atteste uniquement que le processus est vivant et capable de repondre. Ne
+    verifie aucune dependance : cette sonde pilote le redemarrage automatique
+    du conteneur, et un echec de base de donnees ne doit pas provoquer une
+    boucle de redemarrage inutile.
+    """
     return {
         "status": "ok",
         "service": "survivant-de-ruche-api",
         "version": app.version,
         "database": str(DATABASE_PATH),
     }
+
+
+@app.get("/api/health/ready")
+def readiness_check(response: Response):
+    """Sonde d'APTITUDE (readiness).
+
+    Verifie reellement les dependances necessaires au service : lecture SQLite,
+    presence de la fiche de personnage et du prompt, accessibilite en ecriture
+    du repertoire de sauvegarde. Retourne 503 si l'une d'elles est indisponible,
+    ce qui permet de retirer l'instance du trafic sans la redemarrer.
+    """
+    result = probe_dependencies(
+        database_path=DATABASE_PATH,
+        character_file=CHARACTER_FILE,
+        prompt_file=PROMPT_FILE,
+        save_dir=SAVE_DIR,
+    )
+    if not result["ready"]:
+        response.status_code = 503
+        degraded = [name for name, check in result["checks"].items() if not check["ok"]]
+        log.error("Service non pret : dependances indisponibles=%s", degraded)
+    return {
+        "status": "ready" if result["ready"] else "degraded",
+        "checks": result["checks"],
+        "llm_configured": bool(os.getenv("OPENAI_API_KEY", "")),
+    }
+
+
+@app.get("/api/metrics")
+def metrics_endpoint():
+    """Point de collecte Prometheus.
+
+    Expose les sondes au format d'exposition texte. La jauge des sessions
+    actives est rafraichie au moment du scrape, car elle reflete un etat
+    courant et non un evenement.
+    """
+    ACTIVE_SESSIONS.set(len(_sessions) + (1 if _session is not None else 0))
+    payload, content_type = render_metrics()
+    return Response(content=payload, media_type=content_type)
 
 
 @app.post("/api/auth/register", status_code=201)
@@ -657,7 +737,9 @@ def register(req: RegisterRequest):
     try:
         account = create_account(username, digest, req.display_name, role=ROLE_PLAYER)
     except ValueError as exc:
+        AUTH_ATTEMPTS.labels(action="register", result="failure").inc()
         raise HTTPException(status_code=409, detail=str(exc))
+    AUTH_ATTEMPTS.labels(action="register", result="success").inc()
     record_event(username, "register")
     token = create_access_token(account["id"], account["role"])
     return {
@@ -673,7 +755,11 @@ def login(req: LoginRequest):
     username = normalize_user_id(req.username)
     account = get_account(username)
     if not account or not account.get("password_hash") or not verify_password(req.password, account["password_hash"]):
+        # Sonde de securite : alimente la detection de tentatives repetees.
+        AUTH_ATTEMPTS.labels(action="login", result="failure").inc()
+        log.warning("Echec d'authentification pour l'identifiant '%s'", username)
         raise HTTPException(status_code=401, detail="Identifiants incorrects.")
+    AUTH_ATTEMPTS.labels(action="login", result="success").inc()
     touch_last_seen(username)
     record_event(username, "login")
     token = create_access_token(account["id"], account["role"])
@@ -794,6 +880,7 @@ def start_combat(req: SpawnRequest, user_id: str = Depends(current_user_id)):
     level = level_map.get(req.level.lower(), ThreatLevel.STANDARD)
 
     enemies = _spawn_enemy_group(faction, level, req.count)
+    COMBATS_STARTED.labels(faction=faction.value).inc()
 
     player = Combatant.from_player_state(session.character)
     build = _character_build(session)

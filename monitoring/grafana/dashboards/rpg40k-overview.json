@@ -1,0 +1,170 @@
+{
+  "uid": "rpg40k-overview",
+  "title": "RPG 40K — Vue d'exploitation",
+  "tags": ["rpg40k", "supervision"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Disponibilité du service",
+      "description": "Sonde de vivacité du backend. 1 = joignable par Prometheus.",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "up{job=\"rpg40k-backend\"}", "refId": "A" }],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "HORS SERVICE", "color": "red", "index": 0 } } },
+            { "type": "value", "options": { "1": { "text": "EN LIGNE", "color": "green", "index": 1 } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Aptitude au trafic",
+      "description": "Sonde d'aptitude : vérifie SQLite, fichiers de jeu et accès disque.",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [{ "expr": "rpg40k_ready", "refId": "A" }],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DÉGRADÉ", "color": "red", "index": 0 } } },
+            { "type": "value", "options": { "1": { "text": "PRÊT", "color": "green", "index": 1 } } }
+          ]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Taux d'erreur 5xx (5 min)",
+      "description": "Seuil d'alerte majeure : 5 %.",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(rpg40k_http_requests_total{status_class=\"5xx\"}[5m])) / clamp_min(sum(rate(rpg40k_http_requests_total[5m])), 0.001)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.01 }, { "color": "red", "value": 0.05 }] }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Sessions en mémoire",
+      "description": "Les sessions ne sont pas expirées : indicateur de capacité.",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [{ "expr": "rpg40k_active_sessions", "refId": "A" }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 100 }, { "color": "red", "value": 200 }] }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Mode de production de la narration",
+      "description": "Sonde structurante : distingue les générations servies par le LLM de celles servies par le narrateur local (mode dégradé).",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        { "expr": "sum by (mode) (rate(rpg40k_gm_generations_total[5m]) * 60)", "legendFormat": "{{mode}}", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 20, "stacking": { "mode": "normal" } } } }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Latence HTTP (p50 / p95)",
+      "description": "Hors streaming, les routes de jeu doivent rester sous 250 ms.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum by (le) (rate(rpg40k_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p50", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(rpg40k_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95", "refId": "B" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Trafic HTTP par famille de code",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        { "expr": "sum by (status_class) (rate(rpg40k_http_requests_total[5m]) * 60)", "legendFormat": "{{status_class}}", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqpm" } }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Authentification — succès et échecs",
+      "description": "Seuil d'alerte : plus de 10 échecs par minute (recherche exhaustive probable).",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        { "expr": "sum by (result) (rate(rpg40k_auth_attempts_total[5m]) * 60)", "legendFormat": "{{result}}", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Durée de génération de narration (p95)",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 20 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le, mode) (rate(rpg40k_gm_generation_duration_seconds_bucket[10m])))", "legendFormat": "{{mode}}", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Flux SSE ouverts",
+      "description": "Connexions de streaming simultanées : indicateur de charge réelle.",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 20 },
+      "targets": [{ "expr": "rpg40k_sse_streams_active", "legendFormat": "flux ouverts", "refId": "A" }]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Combats engagés par faction",
+      "description": "Indicateur métier : vérifie que la génération de rencontres reste variée.",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 20 },
+      "targets": [
+        { "expr": "sum by (faction) (increase(rpg40k_combats_started_total[1h]))", "legendFormat": "{{faction}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "État des dépendances internes",
+      "description": "1 = disponible. Alimenté par la sonde d'aptitude /api/health/ready.",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 27 },
+      "targets": [
+        { "expr": "rpg40k_dependency_up", "legendFormat": "{{dependency}}", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "max": 1, "min": 0 } }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Taille du contexte envoyé au LLM (p95)",
+      "description": "L'historique n'est pas tronqué : surveille la dérive du coût par appel.",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 27 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(rpg40k_gm_context_messages_bucket[30m])))", "legendFormat": "messages (p95)", "refId": "A" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+# Configuration Prometheus — supervision RPG 40K (C4.1.2)
+global:
+  # Le service est mono-instance et à faible trafic : un pas de 15 s offre une
+  # granularité suffisante pour le diagnostic sans gonfler le volume stocké.
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    service: survivant-de-ruche
+    environnement: production
+
+rule_files:
+  - /etc/prometheus/alert_rules.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  # Sondes applicatives exposées par le backend FastAPI.
+  - job_name: rpg40k-backend
+    metrics_path: /api/metrics
+    static_configs:
+      - targets: ["backend:8000"]
+        labels:
+          composant: api
+
+  # Sonde de disponibilité "boîte noire" : interroge la sonde de vivacité par
+  # le même chemin réseau qu'un utilisateur, ce qui couvre aussi le reverse
+  # proxy. Une panne Nginx est ainsi détectée même si le backend est sain.
+  - job_name: rpg40k-disponibilite
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://frontend/api/health
+          - http://frontend/
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Prometheus se supervise lui-même : sans cela, l'arrêt du collecteur
+  # produirait un silence indistinguable d'une absence d'incident.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

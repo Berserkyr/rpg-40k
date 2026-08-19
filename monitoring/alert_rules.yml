@@ -1,0 +1,177 @@
+# Règles d'alerte — supervision RPG 40K (C4.1.2)
+#
+# Chaque règle porte une sévérité qui détermine le canal de signalement :
+#   critique  -> notification immédiate (service indisponible ou compromis)
+#   majeure   -> notification en heures ouvrées (dégradation perceptible)
+#   mineure   -> consignation seule, revue hebdomadaire (dérive à surveiller)
+#
+# Les fenêtres `for:` sont volontairement supérieures à l'intervalle de collecte
+# afin d'éviter les alertes déclenchées par un pic isolé.
+groups:
+  # ---------------------------------------------------------------------------
+  - name: disponibilite
+    rules:
+      - alert: ServiceIndisponible
+        expr: up{job="rpg40k-backend"} == 0
+        for: 1m
+        labels:
+          severite: critique
+        annotations:
+          resume: "Backend injoignable"
+          description: >-
+            Le point de collecte /api/metrics ne répond plus depuis 1 minute.
+            Vérifier l'état du conteneur (docker compose ps) et les journaux.
+
+      - alert: ServiceNonPret
+        expr: rpg40k_ready == 0
+        for: 2m
+        labels:
+          severite: critique
+        annotations:
+          resume: "Service demarre mais non apte au trafic"
+          description: >-
+            Le processus répond, mais une dépendance est indisponible. Consulter
+            /api/health/ready pour identifier laquelle (base, fichiers, disque).
+
+      - alert: DependanceIndisponible
+        expr: rpg40k_dependency_up == 0
+        for: 2m
+        labels:
+          severite: critique
+        annotations:
+          resume: "Dependance {{ $labels.dependency }} indisponible"
+          description: "La sonde d'aptitude signale un echec sur {{ $labels.dependency }}."
+
+      - alert: SondeExterneEnEchec
+        expr: probe_success{job="rpg40k-disponibilite"} == 0
+        for: 2m
+        labels:
+          severite: critique
+        annotations:
+          resume: "Application injoignable depuis l'exterieur"
+          description: >-
+            La sonde boîte noire échoue sur {{ $labels.instance }} : la panne peut
+            venir du reverse proxy Nginx et non du backend.
+
+  # ---------------------------------------------------------------------------
+  - name: qualite_de_service
+    rules:
+      - alert: TauxErreurServeurEleve
+        expr: >-
+          sum(rate(rpg40k_http_requests_total{status_class="5xx"}[5m]))
+          /
+          clamp_min(sum(rate(rpg40k_http_requests_total[5m])), 0.001)
+          > 0.05
+        for: 5m
+        labels:
+          severite: majeure
+        annotations:
+          resume: "Plus de 5 % de reponses 5xx"
+          description: "Taux d'erreur serveur a {{ $value | humanizePercentage }} sur 5 minutes."
+
+      - alert: LatenceApiDegradee
+        expr: >-
+          histogram_quantile(
+            0.95,
+            sum by (le, endpoint) (rate(rpg40k_http_request_duration_seconds_bucket[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          severite: majeure
+        annotations:
+          resume: "Latence p95 superieure a 1 s sur {{ $labels.endpoint }}"
+          description: >-
+            Les routes de jeu opèrent en mémoire et doivent répondre sous 250 ms.
+            Un p95 au-delà d'une seconde signale une contention disque ou CPU.
+
+      - alert: ExceptionsNonGerees
+        expr: increase(rpg40k_http_exceptions_total[15m]) > 0
+        for: 1m
+        labels:
+          severite: majeure
+        annotations:
+          resume: "Exception non geree sur {{ $labels.endpoint }}"
+          description: "Exception {{ $labels.exception }} remontee jusqu'au middleware."
+
+  # ---------------------------------------------------------------------------
+  - name: dependance_llm
+    rules:
+      # Alerte structurante de ce projet : l'application reste "verte" en cas de
+      # panne du fournisseur LLM, car elle bascule sur un narrateur local. Sans
+      # cette règle, la dégradation resterait invisible côté exploitation.
+      - alert: ModeDegradeNarration
+        expr: increase(rpg40k_gm_generations_total{mode="local_fallback"}[10m]) > 0
+        for: 1m
+        labels:
+          severite: majeure
+        annotations:
+          resume: "Narration en mode degrade (repli local)"
+          description: >-
+            Le fournisseur LLM est injoignable : les parties se poursuivent avec le
+            narrateur local. Vérifier la validité de la clé, le quota et l'état du
+            fournisseur.
+
+      - alert: LatenceLlmElevee
+        expr: >-
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(rpg40k_gm_generation_duration_seconds_bucket{mode="openai"}[10m]))
+          ) > 20
+        for: 10m
+        labels:
+          severite: mineure
+        annotations:
+          resume: "Generation de narration lente (p95 > 20 s)"
+          description: "Temps de reponse du LLM degrade : experience de jeu penalisee."
+
+      - alert: ContexteConversationExcessif
+        expr: >-
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(rpg40k_gm_context_messages_bucket[30m]))
+          ) > 200
+        for: 30m
+        labels:
+          severite: mineure
+        annotations:
+          resume: "Historique de conversation superieur a 200 messages"
+          description: >-
+            L'historique n'est pas tronqué : la croissance du contexte augmente le
+            coût par appel et la latence. Envisager une fenêtre glissante.
+
+  # ---------------------------------------------------------------------------
+  - name: securite
+    rules:
+      - alert: EchecsAuthentificationRepetes
+        expr: sum(rate(rpg40k_auth_attempts_total{result="failure"}[5m])) * 60 > 10
+        for: 5m
+        labels:
+          severite: majeure
+        annotations:
+          resume: "Plus de 10 echecs d'authentification par minute"
+          description: >-
+            Tentative de recherche exhaustive probable. Vérifier les journaux et
+            envisager une limitation de débit sur /api/auth/login.
+
+  # ---------------------------------------------------------------------------
+  - name: capacite
+    rules:
+      - alert: SessionsMemoireCroissantes
+        expr: rpg40k_active_sessions > 200
+        for: 15m
+        labels:
+          severite: mineure
+        annotations:
+          resume: "Nombre eleve de sessions en memoire"
+          description: >-
+            Les sessions sont conservées en mémoire sans expiration : au-delà de ce
+            seuil, la consommation du processus doit être surveillée.
+
+      - alert: EchecSauvegarde
+        expr: increase(rpg40k_save_failures_total[10m]) > 0
+        for: 1m
+        labels:
+          severite: critique
+        annotations:
+          resume: "Echec d'ecriture de sauvegarde"
+          description: "Risque de perte de progression joueur : verifier l'espace disque et les volumes."

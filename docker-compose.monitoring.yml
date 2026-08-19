@@ -1,0 +1,79 @@
+# Pile de supervision — surcouche optionnelle (C4.1.2)
+#
+# Fichier de superposition : la pile applicative (docker-compose.yml) reste
+# déployable seule. La supervision s'active explicitement :
+#
+#   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+#
+# Les services partagent le réseau par défaut du projet Compose, ce qui permet à
+# Prometheus d'atteindre le backend par son nom de service.
+services:
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: rpg40k-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      # 30 jours : couvre l'analyse de tendance mensuelle sans saturer le VPS.
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - backend
+    # Exposition sur la boucle locale uniquement : l'accès distant passe par un
+    # tunnel SSH. Prometheus n'embarque aucune authentification.
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.0
+    container_name: rpg40k-alertmanager
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+    environment:
+      # Destinataires injectés depuis .env : aucun webhook n'est versionné.
+      ALERT_WEBHOOK_CRITIQUE: ${ALERT_WEBHOOK_CRITIQUE:-http://localhost:9099/critique}
+      ALERT_WEBHOOK_EQUIPE: ${ALERT_WEBHOOK_EQUIPE:-http://localhost:9099/equipe}
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "127.0.0.1:9093:9093"
+
+  # Sonde "boîte noire" : interroge l'application par le même chemin réseau
+  # qu'un utilisateur, ce qui couvre également le reverse proxy Nginx.
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.26.0
+    container_name: rpg40k-blackbox
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9115:9115"
+
+  grafana:
+    image: grafana/grafana:11.5.1
+    container_name: rpg40k-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?definir GRAFANA_ADMIN_PASSWORD dans .env}
+      # Interface de consultation : aucune inscription libre.
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:

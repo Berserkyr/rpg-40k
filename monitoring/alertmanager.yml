@@ -1,0 +1,63 @@
+# Modalités de signalement — Alertmanager (C4.1.2)
+#
+# Le routage traduit la sévérité en canal et en cadence de notification :
+#   critique -> notification immédiate, rappel toutes les heures tant que l'alerte dure
+#   majeure  -> notification groupée, rappel toutes les 4 heures
+#   mineure  -> consignation seule, rappel quotidien (revue hebdomadaire)
+global:
+  resolve_timeout: 5m
+
+# Les destinataires réels sont injectés par variables d'environnement afin de ne
+# jamais versionner d'URL de webhook ni d'identifiants (cf. .env.example).
+route:
+  receiver: journal-mineur
+  # Regroupe par nom d'alerte et sévérité : une panne provoquant dix règles
+  # simultanées produit une notification par famille, pas dix notifications.
+  group_by: ["alertname", "severite"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 24h
+
+  routes:
+    - matchers:
+        - severite = "critique"
+      receiver: astreinte-immediate
+      group_wait: 10s
+      repeat_interval: 1h
+      continue: false
+
+    - matchers:
+        - severite = "majeure"
+      receiver: equipe-technique
+      group_wait: 1m
+      repeat_interval: 4h
+
+# Empêche le bruit : si le service entier est injoignable, les alertes de
+# latence et de taux d'erreur qui en découlent sont supprimées.
+inhibit_rules:
+  - source_matchers:
+      - alertname = "ServiceIndisponible"
+    target_matchers:
+      - severite =~ "majeure|mineure"
+    equal: ["service"]
+
+  - source_matchers:
+      - severite = "critique"
+    target_matchers:
+      - severite = "mineure"
+    equal: ["alertname"]
+
+receivers:
+  - name: astreinte-immediate
+    webhook_configs:
+      - url: "${ALERT_WEBHOOK_CRITIQUE}"
+        send_resolved: true
+
+  - name: equipe-technique
+    webhook_configs:
+      - url: "${ALERT_WEBHOOK_EQUIPE}"
+        send_resolved: true
+
+  # Récepteur sans notification sortante : l'alerte reste consultable dans
+  # l'interface Alertmanager et alimente la revue hebdomadaire.
+  - name: journal-mineur

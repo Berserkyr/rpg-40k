@@ -1,0 +1,13 @@
+# Chargement automatique des tableaux de bord depuis le dépôt : la
+# configuration de supervision est versionnée avec le code (infrastructure as code).
+apiVersion: 1
+providers:
+  - name: rpg40k
+    orgId: 1
+    folder: "RPG 40K"
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
