@@ -12,14 +12,14 @@
     "e2e:install": "playwright install chromium"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0",
+    "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
+    "@testing-library/user-event": "^14.6.4",
     "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^29.1.1",
     "typescript": "~6.0.2",
-    "vite": "^8.0.12",
+    "vite": "^8.2.1",
     "vitest": "^4.1.8"
   },
   "dependencies": {
