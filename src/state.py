@@ -75,6 +75,26 @@ class CharacterState:
 
     # Persistence helpers -------------------------------------------------
 
+    @classmethod
+    def from_dict(cls, data: Dict[str, object]) -> "CharacterState":
+        """Reconstruit une fiche depuis une sauvegarde (anomalie ANO-2026-002).
+
+        Complement de :meth:`to_dict`. Sans cette methode, l'etat du personnage
+        pouvait etre serialise mais jamais relu : la fiche etait donc toujours
+        rechargee depuis le modele vierge au demarrage d'une session.
+        """
+        modele = data or {}
+        return cls(
+            name=modele.get("name", "Inconnu"),
+            role=modele.get("role", ""),
+            origin=modele.get("origin", ""),
+            objective=modele.get("objective", ""),
+            attributes=dict(modele.get("attributes") or {}),
+            resources=dict(modele.get("resources") or {}),
+            tracks=dict(modele.get("tracks") or {}),
+            notes=list(modele.get("notes") or []),
+        )
+
     def to_dict(self) -> Dict[str, object]:
         """Return raw data structure for serialization."""
         return {

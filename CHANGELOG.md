@@ -43,6 +43,23 @@ dépendances, traitement d'anomalie et durcissement du déploiement.
   la clôture de la scène. 18 tests de non-régression, dont 16 en échec sur le
   code antérieur. Fiche complète : `docs/bloc4/03_collecte_consignation_anomalies.md`.
 
+- **ANO-2026-002 — Perte partielle de progression au redémarrage**
+  *(gravité : majeure, perte de données ; remontée via le support)*
+
+  `Session.save()` persistait la progression, l'inventaire, les quêtes, la
+  carte, les relations et l'équipe, mais **omettait la fiche de personnage**.
+  Celle-ci était systématiquement rechargée depuis le modèle vierge
+  `character_sheet.yaml`. Blessures, stress, ressources et points d'attribut
+  alloués étaient donc perdus à chaque redémarrage du serveur, alors que le
+  niveau et l'inventaire survivaient. Cette perte **partielle** rendait le
+  symptôme déroutant et non reproductible en session unique.
+
+  *Correctif* : ajout de `CharacterState.from_dict()` — `to_dict()` existait
+  sans réciproque — et persistance de `character.yaml` dans `Session.save()`,
+  avec repli sur le modèle vierge pour les sauvegardes antérieures. 8 tests de
+  non-régression, dont 6 en échec sur le code antérieur. Fiche complète :
+  `docs/bloc4/08_support_client.md`.
+
 - **Version du logiciel incorrectement rapportée.** `backend/api.py` déclarait
   `version="1.0.0"` en dur alors que le journal était à `1.2.0` : `/api/health`
   identifiait donc mal la version en service, rendant impossible le
@@ -163,7 +180,8 @@ dépendances, traitement d'anomalie et durcissement du déploiement.
   base corrompue par la sonde d'aptitude.
 - `test_state_markers.py` (18 tests) : non-régression de l'anomalie ANO-2026-001.
 - `test_version.py` (7 tests) : cohérence entre le fichier `VERSION`, l'API et ce journal.
-- **Total : 82 → 127 tests backend au vert.**
+- `test_character_persistence.py` (8 tests) : non-régression de l'anomalie ANO-2026-002.
+- **Total : 82 → 135 tests backend au vert.**
 - Tests frontend : `animation_engine.test.js` avec 16 tests couvrant le moteur
   d'animation, les particules et l'AnimationPlayer (30 tests frontend au vert).
 
@@ -235,7 +253,7 @@ Réf. tag : `v1.0.0-rncp`.
 
 | Version | Tag / commit | Preuve de fonctionnement |
 |---|---|---|
-| 1.3.0 | `fix/ANO-2026-001-marqueurs-etat` | CI locale verte (127 backend + 30 frontend), test de fumée exécuté |
+| 1.3.0 | `fix/ANO-2026-001-marqueurs-etat` | CI locale verte (135 backend + 30 frontend), test de fumée exécuté |
 | 1.2.0 | `7d9bf12` | CI verte + déploiement VPS |
 | 1.1.0 | `b565b39` | CI verte + déploiement VPS |
 | 1.0.1 | `5b1164d` | CI verte |

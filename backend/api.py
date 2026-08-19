@@ -142,7 +142,7 @@ class Session:
         save_dir = _save_dir_for_user(self.user_id)
         save_dir.mkdir(parents=True, exist_ok=True)
 
-        self.character = CharacterState.from_file(CHARACTER_FILE)
+        self.character = self._load_character(save_dir)
         self.world = GameWorld.load(save_dir) or create_new_game_world(CAMPAIGN)
         self._load_subsystems(save_dir)
         self.combat: Optional[CombatState] = None
@@ -150,6 +150,33 @@ class Session:
             {"role": "system", "content": self._build_prompt()}
         ]
         self.save_dir = save_dir
+
+    def _load_character(self, save_dir: Path) -> CharacterState:
+        """Charge la fiche sauvegardee, ou le modele vierge a defaut.
+
+        Anomalie ANO-2026-002 : la fiche etait systematiquement rechargee depuis
+        `character_sheet.yaml`, si bien que blessures, stress, ressources et
+        points d'attribut alloues etaient perdus a chaque redemarrage, alors
+        que la progression et l'inventaire, eux, etaient conserves.
+
+        Le repli sur le modele vierge preserve la compatibilite avec les
+        sauvegardes anterieures au correctif.
+        """
+        import yaml
+
+        fichier = save_dir / "character.yaml"
+        if fichier.exists():
+            try:
+                with open(fichier, "r", encoding="utf-8") as flux:
+                    donnees = yaml.safe_load(flux) or {}
+                if donnees:
+                    return CharacterState.from_dict(donnees)
+            except (OSError, yaml.YAMLError) as exc:
+                log.error(
+                    "Fiche de personnage illisible (%s) : repli sur le modele vierge. %s",
+                    fichier, exc,
+                )
+        return CharacterState.from_file(CHARACTER_FILE)
 
     def _load_subsystems(self, save_dir: Path) -> None:
         import yaml
@@ -181,6 +208,10 @@ class Session:
         import yaml
         self.world.save(self.save_dir)
         for fname, obj in [
+            # La fiche de personnage doit etre persistee au meme titre que les
+            # autres sous-systemes (anomalie ANO-2026-002) : son omission
+            # provoquait une perte partielle de progression au redemarrage.
+            ("character.yaml", self.character),
             ("progression.yaml", self.progression),
             ("inventory.yaml", self.inventory),
             ("world_map.yaml", self.world_map),
