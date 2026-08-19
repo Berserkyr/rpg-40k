@@ -51,3 +51,6 @@ scripts/create_rncp_professional_docx.py
 scripts/format_rncp_docx.py
 scripts/format_rncp_docx_sobre.py
 scripts/capture_rncp_screenshots.mjs
+
+# Environnement de developpement de l'assistant
+.claude/

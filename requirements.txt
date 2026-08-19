@@ -1,12 +1,36 @@
-openai>=1.51.0
-pyyaml>=6.0.2
-typer>=0.12.3
-rich>=13.8.1
-python-dotenv>=1.0.1
-pytest>=8.3.2
-fastapi>=0.136.1
-uvicorn[standard]>=0.47.0
-sse-starlette>=3.4.4
-httpx>=0.28.1
-PyJWT>=2.9.0
-bcrypt>=4.2.0
+# Dépendances backend — RPG 40K "Survivant de Ruche"
+#
+# Convention de bornage (compétence C4.1.1) :
+#   >=X.Y.Z  plancher : version minimale validée par la suite de tests ;
+#   <N.0.0   plafond  : interdit une montée de version MAJEURE automatique.
+#
+# Conséquence : les correctifs et les versions mineures sont récupérés
+# automatiquement (pip, Dependabot, CI), tandis qu'une montée majeure exige la
+# modification explicite de ce fichier — c'est-à-dire une décision humaine,
+# tracée par une pull request et accompagnée d'une évaluation d'impact.
+#
+# Versions plancher = versions vérifiées le 19/08/2026 (82 tests backend au vert).
+
+# --- API et serveur ---------------------------------------------------------
+fastapi>=0.141.1,<1.0.0
+uvicorn[standard]>=0.52.4,<1.0.0
+sse-starlette>=3.4.8,<4.0.0
+
+# --- Sécurité : authentification et hachage ---------------------------------
+PyJWT>=2.13.0,<3.0.0
+bcrypt>=5.0.0,<6.0.0
+
+# --- Client du maître de jeu ------------------------------------------------
+openai>=3.3.0,<4.0.0
+
+# --- Utilitaires ------------------------------------------------------------
+pyyaml>=6.0.3,<7.0.0
+python-dotenv>=1.2.3,<2.0.0
+httpx>=0.28.1,<1.0.0
+
+# --- CLI (run_session.py) ---------------------------------------------------
+typer>=0.27.1,<1.0.0
+rich>=15.0.0,<16.0.0
+
+# --- Tests ------------------------------------------------------------------
+pytest>=9.1.1,<10.0.0

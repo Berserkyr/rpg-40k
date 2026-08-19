@@ -46,4 +46,27 @@ Les pipelines vérifient :
 
 Ces pipelines servent de preuve de non-régression et de qualité continue.
 
-Le déploiement VPS est volontairement manuel : il évite qu’un simple push redéploie automatiquement la production.
+## Déclenchement du déploiement VPS
+
+Le workflow [deploy-vps.yml](../../.github/workflows/deploy-vps.yml) dispose de deux déclencheurs :
+
+| Déclencheur | Condition | Usage |
+|---|---|---|
+| `workflow_run` (automatique) | La CI se termine **avec succès** sur `main` | Déploiement nominal : seul un code testé atteint la production |
+| `workflow_dispatch` (manuel) | Lancement explicite depuis GitHub | Rollback, déploiement d’une branche spécifique, changement de port |
+
+La production n’est donc jamais mise à jour par un simple push sur une branche de travail : la
+porte d’entrée reste la fusion vers `main`, elle-même conditionnée à une CI verte. Le job utilise
+`concurrency: deploy-vps` avec `cancel-in-progress: false`, ce qui sérialise les déploiements et
+évite que deux mises en production ne se chevauchent.
+
+## Gestion des dépendances
+
+La surveillance des dépendances est décrite dans
+[docs/bloc4/01_processus_maj_dependances.md](../bloc4/01_processus_maj_dependances.md) et outillée par :
+
+- [.github/dependabot.yml](../../.github/dependabot.yml) — détection hebdomadaire sur les quatre
+  écosystèmes (pip, npm, Docker, GitHub Actions) ;
+- [scripts/check_updates.py](../../scripts/check_updates.py) — rapport de veille à la demande ou en CI ;
+- les bornes hautes de [requirements.txt](../../requirements.txt), qui interdisent toute montée de
+  version majeure non décidée explicitement.

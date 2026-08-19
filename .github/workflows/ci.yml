@@ -95,6 +95,19 @@ jobs:
         working-directory: frontend
         run: npm audit --audit-level=high || true
 
+      # Veille d'obsolescence (C4.1.1) : recense les nouvelles versions et
+      # sépare les montées majeures (manuelles) des mineures/correctifs
+      # (automatiques). Non bloquant, comme les audits ci-dessus.
+      - name: Install project dependencies for outdated check
+        run: pip install -r requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Check outdated dependencies
+        run: python scripts/check_updates.py || true
+
   e2e-tests:
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-build, frontend-unit-tests]
