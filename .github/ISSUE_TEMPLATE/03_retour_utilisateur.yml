@@ -1,0 +1,69 @@
+# Canal de retour utilisateur (C4.3.1).
+#
+# Distinct du formulaire d'anomalie : il ne s'agit pas d'un dysfonctionnement
+# mais d'un ressenti d'usage ou d'une demande d'evolution. Les deux flux sont
+# separes car ils n'ont ni le meme delai de traitement ni le meme arbitrage :
+# une anomalie se corrige, une demande d'evolution se priorise.
+name: "Retour d'expérience / suggestion"
+description: "Partager un ressenti de jeu ou proposer une amélioration"
+title: "[UX] "
+labels: ["retour-utilisateur", "a-arbitrer"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ce formulaire recueille les retours d'usage. Pour signaler un
+        **dysfonctionnement**, utilisez plutôt le formulaire « Anomalie ».
+
+  - type: dropdown
+    id: nature
+    attributes:
+      label: Nature du retour
+      options:
+        - "Difficulté à comprendre ou à utiliser une fonctionnalité"
+        - "Lenteur ou attente perçue"
+        - "Équilibrage du jeu (trop facile / trop difficile)"
+        - "Qualité de la narration"
+        - "Proposition de nouvelle fonctionnalité"
+        - "Appréciation positive"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Votre retour
+      description: Décrivez ce que vous avez ressenti et dans quelle situation.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequence_jeu
+    attributes:
+      label: Fréquence de jeu
+      description: Situe le retour — un nouveau venu et un joueur régulier ne rencontrent pas les mêmes limites.
+      options:
+        - "Première partie"
+        - "Quelques parties"
+        - "Joueur régulier"
+    validations:
+      required: true
+
+  - type: input
+    id: scene
+    attributes:
+      label: Nombre approximatif de scènes jouées
+      description: Certaines limites n'apparaissent qu'après une longue partie.
+      placeholder: "environ 25 scènes"
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact sur votre envie de continuer à jouer
+      options:
+        - "Bloquant — j'ai arrêté la partie"
+        - "Gênant — j'ai continué malgré tout"
+        - "Anecdotique"
+        - "Sans objet (retour positif ou suggestion)"
+    validations:
+      required: true
