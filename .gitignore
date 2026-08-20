@@ -54,3 +54,11 @@ scripts/capture_rncp_screenshots.mjs
 
 # Environnement de developpement de l'assistant
 .claude/
+
+# Artefacts de compilation LaTeX (le PDF et les figures restent versionnes)
+docs/bloc4/latex/*.aux
+docs/bloc4/latex/*.log
+docs/bloc4/latex/*.out
+docs/bloc4/latex/*.toc
+docs/bloc4/latex/*.synctex.gz
+docs/bloc4/latex/bloc4-overleaf.zip

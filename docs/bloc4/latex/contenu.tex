@@ -1,0 +1,1446 @@
+% ===========================================================================
+%  Corps du dossier — 8 competences
+% ===========================================================================
+
+\section{Le logiciel supervise}
+
+\begin{minipage}[t]{0.60\linewidth}
+\vspace{0pt}
+Le logiciel n'est ni un site vitrine ni une API transactionnelle : c'est un \textbf{jeu de role
+narratif mono-joueur}, expose en REST + SSE, dont la narration est deleguee a un \textbf{fournisseur
+LLM externe} et dont l'etat de partie vit \textbf{en memoire} du processus avant serialisation sur
+disque. Quatre caracteristiques commandent tout le dispositif decrit ensuite.
+
+\vspace{3pt}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{3.5cm} X@{}}
+\toprule
+\textbf{Caracteristique} & \textbf{Consequence} \\
+\midrule
+Degradation \textbf{silencieuse} prevue par conception : en cas de panne du LLM, l'application
+bascule sur un narrateur local et repond toujours \code{200 OK} &
+Une supervision fondee sur les codes HTTP declarerait le service sain alors que la valeur percue
+s'est effondree. Une sonde du \textbf{mode de narration} est indispensable. \\
+\addlinespace
+Reponses en \textbf{streaming SSE} de plusieurs dizaines de secondes &
+Ces routes ne peuvent pas etre jugees sur les seuils de latence des routes de jeu ; elles sont
+exclues des alertes de lenteur. \\
+\addlinespace
+\textbf{Sessions en memoire}, sans expiration &
+La consommation croit avec le nombre de joueurs depuis le demarrage : jauge de capacite. \\
+\addlinespace
+Fournisseur \textbf{facture a l'usage}, historique jamais tronque &
+Le cout et la latence par appel croissent au fil de la partie : sonde de taille de contexte. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.37\linewidth}
+\vspace{0pt}
+\includegraphics[width=\linewidth]{01_authentification.png}
+\captionof{figure}{Authentification JWT.}
+\vspace{4pt}
+\includegraphics[width=\linewidth]{02_partie_en_cours.png}
+\captionof{figure}{Scene d'ouverture diffusee en SSE, en mode narrateur local.}
+\vspace{4pt}
+\includegraphics[width=\linewidth]{07_competences.png}
+\captionof{figure}{Panneau de progression : arbre de competences et points d'attribut.}
+\end{minipage}
+
+% ===========================================================================
+\section{Processus de mise a jour des dependances}
+\label{sec:deps}
+
+\competence{Competence C4.1.1}{Gerer les mises a jour des dependances et des bibliotheques tiers,
+en surveillant regulierement les nouvelles versions, en evaluant les impacts des mises a jour, et
+en les integrant de maniere securisee.}
+
+\subsection{Perimetre et politique}
+
+Le perimetre couvre quatre ensembles : \textbf{backend Python} (\code{requirements.txt} :
+FastAPI, Uvicorn, sse-starlette, PyJWT, bcrypt, openai, PyYAML, pytest) ; \textbf{frontend npm}
+(\code{package.json} + \code{package-lock.json} : React 19, Three.js en execution ; Vite, Vitest,
+Playwright en developpement) ; \textbf{images Docker} (\code{python:3.13-slim},
+\code{node:22-alpine}, \code{nginx:1.27-alpine}) ; \textbf{chaine CI/CD} (actions GitHub).
+
+Cette separation est structurante : une regression sur une dependance de developpement n'affecte
+que le build, une regression sur une dependance d'execution atteint le service rendu.
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{2.2cm} L{3.0cm} L{2.6cm} X@{}}
+\toprule
+\textbf{Type} & \textbf{Exemple} & \textbf{Mode} & \textbf{Justification} \\
+\midrule
+Patch \code{x.y.Z} & \code{bcrypt 5.0.0 -> 5.0.1} & \textcolor{VertOk}{\textbf{Automatique}} &
+Retro-compatibilite acquise ; la CI valide la non-regression. \\
+Mineure \code{x.Y.z} & \code{fastapi 0.141 -> 0.142} & \textcolor{OrangeAlerte}{\textbf{Semi-auto}} &
+Auto sur \code{develop}, validation humaine avant production. \\
+Majeure \code{X.y.z} & \code{React 19 -> 20} & \textcolor{RougeKo}{\textbf{Manuelle}} &
+Rupture probable : branche dediee, guide de migration, tests e2e. \\
+Image Docker & \code{python:3.13-slim} & \textcolor{VertOk}{\textbf{Automatique}} &
+Reconstruite a chaque deploiement (correctifs systeme). \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\subsection{Incident ayant motive le bornage}
+
+\defaut{Defaut identifie --- des montees majeures non decidees}{%
+\code{requirements.txt} ne declarait que des planchers (\code{>=}). Chaque installation propre et
+chaque execution de CI embarquaient donc des montees \textbf{majeures} que personne n'avait
+decidees ni evaluees.}
+
+\footnotesize
+\begin{tabularx}{0.86\linewidth}{@{}L{2.6cm} L{2.8cm} L{2.4cm} X@{}}
+\toprule
+\textbf{Dependance} & \textbf{Plancher declare} & \textbf{Installee} & \textbf{Ecart} \\
+\midrule
+\code{openai} & \code{>=1.51.0} & \textbf{3.3.0} & \textcolor{RougeKo}{\textbf{2 majeures}} \\
+\code{rich} & \code{>=13.8.1} & \textbf{15.0.0} & \textcolor{RougeKo}{\textbf{2 majeures}} \\
+\code{bcrypt} & \code{>=4.2.0} & \textbf{5.0.0} & \textcolor{OrangeAlerte}{1 majeure} \\
+\code{pytest} & \code{>=8.3.2} & \textbf{9.1.1} & \textcolor{OrangeAlerte}{1 majeure} \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{3pt}
+Le cas sensible est \code{openai}, dont depend tout le moteur de narration. \textbf{Evaluation
+d'impact} : la surface reellement appelee (\code{AsyncOpenAI}, \code{chat.completions.create} avec
+\code{messages} et \code{stream}) reste disponible en 3.3.0 et les 82 tests passaient. La version
+3.3.0 devient donc le \textbf{nouveau plancher valide}, plafonne a \code{<4.0.0} : la derive est
+convertie en decision tracee.
+
+\subsection{Outillage mis en place}
+
+\textbf{1. Bornage} --- chaque dependance porte un plancher (version validee) et un plafond
+(interdit la majeure). La regle « majeure = manuelle » n'est plus une consigne : elle est appliquee
+par pip.
+
+\begin{lstlisting}[style=bash]
+fastapi>=0.141.1,<1.0.0     openai>=3.3.0,<4.0.0     bcrypt>=5.0.0,<6.0.0
+\end{lstlisting}
+
+\textbf{2. Detection} --- \code{.github/dependabot.yml} inspecte chaque lundi les 4 ecosystemes.
+Mineures et correctifs \textbf{groupes}, majeures en \textbf{PR isolee} pour forcer une revue
+individuelle.
+
+\textbf{3. Veille} --- \code{scripts/check_updates.py} compare les versions majeures et classe les
+ecarts ; code de sortie 1 si une majeure est en attente. Integre au job \code{security-audit}.
+
+\begin{lstlisting}[style=sortie]
+MONTEES MAJEURES - traitement MANUEL (3)
+  npm  @testing-library/jest-dom   6.9.1 -> 7.0.1     npm  jsdom  29.1.1 -> 30.0.1
+  npm  typescript                  6.0.3 -> 7.0.2
+  => Ouvrir un ticket par montee, evaluer l'impact, brancher sur feature/.
+MINEURES ET CORRECTIFS - traitement AUTOMATIQUE (10)  => Lot mensuel, valide par la CI.
+\end{lstlisting}
+
+\subsection{La politique observee en fonctionnement}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\linewidth]{10_dependabot.png}
+\caption{Pull requests reellement ouvertes par Dependabot sur le depot. Trois comportements
+prevus par la configuration se lisent directement : les montees \textbf{groupees}
+(\emph{frontend-runtime}, 4 mises a jour ; \emph{frontend-outils-dev}, 3 mises a jour), les montees
+\textbf{majeures isolees} chacune dans sa propre PR (\code{jest-dom} 6 $\rightarrow$ 7,
+\code{typescript} 6 $\rightarrow$ 7, \code{jsdom} 29 $\rightarrow$ 30), et la couverture effective
+des \textbf{quatre ecosystemes} --- npm, GitHub Actions, Docker (\code{node 22-alpine}
+$\rightarrow$ \code{26-alpine}) et pip.}
+\end{figure}
+
+Cette copie d'ecran n'illustre pas la politique : elle la \textbf{demontre}. Le groupement et
+l'isolement des majeures ne sont pas des intentions declarees dans un fichier de configuration,
+ce sont des comportements observables sur le depot. On note au passage que \code{node} passerait de
+la version 22 a la version 26 : c'est exactement le type de saut qui, sans la regle d'isolement,
+serait passe inapercu au milieu d'un lot.
+
+\subsection{Frequence et evaluation d'impact}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{4.0cm} L{4.2cm} X@{}}
+\toprule
+\textbf{Activite} & \textbf{Frequence} & \textbf{Outillage} \\
+\midrule
+Audit de securite & A chaque push / PR & \code{pip-audit}, \code{npm audit} \\
+Rapport de veille & A chaque push / PR & \code{scripts/check_updates.py} \\
+Detection des nouvelles versions & Hebdomadaire (lundi 06h00) & \code{dependabot.yml}, 4 ecosystemes \\
+Lot de mises a jour mineures & Mensuel & PR groupees, fusion apres CI verte \\
+CVE elevee ou critique & Sous 48 h & Hors lot, branche \code{fix/} \\
+Montees majeures & Trimestrielle & PR isolee, apres evaluation d'impact \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{3pt}
+Trois questions sont tranchees avant integration : la dependance est-elle \textbf{embarquee en
+production} ? quelle est sa \textbf{surface d'appel} ? le correctif est-il \textbf{disponible sans
+rupture} ?
+
+\textbf{Application reelle} : l'audit npm a remonte 4 vulnerabilites « high » (\code{vite},
+\code{postcss}, \code{nanoid}, \code{undici}). Toutes sont des dependances de \textbf{developpement},
+absentes du bundle servi par Nginx, et leur vecteur suppose un acces au serveur de developpement.
+\textbf{Decision} : lot mensuel via \code{npm audit fix}, et non correctif d'urgence sous 48 h.
+
+\couverture
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{4.0cm} X L{3.6cm}@{}}
+\toprule
+\textbf{Critere} & \textbf{Traitement} & \textbf{Preuve} \\
+\midrule
+Frequence des mises a jour & Audit et veille a chaque push, detection hebdomadaire, lot mensuel,
+CVE sous 48 h, majeures trimestrielles & \code{dependabot.yml}, job \code{security-audit} \\
+Perimetre logiciel & Backend Python, frontend npm, images Docker, chaine CI/CD & 4 entrees \code{updates:} \\
+Type automatique / manuel & Patch auto, mineure semi-auto, majeure manuelle & Bornes \code{<N.0.0}, \code{groups} \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+% ===========================================================================
+\section{Systeme de supervision et d'alerte}
+\label{sec:supervision}
+
+\competence{Competence C4.1.2}{Concevoir un systeme de supervision et d'alerte en determinant le
+perimetre, en identifiant les indicateurs pertinents, en mettant en place des sondes et en
+configurant la modalite des signalements afin de garantir une disponibilite permanente.}
+
+\defaut{Etat initial --- une sonde qui n'interroge rien}{%
+Le projet ne disposait d'aucune supervision. \code{/api/health} retournait un dictionnaire fige
+affichant le \emph{chemin} de la base sans jamais l'interroger : une base corrompue, un volume non
+monte ou un disque plein laissaient la sonde repondre \code{"status": "ok"} alors que toute partie
+etait impossible.}
+
+\subsection{Perimetre : ce que Prometheus et Grafana peuvent superviser}
+
+Prometheus et Grafana supervisent le \textbf{serveur, l'API et l'infrastructure}. Ils ne mesurent
+pas le rendu du jeu dans le navigateur : ce qui se passe apres la reponse HTTP --- temps de peinture,
+fluidite de l'animation, erreurs JavaScript cote client --- releve d'un outillage different
+(instrumentation navigateur de type RUM), hors du perimetre de ce dossier. La distinction est
+importante : elle delimite ce que la supervision peut affirmer et ce qu'elle ne peut pas.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  bloc/.style={draw=AccentSec,thick,rounded corners=2pt,fill=GrisClair,align=center,
+               minimum height=0.95cm,text width=2.35cm,font=\scriptsize},
+  sup/.style={bloc,fill=AccentPrim!8,draw=AccentPrim},
+  hors/.style={bloc,fill=white,draw=GrisBord,dashed},
+  fl/.style={-{Stealth[length=2.2mm]},thick,draw=AccentSec},
+  fls/.style={-{Stealth[length=2.2mm]},thick,draw=AccentPrim},
+  lg/.style={font=\tiny\itshape,color=GrisTexte}]
+
+\node[hors] (nav) {\textbf{Navigateur}\\rendu du jeu};
+\node[sup, right=1.8cm of nav] (api) {\textbf{API / serveur}\\du jeu};
+\node[sup, right=1.8cm of api] (bdd) {\textbf{Base de}\\\textbf{donnees}};
+\node[sup, below=1.05cm of api] (prom) {\textbf{Prometheus}};
+\node[sup, right=1.8cm of prom] (graf) {\textbf{Grafana}};
+\node[sup, left=1.8cm of prom] (node) {\textbf{node-exporter}\\\textbf{cAdvisor}};
+
+\draw[fl] (nav) -- node[above,lg,pos=0.5]{HTTP/SSE} (api);
+\draw[fl] (api) -- node[above,lg,pos=0.5]{SQL} (bdd);
+\draw[fls] (api) -- node[right,lg]{scrape} (prom);
+\draw[fls] (node) -- (prom);
+\draw[fls] (prom) -- (graf);
+
+\node[lg, below=1pt of nav, text width=2.6cm, align=center] {hors perimetre\\(rendu client)};
+\end{tikzpicture}
+\caption{Le trait plein suit le parcours d'une requete joueur ; les fleches sombres, la chaine de
+supervision. Le navigateur est le seul maillon non instrumente.}
+\end{figure}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{2.7cm} X L{2.9cm}@{}}
+\toprule
+\textbf{Domaine} & \textbf{Ce qui est supervise} & \textbf{Par quoi} \\
+\midrule
+\textbf{Serveur} &
+CPU, memoire, espace disque, reseau de l'hote ; consommation et redemarrages par conteneur &
+\code{node-exporter}, \code{cAdvisor} \\
+\addlinespace
+\textbf{Backend / API} &
+Temps de reponse (centiles), nombre de requetes par route, codes HTTP, exceptions non gerees &
+Instrumentation applicative \\
+\addlinespace
+\textbf{Jeu} &
+Sessions actives, flux SSE ouverts, combats engages par faction, mode de production de la narration &
+Sondes metier \\
+\addlinespace
+\textbf{Base de donnees} &
+Disponibilite verifiee par une \emph{requete reelle}, duree d'ecriture des sauvegardes, echecs
+d'ecriture, volumetrie &
+Sonde d'aptitude, \code{benchmark.py} \\
+\addlinespace
+\textbf{Erreurs} &
+Taux de 4xx et 5xx, exceptions, dependance indisponible, service demarre mais inapte &
+Middleware et sondes de dependance \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{4pt}
+\textbf{Une nuance sur la base de donnees.} Les indicateurs habituels --- nombre de connexions,
+saturation du pool, requetes lentes --- supposent un SGBD \emph{serveur}. Le projet utilise
+\textbf{SQLite}, moteur embarque dans le processus : il n'y a ni connexion reseau ni pool a
+surveiller. Ce qui reste pertinent est donc l'\textbf{accessibilite} du fichier (verifiee par une
+requete reelle a chaque collecte), la \textbf{duree d'ecriture} des sauvegardes et la
+\textbf{volumetrie}. Transposer mecaniquement un tableau de bord MySQL ou PostgreSQL produirait des
+panneaux vides. Une migration vers PostgreSQL justifierait en revanche l'ajout de
+\code{postgres_exporter}.
+
+\subsection{Sondes de disponibilite : vivacite contre aptitude}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{1.9cm} L{3.4cm} X L{3.4cm}@{}}
+\toprule
+\textbf{Sonde} & \textbf{Route} & \textbf{Finalite} & \textbf{Effet d'un echec} \\
+\midrule
+Vivacite & \code{GET /api/health} & Atteste que le processus repond & Redemarrage du conteneur \\
+Aptitude & \code{GET /api/health/ready} & Verifie \emph{reellement} les dependances & \textbf{503} et retrait du trafic, \textbf{sans} redemarrage \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{3pt}
+Cette separation evite un piege d'exploitation : si la sonde de redemarrage verifiait la base, une
+indisponibilite disque declencherait une \textbf{boucle de redemarrage} aggravant la panne. La sonde
+d'aptitude effectue quatre controles \textbf{actifs} : requete reelle \code{SELECT count(*) FROM users},
+presence et taille non nulle de \code{character_sheet.yaml} et \code{prompt_survivant.md}, ecriture
+puis suppression d'un fichier temoin dans le repertoire de sauvegarde.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.94\linewidth]{05_sonde_aptitude.png}
+\caption{Sonde d'aptitude en fonctionnement : chaque dependance est controlee individuellement.}
+\end{figure}
+
+\subsection{Sondes applicatives}
+
+La sonde structurante est \code{rpg40k_gm_generations_total{mode}}, qui distingue \code{openai},
+\code{local_fallback} et \code{local_no_key} : elle rend \textbf{observable} la bascule silencieuse
+vers le narrateur local, seule facon de voir une panne du fournisseur derriere un \code{200 OK}.
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{6.4cm} L{1.9cm} X@{}}
+\toprule
+\textbf{Sonde} & \textbf{Type} & \textbf{Finalite} \\
+\midrule
+\code{rpg40k_gm_generations_total{mode}} & Compteur & Mode de production reel de la narration \\
+\code{rpg40k_gm_generation_duration_seconds} & Histogramme & Temps de generation percu \\
+\code{rpg40k_gm_context_messages} & Histogramme & Croissance de l'historique envoye au LLM \\
+\code{rpg40k_http_requests_total{...}} & Compteur & Trafic et taux d'erreur par famille de code \\
+\code{rpg40k_http_request_duration_seconds} & Histogramme & Centiles de latence \\
+\code{rpg40k_auth_attempts_total{action,result}} & Compteur & Detection de tentatives repetees \\
+\code{rpg40k_active_sessions} / \code{rpg40k_sse_streams_active} & Jauges & Capacite et charge reelle \\
+\code{rpg40k_state_markers_rejected_total} & Compteur & Marqueurs d'etat ignores (\S\ref{sec:fiche}) \\
+\code{rpg40k_ready} / \code{rpg40k_dependency_up} & Jauges & Etat des dependances internes \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{3pt}
+\textbf{Maitrise de la cardinalite} : les chemins porteurs d'identifiants sont ramenes a leur
+gabarit (\code{/api/animations/tir_bolter} devient \code{/api/animations/{skill_id}}). Sans cette
+normalisation, chaque identifiant creerait une serie temporelle distincte. Un test verifie que cent
+identifiants ne produisent qu'un seul libelle.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\linewidth,trim=0 0 0 0,clip]{04_metriques.png}
+\caption{Point de collecte \texttt{/api/metrics} apres un parcours reel : version du service,
+trafic par route et histogrammes de latence.}
+\end{figure}
+
+\subsection{Criteres de qualite et modalite des signalements}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{3.6cm} L{1.7cm} L{2.4cm} X@{}}
+\toprule
+\textbf{Indicateur} & \textbf{Objectif} & \textbf{Seuil d'alerte} & \textbf{Justification} \\
+\midrule
+Disponibilite API & $\geq$ 99 \%/mois & Injoignable > 1 min & Jeu solo : une coupure breve est toleree \\
+Latence p95 routes de jeu & < 250 ms & > 1 s pendant 10 min & Calculs en memoire ; mesure : \textbf{1,0 ms} sur \code{/api/roll} \\
+Latence \code{/api/auth/login} & < 500 ms & --- & Mesure : \textbf{$\sim$230 ms} dont \textbf{219 ms de bcrypt}. Lenteur \textbf{voulue}, a ne pas optimiser \\
+Taux d'erreur 5xx & < 1 \% & > 5 \% pendant 5 min & Une erreur interrompt une partie \\
+Narration servie par le LLM & 100 \% & $\geq$ 1 repli en 10 min & Tout \code{local_fallback} traduit une panne \\
+Taille du contexte LLM & < 100 messages & p95 > 200 & Impact direct sur cout et latence \\
+Echecs d'authentification & --- & > 10/min pendant 5 min & Signature d'une recherche exhaustive \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{3pt}
+Les paliers de l'histogramme (\code{0.01} a \code{10 s}) sont resserres sous la seconde, la ou se
+situe la distribution reelle ; des paliers generiques auraient rendu le p95 inexploitable.
+
+\subsection{Catalogue des 18 regles d'alerte}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{2.5cm} L{4.3cm} L{1.7cm} X@{}}
+\toprule
+\textbf{Groupe} & \textbf{Regle} & \textbf{Severite} & \textbf{Condition et intention} \\
+\midrule
+\multirow{4}{*}{\textbf{disponibilite}}
+ & \code{ServiceIndisponible} & \textcolor{RougeKo}{critique} & \code{up == 0} pendant 1 min : le collecteur ne joint plus le backend \\
+ & \code{ServiceNonPret} & \textcolor{RougeKo}{critique} & \code{rpg40k_ready == 0} : le processus repond mais une dependance manque \\
+ & \code{DependanceIndisponible} & \textcolor{RougeKo}{critique} & Identifie \emph{laquelle} des quatre dependances est tombee \\
+ & \code{SondeExterneEnEchec} & \textcolor{RougeKo}{critique} & Sonde boite noire : couvre aussi une panne du reverse proxy \\
+\midrule
+\multirow{5}{*}{\parbox{2.4cm}{\raggedright\textbf{ressources serveur}}}
+ & \code{EspaceDisqueFaible} & \textcolor{OrangeAlerte}{majeure} & < 15 \% d'espace libre : les sauvegardes echoueront avant tout signal applicatif \\
+ & \code{EspaceDisqueCritique} & \textcolor{RougeKo}{critique} & < 5 \% : perte de donnees imminente \\
+ & \code{MemoireHoteSaturee} & \textcolor{OrangeAlerte}{majeure} & > 90 \% pendant 10 min : risque d'arret par le noyau \\
+ & \code{ChargeProcesseurElevee} & mineure & > 85 \% pendant 15 min : sur un service a faible trafic, signale plutot une boucle \\
+ & \code{ConteneurRedemarrages} & \textcolor{OrangeAlerte}{majeure} & Redemarrage inattendu d'un conteneur \\
+\midrule
+\multirow{3}{*}{\parbox{2.4cm}{\raggedright\textbf{qualite de service}}}
+ & \code{TauxErreurServeurEleve} & \textcolor{OrangeAlerte}{majeure} & > 5 \% de 5xx sur 5 min \\
+ & \code{LatenceApiDegradee} & \textcolor{OrangeAlerte}{majeure} & p95 > 1 s sur 10 min, hors routes de streaming \\
+ & \code{ExceptionsNonGerees} & \textcolor{OrangeAlerte}{majeure} & Toute exception remontee jusqu'au middleware \\
+\midrule
+\multirow{3}{*}{\parbox{2.4cm}{\raggedright\textbf{dependance LLM}}}
+ & \code{ModeDegradeNarration} & \textcolor{OrangeAlerte}{majeure} & \textbf{Regle structurante} : tout repli sur le narrateur local \\
+ & \code{LatenceLlmElevee} & mineure & p95 de generation > 20 s \\
+ & \code{ContexteConversationExcessif} & mineure & p95 > 200 messages : derive de cout et de latence \\
+\midrule
+\textbf{securite} & \code{EchecsAuthentificationRepetes} & \textcolor{OrangeAlerte}{majeure} & > 10 echecs/min : recherche exhaustive probable \\
+\midrule
+\multirow{2}{*}{\textbf{capacite}}
+ & \code{SessionsMemoireCroissantes} & mineure & > 200 sessions residentes pendant 15 min \\
+ & \code{EchecSauvegarde} & \textcolor{RougeKo}{critique} & Toute ecriture de sauvegarde en echec : perte de progression \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{4pt}
+Les fenetres \code{for:} sont volontairement superieures a l'intervalle de collecte, afin qu'un pic
+isole ne declenche pas d'alerte.
+
+\subsection{Modalite des signalements}
+
+Le routage Alertmanager traduit la severite en canal \emph{et} en cadence.
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{2.1cm} L{4.0cm} c c X@{}}
+\toprule
+\textbf{Severite} & \textbf{Destinataire} & \textbf{Groupe} & \textbf{Rappel} & \textbf{Intention} \\
+\midrule
+\textcolor{RougeKo}{\textbf{Critique}} & Astreinte, notification immediate & 10 s & 1 h & Service indisponible ou donnees menacees \\
+\textcolor{OrangeAlerte}{\textbf{Majeure}} & Equipe, heures ouvrees & 1 min & 4 h & Degradation perceptible par le joueur \\
+\textcolor{AccentSec}{\textbf{Mineure}} & Consignation seule & 30 s & 24 h & Derive a surveiller, revue hebdomadaire \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{4pt}
+Deux mecanismes limitent le bruit, condition d'une supervision \emph{reellement} exploitee. Le
+\textbf{groupement} (\code{group_by: [alertname, severite]}) fait qu'une panne declenchant dix
+regles produit une notification par famille et non dix. L'\textbf{inhibition} supprime les alertes
+de latence et de taux d'erreur lorsque \code{ServiceIndisponible} est actif, puisqu'elles en
+decoulent mecaniquement. Les URL de destination ne sont jamais versionnees : elles proviennent des
+variables \code{ALERT_WEBHOOK_CRITIQUE} et \code{ALERT_WEBHOOK_EQUIPE}.
+
+\subsection{Architecture de la chaine}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  bloc/.style={draw=AccentSec,thick,rounded corners=2pt,fill=GrisClair,align=center,
+               minimum height=1.0cm,text width=2.5cm,font=\scriptsize},
+  alt/.style={bloc,fill=white},
+  fl/.style={-{Stealth[length=2.2mm]},thick,draw=AccentSec},
+  lg/.style={font=\tiny\itshape,color=GrisTexte}]
+\node[bloc] (back) {\textbf{Backend}\\\texttt{/api/metrics}\\\texttt{/health/ready}};
+\node[bloc, right=1.5cm of back] (prom) {\textbf{Prometheus}\\collecte 15 s\\retention 30 j};
+\node[bloc, right=1.5cm of prom] (alert) {\textbf{Alertmanager}\\routage, groupage\\inhibition};
+\node[alt, below=0.8cm of back] (nginx) {\textbf{Nginx + React}};
+\node[alt, below=0.8cm of prom] (black) {\textbf{Blackbox}\\sonde externe};
+\node[bloc, below=0.8cm of alert] (graf) {\textbf{Grafana}\\13 panneaux};
+\draw[fl] (back) -- node[above,lg]{scrape 15 s} (prom);
+\draw[fl] (prom) -- node[above,lg]{18 regles} (alert);
+\draw[fl] (prom) -- (graf);
+\draw[fl] (black) -- (prom);
+\draw[fl] (nginx) -- (black);
+\draw[fl] (back) -- (nginx);
+\end{tikzpicture}
+\caption{Collecte applicative, sonde externe « boite noire », evaluation des regles et
+visualisation. Prometheus se supervise lui-meme : sans cela, l'arret du collecteur produirait un
+silence indistinguable d'une absence d'incident.}
+\end{figure}
+
+La pile s'active en surcouche, ce qui laisse la pile applicative deployable seule. Prometheus,
+Alertmanager et Grafana n'exposent leurs ports que sur \code{127.0.0.1} : ils n'embarquent pas
+d'authentification suffisante pour une exposition publique, et l'acces distant passe par un tunnel
+SSH.
+
+\begin{lstlisting}[style=bash]
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+\end{lstlisting}
+
+\subsection{Validation de la pile en fonctionnement}
+
+La chaine a ete executee de bout en bout pour verifier qu'elle ne se limite pas a des fichiers de
+configuration valides. Prometheus a collecte le backend reel, evalue les 18 regles, et Grafana a
+affiche le tableau de bord \emph{provisionne depuis le depot}.
+
+Premiere verification, avec \code{promtool}, l'outil officiel de Prometheus --- il controle la
+syntaxe \emph{et} les expressions PromQL, ce qu'une simple validation YAML ne fait pas :
+
+\begin{lstlisting}[style=sortie]
+$ promtool check rules alert_rules.yml      $ promtool check config prometheus.yml
+  SUCCESS: 18 rules found                     SUCCESS: prometheus.yml is valid
+
+$ curl -s localhost:9090/api/v1/targets
+  prometheus       http://127.0.0.1:9090/metrics       UP
+  rpg40k-backend   http://127.0.0.1:8000/api/metrics   UP
+\end{lstlisting}
+
+Une panne du fournisseur LLM a ensuite ete simulee (cle API invalide) pendant que Prometheus
+collectait. L'alerte structurante est passee en etat \textbf{firing} :
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\linewidth]{11_alertes.png}
+\caption{Regles evaluees par Prometheus. Le groupe \texttt{dependance\_llm} affiche
+\textbf{FIRING (1)} : \texttt{ModeDegradeNarration} s'est declenchee parce que la narration etait
+servie par le narrateur local. L'application repondait pourtant \texttt{200 OK} --- c'est exactement
+la degradation qu'aucune supervision fondee sur les codes HTTP n'aurait vue.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\linewidth]{14_grafana.png}
+\caption{Tableau de bord d'exploitation, alimente par des donnees reelles. Le panneau
+\emph{Mode de production de la narration} distingue \texttt{local\_fallback} de \texttt{local\_no\_key} ;
+le taux d'erreur 5xx affiche \emph{No data}, ce qui est exact : aucune erreur serveur n'est
+survenue pendant la mesure.}
+\end{figure}
+
+\subsection{Tableau de bord infrastructure et jeu}
+
+Un second tableau de bord regroupe les indicateurs d'exploitation courants : ressources de l'hote,
+activite de jeu et sante de l'API sur une meme vue.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\linewidth]{15_infrastructure.png}
+\caption{Huit indicateurs alimentes par des mesures reelles : charge processeur, memoire utilisee,
+debit reseau, joueurs connectes, latence p95, erreurs cumulees, uptime du processus et debit de
+requetes. En bas, l'evolution processeur/memoire et l'espace disque par volume, avec les seuils de
+15 \% et 5 \% des regles \texttt{EspaceDisque}.}
+\end{figure}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{3.1cm} L{5.6cm} X@{}}
+\toprule
+\textbf{Indicateur} & \textbf{Source} & \textbf{Interet} \\
+\midrule
+CPU & \texttt{node\_cpu\_seconds\_total} & Saturation de l'hote \\
+RAM utilisee & \texttt{node\_memory\_*} & Risque d'arret par le noyau \\
+Reseau & \texttt{node\_network\_*\_bytes\_total} & Volume echange, detection d'anomalie \\
+Joueurs connectes & \texttt{rpg40k\_active\_sessions} & Charge reelle et derive memoire \\
+Latence p95 & \texttt{rpg40k\_http\_request\_duration\_seconds} & Experience percue, hors streaming \\
+Erreurs (1 h) & \texttt{rpg40k\_http\_requests\_total} & Volume de 4xx et 5xx \\
+Uptime & \texttt{rpg40k\_process\_start\_time\_seconds} & Detecte les redemarrages silencieux \\
+Requetes / s & \texttt{rpg40k\_http\_requests\_total} & Debit traite par l'API \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{4pt}
+La sonde d'uptime a ete ajoutee pour ce tableau de bord : \code{prometheus_client} n'expose
+\code{process_start_time_seconds} que sous Linux, ce qui aurait laisse la tuile vide sur une autre
+plateforme. Les panneaux de ressources sont ecrits avec l'operateur \code{or} de PromQL
+(\code{node_...} \emph{ou} \code{windows_...}), de sorte que le meme fichier fonctionne en
+production Linux comme en validation locale.
+
+\reserve{%
+\textbf{Portee de cette validation.} Docker n'etant pas disponible sur le poste de travail, la
+pile a ete executee a partir des \textbf{binaires autonomes} de Prometheus 3.1.0 et Grafana 11.5.1,
+avec les cibles adressees en \texttt{127.0.0.1} au lieu des noms de services Compose. Les
+\textbf{regles d'alerte et le tableau de bord sont ceux du depot, sans modification} ; seules les
+adresses des cibles different. \texttt{node-exporter}, \texttt{cAdvisor}, \texttt{blackbox-exporter} et
+Alertmanager restent donc configures mais non executes.}
+
+\subsection{Couverture des modes de defaillance}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{4.4cm} L{4.2cm} X@{}}
+\toprule
+\textbf{Mode de defaillance} & \textbf{Detection} & \textbf{Reaction} \\
+\midrule
+Processus arrete ou fige & \code{up == 0} (1 min) & Redemarrage automatique, alerte critique \\
+Dependance en panne & \code{rpg40k_ready == 0} (2 min) & Retrait du trafic (503), \textbf{pas} de redemarrage \\
+Panne du proxy ou du frontend & \code{probe_success == 0} & Alerte critique meme si le backend est sain \\
+Service disponible mais \textbf{degrade} & \code{mode="local_fallback"} & Alerte majeure : degradation rendue visible \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{3pt}
+Le dernier cas est celui que la sonde initiale ne pouvait pas voir, et c'est le plus probable en
+exploitation : cle expiree, quota depasse, incident du fournisseur. \textbf{20 tests} couvrent le
+dispositif (82 $\rightarrow$ 102) et verifient que la sonde d'aptitude detecte \emph{reellement}
+une base corrompue et un fichier de jeu absent.
+
+\couverture
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{4.4cm} X@{}}
+\toprule
+\textbf{Critere} & \textbf{Traitement} \\
+\midrule
+Systeme adapte a la typologie & Quatre caracteristiques du logiciel traduites en choix de sondes et de seuils (\S1) \\
+Sondes et finalite explicitees & Disponibilite, applicatives, LLM, securite, capacite : type et finalite pour chacune \\
+Criteres de qualite adaptes & Sept indicateurs, seuils justifies par des mesures reelles (1,0 ms ; 230 ms dont 219 de bcrypt) \\
+Surveillance de la disponibilite & Quatre modes de defaillance couverts, dont la degradation silencieuse \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+% ===========================================================================
+\section{Collecte et consignation des anomalies}
+\label{sec:collecte}
+
+\competence{Competence C4.2.1}{Consigner les anomalies detectees en elaborant un processus de
+collecte et consignation, en utilisant des outils de collecte et en y integrant toutes les
+informations pertinentes, afin de determiner le correctif a mettre en place.}
+
+\subsection{Adaptation a la typologie du logiciel}
+
+\textbf{1. Sorties non deterministes.} La narration provenant d'un LLM, une anomalie declenchee par
+une formulation particuliere est \textbf{intermittente et non rejouable a l'identique}. La fiche
+impose donc \emph{Frequence} et \emph{Horodatage}, seuls moyens de retrouver le texte incrimine
+dans les journaux.
+
+\textbf{2. Degradation sans erreur visible.} Une part des anomalies ne se manifeste \textbf{jamais}
+par un code d'erreur : elles ne sont detectables que par les sondes du \S\ref{sec:supervision}.
+Un formulaire distinct existe pour ces incidents, qui n'ont pas de signalement utilisateur.
+
+\textbf{3. Sauvegarde par scene.} Une anomalie en fin de traitement peut faire perdre une scene
+entiere : la gravite est evaluee a l'aune de la \textbf{perte de donnees}, non du seul blocage.
+
+\subsection{Sources, outils et cycle de vie}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{3.2cm} X L{2.6cm}@{}}
+\toprule
+\textbf{Source} & \textbf{Outil} & \textbf{Delai} \\
+\midrule
+Supervision & 18 regles Prometheus / Alertmanager & Temps reel \\
+Journaux applicatifs & Journalisation structuree & Temps reel \\
+Integration continue & GitHub Actions (5 jobs) & A chaque push \\
+Audit de dependances & \code{pip-audit}, \code{npm audit} & A chaque push \\
+Signalement joueur & Formulaire GitHub Issues & Variable \\
+Recette manuelle & Plan de recette & Avant production \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{3pt}
+Les quatre premieres sources sont \textbf{automatiques} : point decisif pour un logiciel a faible
+base d'utilisateurs, ou l'on ne peut compter sur le volume de signalements.
+
+La collecte est centralisee dans GitHub Issues avec trois formulaires structures, la saisie libre
+etant desactivee (\code{blank_issues_enabled: false}) : \code{01_anomalie.yml} (\textbf{10 champs
+obligatoires}), \code{02_incident_supervision.yml} (5), \code{03_retour_utilisateur.yml} (4). Le
+formulaire contraint repond a un constat pratique : une description en prose omet presque toujours
+la version, l'environnement ou les etapes exactes, imposant un aller-retour avant analyse. Les dix
+champs obligatoires sont exactement ceux \textbf{sans lesquels le bogue n'est pas reproductible}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  bloc/.style={draw=AccentSec,thick,rounded corners=2pt,fill=GrisClair,align=center,
+               minimum height=1.15cm,text width=2.55cm,font=\scriptsize},
+  fl/.style={-{Stealth[length=2.2mm]},thick,draw=AccentPrim},
+  et/.style={font=\scriptsize\itshape,color=AccentPrim}]
+\node[bloc] (d) {\textbf{Detection}\\supervision, journaux, CI, joueur};
+\node[bloc, right=0.95cm of d] (q) {\textbf{Qualification}\\reproduction, gravite, priorisation};
+\node[bloc, right=0.95cm of q] (t) {\textbf{Traitement}\\branche \texttt{fix/}, correctif + test};
+\node[bloc, right=0.95cm of t] (c) {\textbf{Cloture}\\test de non-regression, fermeture};
+\draw[fl] (d) -- node[above,font=\tiny\itshape]{fiche} (q);
+\draw[fl] (q) -- (t); \draw[fl] (t) -- (c);
+\node[et, below=1pt of d] {a-qualifier}; \node[et, below=1pt of q] {confirmee};
+\node[et, below=1pt of t] {en-cours}; \node[et, below=1pt of c] {corrigee};
+\end{tikzpicture}
+\caption{Cycle de vie d'une anomalie ; les etats correspondent aux etiquettes GitHub et au kanban.}
+\end{figure}
+
+\textbf{Grille de gravite} --- \textcolor{RougeKo}{\textbf{Bloquante}} (jeu inutilisable,
+immediat) ; \textcolor{OrangeAlerte}{\textbf{Majeure}} (fonctionnalite inutilisable \emph{ou perte
+de donnees}, 48 h) ; \textbf{Mineure} (gene sans perte, lot mensuel) ; \textbf{Cosmetique}
+(affichage, opportuniste). La perte de donnees est classee majeure \emph{meme sans blocage} : dans
+un jeu a sauvegarde par scene, perdre une scene annule plusieurs minutes de jeu.
+
+% ===========================================================================
+\section{Fiche de consignation --- ANO-2026-001}
+\label{sec:fiche}
+
+\competence{Competence C4.2.1 (livrable 2)}{La presentation d'une fiche de consignation d'une
+anomalie rencontree au cours du projet.}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{2.6cm} X L{2.4cm} L{3.2cm}@{}}
+\toprule
+\textbf{Identifiant} & \code{ANO-2026-001} & \textbf{Gravite} & \textcolor{OrangeAlerte}{\textbf{Majeure}} (perte de donnees) \\
+\textbf{Perimetre} & Narration / maitre du jeu & \textbf{Version} & \code{v1.0.0-rncp} \\
+\textbf{Frequence} & Intermittente, depend du texte du LLM & \textbf{Etat} & \textcolor{VertOk}{\textbf{Corrigee}} en 1.3.0 \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\subsection{Description et reproduction}
+
+A l'issue de certaines scenes, le joueur recoit integralement la narration puis l'interface reste
+bloquee sur l'indicateur d'attente, sans message d'erreur. En rechargeant, \textbf{la scene qui
+vient d'etre jouee a disparu}. Le phenomene est intermittent et independant de l'action du joueur,
+ce qui orientait a tort vers un probleme reseau.
+
+Le declencheur etant une sortie du LLM, la reproduction fiable passe par la substitution du
+narrateur : demarrer une partie, puis faire produire une narration dont la valeur de ressource
+n'est \textbf{pas numerique}, et observer le flux SSE de \code{POST /api/chat}.
+
+\begin{lstlisting}[style=sortie]
+Karimus partage ses dernieres provisions.  [ETAT: rations=aucune, stress=+1]
+
+--- NOMINAL  (rations=-1) ---            --- DEFAILLANT (rations=aucune) ---
+  statut HTTP        : 200                 !! ValueError: invalid literal for
+  evenements 'token' : 5                      int() with base 10: 'aucune'
+  evenements 'done'  : 1                   -> aucun evenement 'done' emis
+\end{lstlisting}
+
+\subsection{Analyse technique}
+
+\textbf{Cause racine} --- dans \code{src/state.py}, \code{apply_updates_from_text()} convertit la
+valeur d'une ressource sans proteger la conversion. \textbf{Asymetrie revelatrice} : la branche
+voisine, qui traite \code{stress} et \code{corruption}, intercepte pourtant \emph{exactement} le
+meme cas. Le defaut n'est donc pas un oubli de conception mais une \textbf{protection appliquee a
+une branche et omise sur l'autre}.
+
+\begin{lstlisting}[style=python]
+# branche resources : conversion nue -> ValueError
+if value.startswith(('+','-')): delta = int(value)
+else:                           self.set_resource(key, int(value))
+
+# branche tracks : le meme cas est deja intercepte
+try:                self.tracks[key] = int(value)
+except ValueError:  self.tracks[key] = value
+\end{lstlisting}
+
+\textbf{Mecanisme de l'impact} --- l'appel se situe dans le generateur SSE ; l'ordre des
+instructions explique les deux symptomes simultanes.
+
+\begin{lstlisting}[style=python]
+546  session.messages.append({"role":"assistant","content": full_text})
+548  changes = session.character.apply_updates_from_text(full_text)  # exception ici
+550  session.save()                                                  # jamais atteint
+551  yield json.dumps({"type":"done", ...})                          # jamais emis
+\end{lstlisting}
+
+L'exception survient \textbf{apres} l'envoi de la narration (le joueur a lu la scene), \textbf{avant}
+\code{session.save()} (progression perdue) et \textbf{avant} l'evenement \code{done} (client bloque).
+Le defaut avait echappe aux tests parce que la suite ne couvrait ce parseur qu'avec des valeurs
+numeriques valides.
+
+\subsection{Preconisations et verification}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{4.2cm} X c@{}}
+\toprule
+\textbf{Option} & \textbf{Analyse} & \textbf{Retenue} \\
+\midrule
+A. Renforcer le prompt systeme & Ne supprime pas le risque : la sortie d'un LLM ne se garantit pas par une consigne & \textcolor{RougeKo}{Non} \\
+B. Intercepter la \code{ValueError} dans le parseur & Traite la cause racine, aligne \code{resources} sur \code{tracks} & \textcolor{VertOk}{\textbf{Oui}} \\
+C. Proteger l'appel dans le generateur SSE & Ne traite pas la cause, mais garantit qu'aucune future erreur ne coute une sauvegarde & \textcolor{VertOk}{\textbf{Oui}} \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{3pt}
+B et C sont retenues ensemble, en \textbf{defense en profondeur} : B corrige le defaut identifie,
+C protege contre les defauts de meme famille non encore decouverts. Une quatrieme mesure rend le
+phenomene \textbf{mesurable} : les sondes \code{rpg40k_state_markers_rejected_total} et
+\code{rpg40k_state_parse_failures_total}. Un marqueur ignore reste en effet une anomalie mineure
+(la ressource n'est pas mise a jour alors que la narration le laisse entendre) : la sonde permet
+d'en mesurer la frequence residuelle.
+
+\textbf{18 tests de non-regression} (dont 8 valeurs textuelles en parametre), portant la suite de
+102 a \textbf{120}. Apres correctif, le meme parcours renvoie \code{200}, 6 evenements \code{token},
+1 evenement \code{done}, et la sonde de marqueurs rejetes vaut \code{1.0}.
+
+\couverture
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{4.4cm} X@{}}
+\toprule
+\textbf{Critere} & \textbf{Traitement} \\
+\midrule
+Processus structure et adapte & Six sources dont quatre automatiques, trois formulaires, grille fondee sur la perte de donnees, cycle en quatre etats \\
+Informations permettant de reproduire & Etapes, marqueur declencheur exact, commande de reproduction automatisee, releves avant/apres \\
+Analyse et preconisations explicitees & Cause racine, asymetrie des branches, impact ligne a ligne ; trois options comparees, deux retenues, 18 tests \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+% ===========================================================================
+\section{Traitement de l'anomalie par la chaine CI/CD}
+\label{sec:cicd}
+
+\competence{Competence C4.2.2}{Creer et deployer un correctif en respectant le processus
+d'integration et de deploiement continu afin de resoudre l'anomalie.}
+
+\subsection{Chaine mobilisee}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}c L{4.0cm} L{3.4cm} X@{}}
+\toprule
+\textbf{\#} & \textbf{Etape} & \textbf{Declencheur} & \textbf{Controle exerce} \\
+\midrule
+1 & Branche de correction & Manuel & Isolation du correctif \\
+2 & Verification locale & Manuel & Boucle courte avant push \\
+3 & Integration continue & Push / pull request & 5 jobs GitHub Actions \\
+4 & Revue & Pull request & Relecture du correctif et des tests \\
+5 & Fusion vers \code{main} & Manuel apres CI verte & Seul un code teste atteint \code{main} \\
+6 & Deploiement & Automatique sur CI verte & Reconstruction et redeploiement Docker \\
+7 & Validation post-deploiement & Automatique & 5 controles fonctionnels \\
+8 & Retour arriere & Automatique si echec & Restauration du commit precedent \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\subsection{Decoupage en commits}
+
+Le correctif est decoupe pour que \textbf{chaque commit reste independamment testable}, condition
+pour qu'une bissection (\code{git bisect}) demeure exploitable et qu'un retour arriere partiel soit
+possible.
+
+\begin{lstlisting}[style=sortie]
+9f98298  test(animations): rendre deterministe le test de fin d'animation (ANO-2026-003)
+0098252  fix(sauvegarde): persister la fiche de personnage (ANO-2026-002)
+ee546a3  feat(version): source unique de verite et journal des versions 1.3.0
+5cafcbd  feat(perf): outiller la mesure des indicateurs et la collecte des retours
+8da4dca  ci(deploy): valider le deploiement par test de fumee et rollback automatique
+26df2a1  fix(narration): ne plus perdre la progression sur un marqueur d'etat invalide
+b335510  feat(supervision): instrumenter l'application et outiller l'alerte
+e9e52d5  chore(deps): borner les versions et automatiser la veille des dependances
+\end{lstlisting}
+
+L'ordre n'est pas arbitraire : le commit de supervision \textbf{precede} le correctif, car
+celui-ci s'appuie sur les sondes qu'il introduit. Le message suit la convention \emph{Conventional
+Commits} deja employee dans le depot et reference explicitement l'anomalie, ce qui relie le commit
+a sa fiche de consignation et permet d'en retrouver le contexte des mois plus tard.
+
+\begin{lstlisting}[style=sortie]
+fix(narration): ne plus perdre la progression sur un marqueur d'etat invalide
+...
+Fixes: ANO-2026-001
+Refs: C4.2.1
+\end{lstlisting}
+
+\subsection{Preuve de resolution}
+
+La validite est etablie en executant la \textbf{meme suite de tests} avant puis apres le correctif.
+Ce double passage est la demonstration recherchee : les tests \textbf{echouent effectivement} sur le
+code d'origine, ce qui prouve qu'ils decrivent l'anomalie et non un comportement quelconque. Les
+deux tests qui passaient deja sont ceux du comportement nominal, que le correctif ne devait pas
+modifier.
+
+\footnotesize
+\begin{tabularx}{0.92\linewidth}{@{}L{5.4cm} L{4.0cm} X@{}}
+\toprule
+\textbf{Commit} & \textbf{Resultat} & \\
+\midrule
+\code{b335510} --- precedant le correctif & \textcolor{RougeKo}{\textbf{16 failed}}, 2 passed & \\
+\code{26df2a1} --- commit du correctif & \textcolor{VertOk}{\textbf{18 passed}} & \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\subsection{Validation post-deploiement et retour arriere}
+
+\defaut{Defaut identifie --- un deploiement valide sur la mauvaise sonde}{%
+Le deploiement se terminait sur un simple \code{curl} de \code{/api/health}, la \textbf{sonde de
+vivacite}, qui repond \code{ok} des le demarrage du processus : une version inapte au trafic etait
+declaree deployee avec succes. \textbf{Aucun retour arriere n'existait.}}
+
+Le workflow memorise desormais le commit en service, execute \code{scripts/smoke_test.sh}, et
+restaure la version precedente en cas d'echec.
+
+\begin{lstlisting}[style=bash]
+# Version actuellement en service, conservee pour un retour arriere.
+VERSION_PRECEDENTE="$(git -C "$APP_DIR" rev-parse HEAD)"
+
+docker compose -p rpg40k up -d --build
+
+if ! ./scripts/smoke_test.sh "http://127.0.0.1:$RPG40K_HTTP_PORT"; then
+  echo "::error::Test de fumee en echec - retour a $VERSION_PRECEDENTE"
+  git -C "$APP_DIR" checkout --force "$VERSION_PRECEDENTE"
+  docker compose -p rpg40k up -d --build
+  exit 1
+fi
+\end{lstlisting}
+
+Le test exerce cinq controles, choisis pour distinguer un service \emph{demarre} d'un service
+\emph{operationnel}.
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}c L{5.0cm} X@{}}
+\toprule
+\textbf{\#} & \textbf{Controle} & \textbf{Ce qu'il detecte} \\
+\midrule
+1 & Disponibilite (30 tentatives) & Conteneur non demarre ou build echoue \\
+2 & \textbf{Sonde d'aptitude} \code{/api/health/ready} & Base injoignable, volume non monte, disque plein \\
+3 & Exposition de \code{/api/metrics} & Version deployee sans supervision --- angle mort \\
+4 & \code{/api/state} sans jeton renvoie \code{401} & Regression de configuration exposant les routes de jeu \\
+5 & Livraison de l'interface & Panne du reverse proxy Nginx \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\begin{lstlisting}[style=sortie]
+1. Attente de la disponibilite     [OK]  service joignable apres 1 tentative(s)
+2. Sonde d'aptitude                [OK]  toutes les dependances sont disponibles
+3. Point de collecte des metriques [OK]  metriques exposees
+4. Protection des routes de jeu    [OK]  acces non authentifie refuse (401)
+5. Livraison de l'interface        [ECHEC] interface non servie par le reverse proxy
+\end{lstlisting}
+
+Le cinquieme controle echoue \textbf{volontairement} ici : le script visait le backend seul
+(port 8000), qui ne sert pas l'interface ; en production la cible est le port du reverse proxy. Ce
+releve demontre que le script \textbf{detecte reellement une chaine incomplete} plutot que de
+valider systematiquement.
+
+\textbf{Garde-fou de securite ajoute au passage} : le deploiement creait \code{.env} par copie de
+\code{.env.example}, ce qui signait les jetons de production avec le \code{JWT_SECRET} d'exemple
+\emph{public dans le depot}. Le deploiement echoue desormais si le secret est absent, trop court ou
+laisse a sa valeur d'exemple.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\linewidth]{06_ci_github.png}
+\caption{Executions reelles de la chaine. La CI \#86 est verte sur \texttt{main} ; Dependabot a
+ouvert 11 pull requests, dont la montee \emph{majeure} \code{jest-dom} 6 $\rightarrow$ 7 en PR
+isolee, conformement a la politique du \S\ref{sec:deps}.}
+\end{figure}
+
+\couverture
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{4.4cm} X@{}}
+\toprule
+\textbf{Critere} & \textbf{Traitement} \\
+\midrule
+Le traitement tire profit de la chaine CI/CD & Branche dediee, commits atomiques referencant l'anomalie, validation par 5 jobs, deploiement conditionne a une CI verte, test de fumee, rollback automatique \\
+Le correctif est decrit et resout l'anomalie & Deux niveaux de correctif code a l'appui ; memes tests avant (16 echecs) et apres (18 succes) ; releve avant/apres sur l'application \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+% ===========================================================================
+\section{Recommandations argumentees d'amelioration}
+\label{sec:reco}
+
+\competence{Competence C4.3.1}{Proposer des axes d'amelioration en prenant en compte les
+indicateurs de performance et en analysant les retours utilisateurs afin de maintenir et renforcer
+l'attractivite du logiciel.}
+
+\reserve{\textbf{Limite assumee.} Le projet n'a pas de base d'utilisateurs constituee : aucun retour
+reel n'a pu etre analyse. Le canal de collecte (\code{03_retour_utilisateur.yml}) a donc ete
+\textbf{mis en place} au titre de cette competence, et les recommandations s'appuient sur les
+indicateurs mesures et les observations de recette. Presenter des retours fictifs aurait prive
+l'analyse de toute valeur probante.}
+
+\subsection{Indicateurs mesures}
+
+Releve reproductible par \code{python scripts/benchmark.py} :
+
+\begin{lstlisting}[style=sortie]
+LATENCE (ms)      p50     p95      POIDS LIVRE AU NAVIGATEUR
+/api/health      2.59     3.1        VoxelEngine.js    481.4 Ko   <- 64 % du total
+/api/roll         3.2    3.82        index.js          245.7 Ko
+/api/state        9.97  11.02        TOTAL JS          756.3 Ko
+/api/auth/login 248.56 287.24
+                                    BASE : users 87, session_events 141, index : aucun
+CONTEXTE LLM   scene 1 : 1209 tokens | scene 10 : 3369 | scene 30 : 8169 (cumul 140692)
+\end{lstlisting}
+
+\textbf{Lecture.} Les routes de jeu (3 a 10 ms) ne sont pas un facteur limitant : aucune
+optimisation n'est justifiee de ce cote. Les deux points de tension sont le \textbf{poids livre au
+navigateur} et la \textbf{croissance du contexte LLM}. La latence du login est \textbf{conforme a
+l'attendu} (219 ms de \code{bcrypt.checkpw}) et ne doit pas etre reduite.
+
+\subsection{R1 --- Charger le moteur 3D a la demande}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{2.5cm} X@{}}
+\toprule
+\textbf{Indicateur} & \code{VoxelEngine.js} pese \textbf{481 Ko} sur 756 Ko de JavaScript, soit \textbf{64 \% du poids livre} \\
+\textbf{Constat} & Le jeu est avant tout \textbf{textuel}. Un joueur qui ne declenche jamais de combat 3D telecharge pourtant tout le moteur voxel et Three.js \\
+\textbf{Cout / delai} & \textcolor{VertOk}{Faible} --- 0,5 a 1 jour ; immediat, sans rupture fonctionnelle \\
+\textbf{Gain attendu} & \textbf{$-$64 \% de JavaScript au premier chargement} ; premier rendu nettement plus rapide, en particulier sur connexion mobile \\
+\textbf{Risque} & Faible : latence au premier combat 3D, absorbable par un indicateur de chargement \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{3pt}
+Vite produit \emph{deja} des fragments separes (\code{VoxelEngine-*.js}, \code{Combat3DDemo-*.js}) :
+le decoupage existe, seuls les imports restent statiques. Il suffit de les convertir en imports
+dynamiques (\code{React.lazy} / \code{import()}). Le temps d'affichage initial etant le premier
+facteur d'abandon d'une application web, c'est le meilleur rapport gain/effort du lot.
+
+\subsection{R2 --- Borner l'historique envoye au LLM}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{2.5cm} X@{}}
+\toprule
+\textbf{Indicateur} & Contexte de \textbf{1 209} tokens (scene 1) a \textbf{8 169} (scene 30) ; cumul envoye \textbf{140 692} tokens \\
+\textbf{Constat} & \code{session.messages} n'est jamais tronque : chaque scene renvoie tout l'historique \\
+\textbf{Cout / delai} & \textcolor{OrangeAlerte}{Faible a moyen} --- 1 a 2 jours ; court terme \\
+\textbf{Gain attendu} & Croissance \textbf{lineaire au lieu de quadratique} ; latence stabilisee ; plafond de contexte jamais atteint \\
+\textbf{Risque} & \textcolor{OrangeAlerte}{Moyen} --- une troncature naive fait « oublier » au maitre du jeu les evenements anciens \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{3pt}
+\textbf{Argument de cout, presente honnetement.} Le gain financier est faible en valeur absolue :
+environ \textbf{0,021 USD} par partie de 30 scenes contre \textbf{0,015 USD} avec une fenetre
+glissante de 10 messages. Ce n'est \textbf{pas} l'argument principal, et le presenter comme tel
+serait trompeur. Les deux vraies justifications sont ailleurs : la \textbf{latence}, qui croit avec
+le contexte et rompt le rythme de jeu au-dela de quelques dizaines de scenes ; et le \textbf{plafond
+de contexte} du modele, dont le depassement provoquerait une erreur, donc aujourd'hui une bascule
+en mode degrade.
+
+\textbf{Mise en oeuvre recommandee} : conserver le prompt systeme, les $N$ derniers echanges et un
+\textbf{resume condense} des scenes anterieures, regenere tous les 10 tours --- approche qui
+preserve la continuite narrative, precisement ce que le joueur percoit. La sonde
+\code{rpg40k_gm_context_messages} mesurera le gain reel.
+
+\subsection{R3 a R5 --- Capacite, reproductibilite et securite}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{1.1cm} L{3.4cm} X L{1.3cm}@{}}
+\toprule
+\textbf{\#} & \textbf{Axe} & \textbf{Constat et gain} & \textbf{Cout} \\
+\midrule
+\textbf{R3} & Expirer les sessions en memoire &
+Le dictionnaire \code{_sessions} n'a \textbf{ni expiration ni eviction} : toute session creee reste
+residente jusqu'au redemarrage. Une expiration apres quelques heures d'inactivite suffit ; l'etat
+etant persiste a chaque scene, l'eviction est transparente pour le joueur. Gain : consommation
+memoire bornee. & 0,5 j \\
+\addlinespace
+\textbf{R4} & Verrouiller les versions Python &
+Le frontend dispose de \code{package-lock.json} et de \code{npm ci} ; le backend n'a
+\textbf{aucun equivalent}. Les bornes hautes du \S\ref{sec:deps} empechent les majeures, mais deux
+installations a deux dates peuvent encore differer sur les correctifs. Un
+\code{requirements.lock.txt} utilise par le \code{Dockerfile.backend} et la CI supprime cette
+derive. & 0,5 j \\
+\addlinespace
+\textbf{R5} & Limiter le debit sur l'authentification &
+La supervision \textbf{detecte} une recherche exhaustive mais rien ne la \textbf{bloque}. Le cout
+de bcrypt (219 ms) freine deja l'attaque, mais constitue aussi un \textbf{vecteur de deni de
+service} : quelques dizaines de requetes simultanees saturent le processus. Une limitation par IP
+traite les deux problemes. & 0,5 j \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\subsection{R6 a R8 --- Securisation et hygiene}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{1.1cm} L{3.4cm} X L{1.3cm}@{}}
+\toprule
+\textbf{\#} & \textbf{Axe} & \textbf{Constat et gain} & \textbf{Cout} \\
+\midrule
+\textbf{R6} & Desactiver le mode debug \textcolor{VertOk}{\textbf{(applique)}} &
+\code{FastAPI(..., debug=True)} etait ecrit \textbf{en dur} : toute exception non geree exposait la
+trace d'execution et des extraits de code source en production (OWASP~A05). \textbf{Applique en
+1.3.0} : le mode est pilote par \code{API_DEBUG}, absente par defaut, et un test verifie qu'il
+reste desactive. Le cout etant inferieur a l'heure et l'enjeu relevant de la securite, il n'y avait
+pas lieu de differer. & < 1 h \\
+\addlinespace
+\textbf{R7} & Retention sur \code{session_events} &
+141 lignes, \textbf{aucun index}, et surtout \textbf{aucune lecture} dans le code : la table est
+alimentee par \code{record_event()} mais jamais interrogee. Deux options s'excluent : soit la
+donnee est utile et il faut l'exposer et l'indexer sur \code{user_id}, soit elle ne l'est pas et il
+faut purger. La conserver sans usage cumule cout de stockage et obligation de protection des
+donnees personnelles, sans contrepartie. & 0,5 j \\
+\addlinespace
+\textbf{R8} & Conteneurs sans privileges root &
+Ni \code{Dockerfile.backend} ni \code{frontend/Dockerfile} ne comportent de directive \code{USER}.
+Gain : une execution de code arbitraire n'obtient plus root dans le conteneur. Ajuster les droits
+sur les volumes \code{/app/data} et \code{/app/saves}. & 0,5 j \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\subsection{Priorisation et suivi des gains}
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}c L{4.6cm} L{2.1cm} X@{}}
+\toprule
+\textbf{Rang} & \textbf{Recommandation} & \textbf{Delai} & \textbf{Moyen de verification du gain} \\
+\midrule
+-- & R6 --- desactiver \code{debug=True} & \textcolor{VertOk}{\textbf{Fait (1.3.0)}} & Controle n$^\circ$4 du test de fumee \\
+1 & R1 --- chargement 3D a la demande & Immediat & \code{benchmark.py}, section poids livre \\
+2 & R5 --- limitation de debit sur le login & Court terme & \code{rpg40k_auth_attempts_total} \\
+3 & R3 --- expiration des sessions & Court terme & \code{rpg40k_active_sessions} \\
+4 & R2 --- fenetre glissante du contexte & Court terme & \code{rpg40k_gm_context_messages} \\
+5 & R4 --- verrouillage des versions Python & Immediat & Comparaison CI / production \\
+6 & R7 --- retention \code{session_events} & Moyen terme & \code{benchmark.py}, section base \\
+7 & R8 --- conteneurs sans root & Moyen terme & \code{docker compose exec backend id} \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\textbf{Charge residuelle : 4 a 5,5 jours-homme}, R6 etant deja appliquee. Aucune refonte
+architecturale : toutes les evolutions sont incrementales, deployables par le processus du
+\S\ref{sec:cicd}, et \textbf{chacune dispose deja d'un moyen de mesure} (benchmark ou sonde), de
+sorte que le gain pourra etre constate plutot que suppose.
+
+\subsection{Contribution a l'attractivite}
+
+\textbf{Rapidite} (R1, R2) : demarrage plus rapide, rythme preserve en partie longue.
+\textbf{Fiabilite} (R3, R4) : service stable, comportement identique d'un environnement a l'autre.
+\textbf{Confiance} (R5, R6, R8) : compte protege, absence de fuite d'information.
+\textbf{Evolutivite} (R7). L'attractivite d'un jeu narratif tient d'abord a la \textbf{fluidite de
+l'experience} : un chargement long ou une attente croissante degradent l'engagement bien avant
+qu'une fonctionnalite ne manque --- d'ou la priorite de R1 et R2 sur toute extension fonctionnelle.
+
+\couverture
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{4.4cm} X@{}}
+\toprule
+\textbf{Critere} & \textbf{Traitement} \\
+\midrule
+Recommandations argumentees, gains evaluables (cout, delai) & Huit axes, chacun avec indicateur mesure, gain chiffre, cout en jours-homme et priorite \\
+Realistes et realisables & Aucune refonte ; evolutions incrementales deployables par le \S\ref{sec:cicd} ; reserves de faisabilite (R4, R8) explicitees \\
+Renforcent l'attractivite & Quatre axes relies a l'effet percu par le joueur, priorisation justifiee de R1 et R2 \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+% ===========================================================================
+\section{Journal des versions}
+\label{sec:journal}
+
+\competence{Competence C4.3.2}{Etablir un journal des versions deployees en y integrant la
+documentation des correctifs realises pour suivre les evolutions realisees sur le logiciel.}
+
+\defaut{Defaut identifie --- le logiciel ignorait sa propre version}{%
+\code{backend/api.py} declarait \code{version="1.0.0"} en dur alors que le journal en etait a
+\code{1.2.0}. Or le formulaire de consignation demande au joueur de relever la valeur retournee par
+\code{/api/health} : un signalement aurait donc porte une version \textbf{erronee}, rendant
+impossible le rattachement d'une anomalie a un etat du code.}
+
+\textbf{Correctif} : fichier \code{VERSION} a la racine (source unique de verite),
+\code{backend/version.py} qui l'expose et lit le journal, et \textbf{7 tests} interdisant la
+derive. La protection a ete verifiee en portant volontairement \code{VERSION} a une valeur
+incoherente :
+
+\begin{lstlisting}[style=sortie]
+$ printf '9.9.9\n' > VERSION && pytest tests/test_version.py -q
+FAILED test_la_version_correspond_au_journal
+FAILED test_le_journal_documente_la_version_courante        2 failed, 5 passed
+\end{lstlisting}
+
+Toute publication oubliant de documenter sa version fait desormais echouer la CI.
+
+\subsection{Exemplaire du journal --- version 1.3.0}
+
+\noindent
+\begin{minipage}{\linewidth}
+\setlength{\fboxsep}{7pt}\setlength{\fboxrule}{0.8pt}
+\fcolorbox{GrisBord}{white}{\begin{minipage}{\dimexpr\linewidth-2\fboxsep-2\fboxrule}
+\footnotesize
+{\normalsize\bfseries\color{AccentPrim}[1.3.0] --- Maintien en condition operationnelle --- 19/08/2026}\par
+\vspace{2pt}{\itshape Ref. branche : \texttt{fix/ANO-2026-001-marqueurs-etat}.}
+
+\vspace{5pt}{\bfseries\color{RougeKo}Corrige}
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=2pt]
+  \item \textbf{\code{ANO-2026-001}} --- perte de la progression d'une scene sur un marqueur d'etat
+        non numerique. Le flux SSE s'interrompait avant l'evenement \code{done} \emph{et} avant
+        \code{session.save()}. Correctif en defense en profondeur ; 18 tests, 16 en echec avant.
+  \item \textbf{\code{ANO-2026-002}} --- perte \emph{partielle} au redemarrage : \code{Session.save()}
+        omettait la fiche de personnage. 8 tests, 6 en echec avant.
+  \item \textbf{\code{ANO-2026-003}} --- test d'animation intermittent en CI (flottant de haute
+        precision). 407 cas sur 300 000. Tests rendus deterministes.
+  \item \textbf{Version rapportee incorrecte} et \textbf{documentation du deploiement} contredite
+        par le code.
+\end{itemize}
+
+\vspace{3pt}{\bfseries\color{OrangeAlerte}Securite}
+\begin{itemize}[leftmargin=*,itemsep=1pt,topsep=2pt]
+  \item Mode debug desactive par defaut (R6) ; garde-fou \code{JWT_SECRET} au deploiement ; sonde
+        et alerte sur les tentatives d'authentification.
+\end{itemize}
+
+\vspace{3pt}{\bfseries\color{VertOk}Ajoute}
+\begin{itemize}[leftmargin=*,itemsep=1pt,topsep=2pt]
+  \item \emph{Supervision} : \code{monitoring.py}, \code{/api/health/ready}, \code{/api/metrics},
+        18 regles d'alerte, tableau de bord Grafana.
+  \item \emph{Dependances} : \code{dependabot.yml} (4 ecosystemes), bornes hautes,
+        \code{check_updates.py}.
+  \item \emph{Deploiement} : \code{smoke_test.sh} (5 controles), retour arriere automatique.
+  \item \emph{Qualite} : formulaires de consignation, \code{benchmark.py}, fichier \code{VERSION}.
+\end{itemize}
+
+\vspace{3pt}{\bfseries\color{AccentSec}Tests} --- \code{test_monitoring.py} (20),
+\code{test_state_markers.py} (18), \code{test_version.py} (7),
+\code{test_character_persistence.py} (8). \textbf{Total : 82 $\rightarrow$ 135 au vert}, plus 30
+tests frontend.
+\end{minipage}}
+\end{minipage}
+
+\vspace{5pt}
+\textbf{Regles de tenue} --- une section par version, la plus recente en premier ; rubriques
+normalisees (\emph{Ajoute}, \emph{Modifie}, \emph{Corrige}, \emph{Securite}, \emph{Tests}) ; chaque
+correctif nomme l'anomalie, son symptome, sa cause et son correctif ; chaque version reference son
+tag, ce qui permet le retour arriere ; les rubriques \emph{Securite} sont toujours explicites. Une
+entree est redigee \textbf{au moment du commit}, jamais reconstituee a la publication : c'est la
+seule facon d'obtenir une description fidele.
+
+La chaine est verifiable \textbf{dans les deux sens} : depuis une version affichee par
+\code{/api/health} on retrouve l'entree du journal, le commit puis la fiche d'anomalie ;
+inversement, une fiche mene au commit qui la corrige et a la version qui l'a deployee.
+
+\couverture
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{4.4cm} X@{}}
+\toprule
+\textbf{Critere} & \textbf{Traitement} \\
+\midrule
+Le journal contient les ameliorations de la version & Exemplaire 1.3.0 : \emph{Corrige} (4), \emph{Securite} (3), \emph{Ajoute} (4 domaines), \emph{Tests} \\
+Les correctifs deployes sont documentes & Chaque correctif nomme anomalie, symptome, cause racine, correctif et couverture de tests ; correspondance versions / preuves \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+% ===========================================================================
+\section{Probleme resolu avec le support client}
+\label{sec:support}
+
+\competence{Competence C4.3.3}{Collaborer avec les equipes de support, en fournissant une expertise
+technique, en repondant aux retours clients, en resolvant des problemes complexes afin d'ameliorer
+le logiciel.}
+
+\reserve{\textbf{Precision de contexte.} Le projet est developpe par une personne seule : il
+n'existe pas d'equipe de support distincte. Les roles decrits correspondent aux \textbf{fonctions
+reellement exercees} --- reception et qualification d'une part, expertise technique d'autre part ---
+et non a des personnes distinctes. L'anomalie, son diagnostic et son correctif sont authentiques.
+Inventer des echanges entre equipes fictives aurait retire toute valeur probante a cet exemple.}
+
+\subsection{Contexte du retour et probleme a resoudre}
+
+\textbf{Signalement} : « Mon personnage est revenu a zero mais j'ai garde mon niveau et mon
+equipement. » Gravite majeure, perimetre sauvegarde, version 1.2.0, frequence « deux fois, mais pas
+a chaque fois ». Le joueur est niveau 3 avec tout son equipement, mais son personnage est de
+nouveau indemne, ses rations pleines, ses points d'attribut disparus.
+
+Trois caracteristiques en font un cas difficile. \textbf{1.} La perte est \textbf{partielle}, donc
+contre-intuitive : une perte totale orienterait vers l'ecriture disque, tandis que cette
+incoherence apparente suggere a tort un probleme d'affichage. \textbf{2.} Le symptome parait
+\textbf{intermittent} : la formulation « pas a chaque fois » est exacte mais decrit une correlation
+que le joueur ne peut pas percevoir. \textbf{3.} Le contournement evident est \textbf{inoperant} :
+sauvegarder manuellement ne change rien.
+
+\subsection{Contribution des parties prenantes}
+
+\textbf{Niveau 1 --- reception.} Trois apports decisifs obtenus par le formulaire structure : la
+\textbf{distinction precise} entre donnees perdues et conservees, qui orientera tout le diagnostic ;
+la \textbf{qualification en gravite majeure}, qui declenche une prise en charge sous 48 h meme sans
+blocage ; et surtout la \textbf{reformulation de l'intermittence} --- interroge sur ce qui
+distinguait les sessions touchees, le joueur precise qu'il revenait « le lendemain », par
+opposition a un simple rechargement. Cette precision transforme un symptome « aleatoire » en
+condition reproductible : un delai suffisant pour que le serveur ait redemarre. Sans elle, le
+niveau 2 aurait cherche une anomalie d'ecriture disque, alors que le defaut se situe au
+\textbf{rechargement}.
+
+\textbf{Niveau 2 --- expertise.} L'hypothese est reproduite en vidant les sessions residentes, ce
+qui simule un redemarrage. Le releve reproduit \emph{exactement} la repartition decrite :
+
+\begin{lstlisting}[style=sortie]
+donnee                     avant redemarrage    apres     verdict
+rations (personnage)                       1        3     >>> PERDU <<<
+blessures (personnage)                 Grave  Indemne     >>> PERDU <<<
+points d'attribut                          9   remis a 0  >>> PERDU <<<
+niveau / xp (progression)            3 / 250    3 / 250    CONSERVE
+\end{lstlisting}
+
+\defaut{Cause racine --- un sous-systeme absent de la liste}{%
+\code{Session.save()} persiste \emph{six} sous-systemes (progression, inventaire, carte, quetes,
+relations, equipe) mais omet \code{self.character}. Au demarrage, la fiche est donc reconstruite
+depuis le modele vierge. \textbf{La liste des donnees perdues correspond exactement au contenu de
+\code{CharacterState}, celle des donnees conservees aux six sous-systemes persistes : la
+repartition observee par le joueur est la signature directe de la cause.}}
+
+L'examen confirme qu'il s'agit d'un oubli et non d'un choix : la classe possede \code{to_dict()} et
+\code{save()}, mais \textbf{aucune reciproque \code{from_dict()}}. L'etat pouvait etre serialise mais
+jamais relu --- l'omission n'avait donc jamais pu etre detectee, faute de chemin de lecture. Aucun
+test ne simulait de redemarrage : le defaut n'etait observable qu'au rechargement a froid, soit
+exactement la condition que le joueur avait decrite sans pouvoir la nommer.
+
+\subsection{Resolution apportee}
+
+Trois volets : ajout de la reciproque \code{CharacterState.from_dict()} ; persistance de
+\code{character.yaml} dans \code{Session.save()} ; rechargement avec \textbf{repli} sur le modele
+vierge pour les parties anterieures au correctif et en cas de fichier illisible. Cette
+compatibilite ascendante est une exigence du support : un correctif rendant inutilisables les
+parties existantes transformerait une perte partielle en \textbf{perte totale}.
+
+\textbf{8 tests de non-regression} : \textcolor{RougeKo}{\textbf{6 en echec}} avant correctif,
+\textcolor{VertOk}{\textbf{8 au vert}} apres. Les deux qui passaient deja sont ceux de
+compatibilite ascendante, que le correctif ne devait pas modifier. Un test verifie specifiquement
+la \textbf{coherence} entre fiche et progression, puisque c'est leur divergence qui constituait le
+symptome.
+
+\textbf{Reponse au joueur} : diagnostic en termes non techniques, explication de l'intermittence,
+contournement provisoire, version de livraison. Le deuxieme point est le plus important : il
+\textbf{valide l'observation du joueur} au lieu de la contredire. Un signalement qualifie
+d'« irreproductible » decourage les suivants, qui sont pourtant la principale source de detection
+sur un logiciel a faible base d'utilisateurs.
+
+\subsection{Amelioration au-dela du correctif}
+
+Une \textbf{couverture de test manquante} a ete comblee (aucun test ne simulait de redemarrage :
+c'est desormais le cas pour \emph{tous} les sous-systemes persistes) ; une \textbf{asymetrie d'API}
+a ete corrigee (\code{to_dict()} sans \code{from_dict()}), cause profonde de l'omission ; et le
+diagnostic a confirme l'interet de la recommandation R3.
+
+\couverture
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{4.4cm} X@{}}
+\toprule
+\textbf{Critere} & \textbf{Traitement} \\
+\midrule
+Contexte du retour et probleme a resoudre & Fiche telle que recue, puis analyse : perte partielle contre-intuitive, intermittence apparente, contournement inoperant \\
+La resolution apportee & Trois volets, compatibilite ascendante, verification par 8 tests executes avant et apres, reponse formulee au joueur \\
+Contribution des parties prenantes & Apport detaille de chaque fonction, en indiquant ce qui aurait manque sans elle \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+% ===========================================================================
+\section{Conclusion}
+
+Le dispositif presente ici a ete \textbf{construit}, non decrit a partir de l'existant. Le projet
+disposait au depart d'une chaine d'integration continue et d'un journal des versions, mais d'aucune
+supervision, d'aucun outillage de veille, d'aucun processus de collecte d'anomalies et d'aucune
+validation post-deploiement.
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{4.2cm} L{4.6cm} X@{}}
+\toprule
+\textbf{Domaine} & \textbf{Etat initial} & \textbf{Etat final} \\
+\midrule
+Gestion des dependances & Planchers seuls, majeures subies & Bornes hautes, Dependabot hebdomadaire, veille en CI \\
+Supervision & Aucune ; \code{/api/health} n'interrogeait rien & 19 sondes, sonde d'aptitude reelle, 18 regles, tableau de bord \\
+Collecte des anomalies & Aucun outil & 3 formulaires structures, saisie libre desactivee \\
+Validation du deploiement & \code{curl} sur la sonde de vivacite & 5 controles fonctionnels, rollback automatique \\
+Indicateurs de performance & Aucune mesure & \code{benchmark.py} reproductible \\
+Version rapportee & \code{1.0.0} en dur, journal a \code{1.2.0} & Source unique de verite, coherence testee \\
+Tests backend & 82 & \textbf{135} \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{5pt}
+\textbf{Trois anomalies reelles} ont ete decouvertes, reproduites, corrigees et couvertes par des
+tests qui echouent sur le code anterieur --- condition sans laquelle un test de non-regression ne
+prouve rien. Les deux premieres partagent un trait instructif : dans les deux cas, \textbf{une
+protection existait deja ailleurs dans le meme fichier}. La branche \code{tracks} interceptait
+l'exception que la branche \code{resources} laissait passer ; six sous-systemes etaient persistes
+quand le septieme etait omis. Le defaut ne venait pas d'une meconnaissance du probleme, mais d'une
+\textbf{application incomplete d'une solution deja connue} --- ce qui plaide pour des tests portant
+sur la \emph{symetrie} des traitements, et non seulement sur les chemins nominaux.
+
+La charge residuelle des recommandations non appliquees est estimee a \textbf{4 a 5,5 jours-homme},
+sans refonte architecturale. Les deux axes prioritaires portent tous deux sur la \textbf{fluidite
+percue}, qui conditionne l'engagement davantage que l'ajout de fonctionnalites. Le dispositif rend
+ces evolutions \textbf{mesurables} : chaque recommandation dispose d'un moyen de verification deja
+operationnel, de sorte que le gain pourra etre constate plutot que suppose.
+
+% ===========================================================================
+\section{Annexe A --- Artefacts ajoutes au depot}
+
+Chaque element du dossier correspond a un fichier verifiable. Le tableau ci-dessous recense les
+artefacts crees ou modifies, avec la competence qu'ils servent.
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{5.6cm} c X@{}}
+\toprule
+\textbf{Fichier} & \textbf{Etat} & \textbf{Role} \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{\color{AccentSec}Gestion des dependances --- C4.1.1}} \\
+\code{.github/dependabot.yml} & cree & Surveillance hebdomadaire des 4 ecosystemes \\
+\code{requirements.txt} & modifie & Bornes hautes interdisant les montees majeures \\
+\code{scripts/check_updates.py} & cree & Rapport de veille classant les obsolescences \\
+\code{.github/workflows/ci.yml} & modifie & Veille integree au job \code{security-audit} \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{\color{AccentSec}Supervision --- C4.1.2}} \\
+\code{backend/monitoring.py} & cree & Sondes, middleware, journalisation, sonde d'aptitude \\
+\code{backend/api.py} & modifie & \code{/api/health/ready}, \code{/api/metrics}, instrumentation \\
+\code{monitoring/prometheus.yml} & cree & Collecte, cibles, auto-supervision \\
+\code{monitoring/alert_rules.yml} & cree & 18 regles reparties en 6 groupes \\
+\code{monitoring/alertmanager.yml} & cree & Routage par severite, groupement, inhibition \\
+\code{monitoring/grafana/} & cree & Tableau de bord provisionne (13 panneaux) \\
+\code{docker-compose.monitoring.yml} & cree & Pile de supervision en surcouche \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{\color{AccentSec}Anomalies et support --- C4.2.1, C4.3.3}} \\
+\code{.github/ISSUE_TEMPLATE/} & cree & 3 formulaires, saisie libre desactivee \\
+\code{src/state.py} & modifie & Correctifs \code{ANO-2026-001} et \code{ANO-2026-002} \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{\color{AccentSec}Deploiement --- C4.2.2}} \\
+\code{scripts/smoke_test.sh} & cree & 5 controles post-deploiement \\
+\code{.github/workflows/deploy-vps.yml} & modifie & Test de fumee, rollback, garde-fou \code{JWT_SECRET} \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{\color{AccentSec}Performance et versions --- C4.3.1, C4.3.2}} \\
+\code{scripts/benchmark.py} & cree & Mesure des indicateurs de performance \\
+\code{VERSION} & cree & Source unique de verite du numero de version \\
+\code{backend/version.py} & cree & Lecture de la version et du journal \\
+\code{CHANGELOG.md} & modifie & Entree \code{[1.3.0]} documentant les correctifs \\
+\code{frontend/scripts/capture_screenshots.mjs} & cree & Captures d'ecran reproductibles de ce dossier \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+% ===========================================================================
+\section{Annexe B --- Inventaire des tests}
+
+La suite backend passe de \textbf{82 a 135 tests}. Les quatre fichiers ajoutes couvrent
+exactement les dispositifs et les anomalies decrits dans ce dossier.
+
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}L{5.0cm} c c X@{}}
+\toprule
+\textbf{Fichier de test} & \textbf{Tests} & \textbf{Avant correctif} & \textbf{Ce qu'il garantit} \\
+\midrule
+\code{tests/test_monitoring.py} & 20 & --- &
+Normalisation des libelles (cardinalite bornee), comptage du trafic par famille de code, sondes de
+securite, et surtout : la sonde d'aptitude \textbf{detecte reellement} une base corrompue et un
+fichier de jeu absent. \\
+\addlinespace
+\code{tests/test_state_markers.py} & 18 & \textcolor{RougeKo}{\textbf{16 en echec}} &
+Aucune valeur textuelle ne leve d'exception ; un marqueur rejete ne corrompt pas l'etat ; un
+marqueur invalide n'annule pas ses voisins valides ; le flux SSE emet \code{done} et
+\code{session.save()} est atteint. \\
+\addlinespace
+\code{tests/test_version.py} & 7 & --- &
+Coherence entre \code{VERSION}, la valeur exposee par \code{/api/health} et l'entree la plus
+recente du journal ; mode debug desactive par defaut. \\
+\addlinespace
+\code{tests/test_character_persistence.py} & 8 & \textcolor{RougeKo}{\textbf{6 en echec}} &
+Ressources, blessures et points d'attribut survivent a un redemarrage ; coherence fiche /
+progression ; compatibilite ascendante avec les sauvegardes anterieures et repli sur fichier
+illisible. \\
+\midrule
+\textbf{Total ajoute} & \textbf{53} & \textbf{22 en echec} & \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\vspace{5pt}
+La colonne \emph{Avant correctif} est la plus importante : elle atteste que les tests de
+non-regression \textbf{echouent effectivement} sur le code anterieur. Un test qui passerait dans les
+deux etats ne prouverait rien de l'anomalie qu'il pretend couvrir.
+
+\vspace{5pt}
+Cote frontend, les \textbf{30 tests} existants sont conserves ; cinq d'entre eux ont ete rendus
+\textbf{deterministes} au titre de \code{ANO-2026-003}, sans modification du code de production.

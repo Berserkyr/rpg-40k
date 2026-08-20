@@ -1,0 +1,101 @@
+% ===========================================================================
+%  BLOC 4 — MAINTENIR L'APPLICATION LOGICIELLE EN CONDITION OPERATIONNELLE
+%  Projet support : RPG 40K — Survivant de Ruche
+%  Auteur : NEHJMEHDINE REBIAI
+%  Compilation : pdfLaTeX (deux passes pour la table des matieres).
+% ===========================================================================
+\documentclass[11pt,a4paper,oneside]{article}
+\input{preambule}
+
+\begin{document}
+
+% --------------------------------------------------------------------------
+%  Page de titre
+% --------------------------------------------------------------------------
+% Hauteurs calibrees pour tenir sur UNE page : l'illustration est bornee en
+% hauteur (et non seulement en largeur), sinon le bloc auteur deborde sur une
+% seconde page qui recuperait en prime l'en-tete courant.
+\begin{titlepage}
+\centering\thispagestyle{empty}
+\vspace*{0.6cm}
+{\color{GrisBord}\rule{\linewidth}{1.2pt}}\vspace{0.5cm}
+
+{\large\color{AccentSec}\textsc{Bloc 4}\par}\vspace{0.3cm}
+{\huge\bfseries\color{AccentPrim}Maintenir l'application logicielle\\[0.12cm]
+en condition operationnelle\par}
+\vspace{0.5cm}{\color{GrisBord}\rule{\linewidth}{1.2pt}}
+
+\vspace{0.8cm}
+{\normalsize\color{GrisTexte}Titre professionnel \textbf{Expert en developpement logiciel} --- RNCP 39583\par}
+
+\vspace{0.9cm}
+{\normalsize\color{AccentSec}\textsc{Projet support}\par}\vspace{0.2cm}
+{\Large\bfseries RPG 40K --- Survivant de Ruche\par}\vspace{0.25cm}
+\begin{minipage}{0.76\linewidth}\centering\small\color{GrisTexte}
+Jeu de role narratif solo. Architecture \mbox{FastAPI + React},
+narration deleguee a un modele de langage, deploiement conteneurise sur VPS.
+\end{minipage}
+
+\vspace{0.8cm}
+\includegraphics[width=0.78\linewidth,height=6.2cm,keepaspectratio]{03_combat_tactique.png}
+
+\vfill
+{\normalsize\color{AccentSec}\textsc{Auteur}\par}\vspace{0.15cm}
+{\Large\bfseries NEHJMEHDINE REBIAI\par}
+\vspace{0.5cm}
+{\small\color{GrisTexte}Version documentee : \textbf{1.3.0} \quad$\bullet$\quad 19 aout 2026\par}
+\vspace{0.3cm}
+\end{titlepage}
+
+% --------------------------------------------------------------------------
+%  Avant-propos + sommaire sur une meme page
+% --------------------------------------------------------------------------
+\section*{Avant-propos}
+
+Ce dossier presente le dispositif de maintien en condition operationnelle du projet
+\textbf{RPG 40K --- Survivant de Ruche} : gestion des dependances, supervision et alerte,
+collecte et traitement des anomalies, deploiement des correctifs, axes d'amelioration, journal
+des versions et collaboration avec le support.
+
+\textbf{Parti pris.} Aucun processus decrit ici n'est depourvu d'outillage dans le depot. Lorsqu'une
+competence exigeait un dispositif absent, celui-ci a ete \emph{developpe}, execute et verifie avant
+d'etre documente. Les trois anomalies presentees sont des defauts \textbf{reels}, decouverts au
+cours de ce travail, reproduits et couverts par des tests qui echouent sur le code anterieur.
+Les releves reproduits sont des sorties reelles, y compris lorsqu'elles montrent un echec.
+
+\vspace{4pt}
+\noindent
+\begin{minipage}{0.485\linewidth}
+\setlength{\fboxsep}{6pt}
+\colorbox{GrisClair}{\begin{minipage}{\dimexpr\linewidth-2\fboxsep}
+\footnotesize\textbf{\color{AccentSec}Chiffres cles}\par\vspace{3pt}
+\begin{tabularx}{\linewidth}{@{}Xr@{}}
+Tests backend (avant $\rightarrow$ apres) & \textbf{82 $\rightarrow$ 135} \\
+Tests frontend & \textbf{30} \\
+Anomalies reelles corrigees & \textbf{3} \\
+Sondes de supervision & \textbf{19} \\
+Regles d'alerte & 	extbf{18} \\
+Recommandations argumentees & \textbf{8} \\
+\end{tabularx}
+\end{minipage}}
+\end{minipage}\hfill
+\begin{minipage}{0.485\linewidth}
+\setlength{\fboxsep}{6pt}\setlength{\fboxrule}{0.7pt}
+\fcolorbox{OrangeAlerte}{white}{\begin{minipage}{\dimexpr\linewidth-2\fboxsep-2\fboxrule}
+\footnotesize\textbf{\color{OrangeAlerte}Limites assumees}\par\vspace{3pt}
+\textbf{1.} Aucune base d'utilisateurs constituee : le canal de retour a ete mis en place, mais
+aucun retour reel n'a pu etre analyse (\S\ref{sec:reco}).\par\vspace{2pt}
+\textbf{2.} Environnement Docker indisponible : la pile de supervision est configuree et validee
+syntaxiquement, non executee.\par\vspace{2pt}
+\textbf{3.} Support exerce par une personne seule : les roles decrits sont des \emph{fonctions},
+non des equipes distinctes (\S\ref{sec:support}).
+\end{minipage}}
+\end{minipage}
+
+\vspace{8pt}
+{\small\tableofcontents}
+
+\clearpage
+\input{contenu}
+
+\end{document}
