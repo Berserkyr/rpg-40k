@@ -54,6 +54,72 @@ groups:
             venir du reverse proxy Nginx et non du backend.
 
   # ---------------------------------------------------------------------------
+  # Ressources de l'hôte. Une saturation disque ou mémoire provoque une panne
+  # que les sondes applicatives ne verraient qu'une fois le service déjà tombé :
+  # ces règles alertent pendant qu'il est encore temps d'intervenir.
+  - name: ressources_serveur
+    rules:
+      - alert: EspaceDisqueFaible
+        expr: >-
+          node_filesystem_avail_bytes{mountpoint="/"}
+          / node_filesystem_size_bytes{mountpoint="/"} < 0.15
+        for: 5m
+        labels:
+          severite: majeure
+        annotations:
+          resume: "Moins de 15 % d'espace disque disponible"
+          description: >-
+            Le disque de l'hôte se remplit. Les sauvegardes de partie et la base
+            SQLite échoueront avant que l'application ne signale quoi que ce soit.
+
+      - alert: EspaceDisqueCritique
+        expr: >-
+          node_filesystem_avail_bytes{mountpoint="/"}
+          / node_filesystem_size_bytes{mountpoint="/"} < 0.05
+        for: 2m
+        labels:
+          severite: critique
+        annotations:
+          resume: "Moins de 5 % d'espace disque disponible"
+          description: "Perte de donnees imminente : liberer de l'espace sans delai."
+
+      - alert: MemoireHoteSaturee
+        expr: >-
+          (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.90
+        for: 10m
+        labels:
+          severite: majeure
+        annotations:
+          resume: "Memoire de l'hote au-dela de 90 %"
+          description: >-
+            Risque d'arrêt du processus par le noyau (OOM killer). Croiser avec
+            rpg40k_active_sessions : les sessions ne sont pas expirées.
+
+      - alert: ChargeProcesseurElevee
+        expr: >-
+          100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 85
+        for: 15m
+        labels:
+          severite: mineure
+        annotations:
+          resume: "Processeur au-dela de 85 % pendant 15 minutes"
+          description: >-
+            Sur un service a faible trafic, une charge soutenue signale plutot une
+            boucle ou un traitement anormal qu'une montee en charge legitime.
+
+      - alert: ConteneurRedemarrages
+        expr: >-
+          increase(container_start_time_seconds{name=~"rpg40k-.+"}[30m]) > 0
+        for: 1m
+        labels:
+          severite: majeure
+        annotations:
+          resume: "Le conteneur {{ $labels.name }} a redemarre"
+          description: >-
+            Un redemarrage inattendu traduit un plantage ou un echec de la sonde
+            de vivacite. Consulter les journaux du conteneur.
+
+  # ---------------------------------------------------------------------------
   - name: qualite_de_service
     rules:
       - alert: TauxErreurServeurEleve

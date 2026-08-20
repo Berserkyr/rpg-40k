@@ -44,6 +44,21 @@ scrape_configs:
       - target_label: __address__
         replacement: blackbox-exporter:9115
 
+  # Ressources de l'hôte : CPU, mémoire, disque, réseau du VPS.
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          composant: systeme
+
+  # Ressources par conteneur : permet d'attribuer une consommation à un
+  # service précis plutôt qu'à l'hôte dans son ensemble.
+  - job_name: conteneurs
+    static_configs:
+      - targets: ["cadvisor:8080"]
+        labels:
+          composant: conteneurs
+
   # Prometheus se supervise lui-même : sans cela, l'arrêt du collecteur
   # produirait un silence indistinguable d'une absence d'incident.
   - job_name: prometheus

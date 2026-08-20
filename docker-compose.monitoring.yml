@@ -45,6 +45,39 @@ services:
     ports:
       - "127.0.0.1:9093:9093"
 
+  # Métriques système du VPS : CPU, mémoire, disque, réseau. Sans cet
+  # exportateur, la supervision ne verrait que l'application et resterait
+  # aveugle à une saturation de l'hôte — disque plein ou mémoire épuisée —
+  # qui est pourtant une cause fréquente d'indisponibilité.
+  node-exporter:
+    image: prom/node-exporter:v1.9.0
+    container_name: rpg40k-node-exporter
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "127.0.0.1:9100:9100"
+
+  # Métriques par conteneur : consommation CPU et mémoire de chaque service,
+  # redémarrages. Complète node-exporter, qui ne mesure que l'hôte globalement.
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
+    container_name: rpg40k-cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+
   # Sonde "boîte noire" : interroge l'application par le même chemin réseau
   # qu'un utilisateur, ce qui couvre également le reverse proxy Nginx.
   blackbox-exporter:
