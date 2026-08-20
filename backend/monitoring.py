@@ -185,6 +185,17 @@ READINESS = Gauge(
     registry=REGISTRY,
 )
 
+# Horodatage de démarrage du processus. `prometheus_client` n'expose les
+# métriques de processus — dont `process_start_time_seconds` — que sous Linux :
+# cette sonde rend l'uptime mesurable quelle que soit la plateforme, via
+# l'expression `time() - rpg40k_process_start_time_seconds`.
+PROCESS_START_TIME = Gauge(
+    "rpg40k_process_start_time_seconds",
+    "Horodatage Unix du démarrage du processus.",
+    registry=REGISTRY,
+)
+PROCESS_START_TIME.set_to_current_time()
+
 
 # ---------------------------------------------------------------------------
 # Journalisation structurée

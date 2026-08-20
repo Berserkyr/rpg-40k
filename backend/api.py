@@ -774,11 +774,23 @@ def readiness_check(response: Response):
 def metrics_endpoint():
     """Point de collecte Prometheus.
 
-    Expose les sondes au format d'exposition texte. La jauge des sessions
-    actives est rafraichie au moment du scrape, car elle reflete un etat
-    courant et non un evenement.
+    Expose les sondes au format d'exposition texte. Les jauges refletent un
+    etat courant et non un evenement : elles sont donc rafraichies au moment
+    du scrape.
+
+    Les sondes de dependance sont rafraichies ici (anomalie ANO-2026-004) :
+    elles n'etaient alimentees que par /api/health/ready, route que Prometheus
+    n'interroge pas. Au demarrage, rpg40k_ready valait donc 0 et l'alerte
+    critique ServiceNonPret se declenchait sur un service parfaitement sain,
+    tandis que les series rpg40k_dependency_up n'existaient pas encore.
     """
     ACTIVE_SESSIONS.set(len(_sessions) + (1 if _session is not None else 0))
+    probe_dependencies(
+        database_path=DATABASE_PATH,
+        character_file=CHARACTER_FILE,
+        prompt_file=PROMPT_FILE,
+        save_dir=SAVE_DIR,
+    )
     payload, content_type = render_metrics()
     return Response(content=payload, media_type=content_type)
 
