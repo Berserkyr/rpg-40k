@@ -14,7 +14,7 @@
 # --- API et serveur ---------------------------------------------------------
 fastapi>=0.141.1,<1.0.0
 uvicorn[standard]>=0.52.4,<1.0.0
-sse-starlette>=3.4.8,<4.0.0
+sse-starlette>=3.4.10,<4.0.0
 
 # --- Sécurité : authentification et hachage ---------------------------------
 PyJWT>=2.13.0,<3.0.0
