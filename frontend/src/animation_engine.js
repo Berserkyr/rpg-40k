@@ -416,13 +416,14 @@ export class AnimationPlayer {
    * @returns {Object} { transforms, particles, cameraShake, flash, isComplete }
    */
   update(now) {
-    if (!this.startTime) {
+    if (this.startTime === null) {
       return { transforms: {}, particles: [], isComplete: true };
     }
 
     const elapsed = now - this.startTime;
-    const progress = Math.min(1.0, elapsed / this.descriptor.duration);
-    this.isComplete = progress >= 1.0;
+    const duration = this.descriptor.duration;
+    const progress = Math.min(1.0, elapsed / duration);
+    this.isComplete = elapsed >= duration - Number.EPSILON;
 
     // Calculer transforms
     const transforms = computeAnimationTransforms(this.descriptor.phases, progress);
