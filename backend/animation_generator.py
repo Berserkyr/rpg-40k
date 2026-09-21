@@ -5,9 +5,9 @@ Cree dynamiquement des descripteurs d'animations JSON pour les skills.
 import json
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any
-import openai
+from typing import Any
 
+import openai
 
 CACHE_FILE = Path(__file__).parent / "animations_cache.json"
 
@@ -74,30 +74,30 @@ Sois creatif mais coherent avec l'univers Warhammer 40K (brutal, gothic, technol
 Retourne UNIQUEMENT le JSON valide, sans texte additionnel."""
 
 
-def load_cache() -> Dict[str, Any]:
+def load_cache() -> dict[str, Any]:
     """Charge le cache d'animations depuis le fichier JSON."""
     if not CACHE_FILE.exists():
         return {}
     try:
         with open(CACHE_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
-    except (json.JSONDecodeError, IOError) as e:
+    except (OSError, json.JSONDecodeError) as e:
         print(f"Erreur lecture cache animations: {e}")
         return {}
 
 
-def save_cache(cache: Dict[str, Any]) -> bool:
+def save_cache(cache: dict[str, Any]) -> bool:
     """Sauvegarde le cache d'animations dans le fichier JSON."""
     try:
         with open(CACHE_FILE, 'w', encoding='utf-8') as f:
             json.dump(cache, f, indent=2, ensure_ascii=False)
         return True
-    except IOError as e:
+    except OSError as e:
         print(f"Erreur ecriture cache animations: {e}")
         return False
 
 
-def get_cached_animation(skill_id: str) -> Optional[Dict[str, Any]]:
+def get_cached_animation(skill_id: str) -> dict[str, Any] | None:
     """Recupere une animation depuis le cache."""
     cache = load_cache()
     return cache.get(skill_id)
@@ -108,7 +108,7 @@ def generate_animation_with_llm(
     skill_name: str,
     skill_description: str,
     skill_category: str = "combat"
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Genere un descripteur d'animation via OpenAI API.
     
@@ -186,7 +186,7 @@ def get_or_generate_animation(
     skill_description: str = "",
     skill_category: str = "combat",
     force_regenerate: bool = False
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Recupere une animation depuis le cache ou la genere via LLM.
     Sauvegarde automatiquement les nouvelles animations.
@@ -230,7 +230,7 @@ def get_or_generate_animation(
     return get_default_animation(skill_id, skill_category)
 
 
-def get_default_animation(skill_id: str, category: str = "combat") -> Dict[str, Any]:
+def get_default_animation(skill_id: str, category: str = "combat") -> dict[str, Any]:
     """
     Retourne une animation par defaut basique selon la categorie.
     Utilisee quand la generation LLM echoue.
@@ -280,7 +280,7 @@ def list_cached_animations() -> list[str]:
     return list(cache.keys())
 
 
-def clear_animation_cache(skill_ids: Optional[list[str]] = None) -> int:
+def clear_animation_cache(skill_ids: list[str] | None = None) -> int:
     """
     Efface le cache d'animations.
     

@@ -1,4 +1,11 @@
-from src.quests import Quest, QuestLog, QuestObjective, QuestReward, QuestStatus, QuestType
+from src.quests import (
+    Quest,
+    QuestLog,
+    QuestObjective,
+    QuestReward,
+    QuestStatus,
+    QuestType,
+)
 
 
 def make_quest(**overrides):

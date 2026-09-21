@@ -1,12 +1,15 @@
 """Tests pour le systeme d'animations procedurales."""
 import json
-from pathlib import Path
-import pytest
+
 from backend.animation_generator import (
-    load_cache, save_cache, get_cached_animation,
-    get_or_generate_animation, get_default_animation,
-    list_cached_animations, clear_animation_cache,
     CACHE_FILE,
+    clear_animation_cache,
+    get_cached_animation,
+    get_default_animation,
+    get_or_generate_animation,
+    list_cached_animations,
+    load_cache,
+    save_cache,
 )
 
 

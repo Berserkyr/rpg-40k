@@ -12,12 +12,16 @@ rester alignés.
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from backend.api import app
-from backend.version import CHANGELOG_FILE, VERSION_FILE, get_version, latest_changelog_version
+from backend.version import (
+    CHANGELOG_FILE,
+    VERSION_FILE,
+    get_version,
+    latest_changelog_version,
+)
 
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
 

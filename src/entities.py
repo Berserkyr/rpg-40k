@@ -5,7 +5,6 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional
 
 
 class Faction(Enum):
@@ -43,8 +42,8 @@ class Entity:
     faction: Faction
     threat_level: ThreatLevel
     stats: EntityStats
-    abilities: List[str] = field(default_factory=list)
-    weakness: Optional[str] = None
+    abilities: list[str] = field(default_factory=list)
+    weakness: str | None = None
     description: str = ""
 
     def as_markdown(self) -> str:
@@ -73,7 +72,7 @@ class Entity:
 # Templates par faction
 # ---------------------------------------------------------------------------
 
-TYRANID_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
+TYRANID_TEMPLATES: dict[ThreatLevel, list[dict]] = {
     ThreatLevel.MINION: [
         {"name": "Hormagaunt", "stats": (2, 1, 3, 0), "abilities": ["Essaim"], "weakness": "Feu", "desc": "Creature rapide aux griffes acerees."},
         {"name": "Termagant", "stats": (2, 1, 2, 1), "abilities": ["Tir_bioplasma"], "weakness": "Isolation synaptique", "desc": "Bioform arme a distance."},
@@ -93,7 +92,7 @@ TYRANID_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
     ],
 }
 
-GENESTEALER_CULT_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
+GENESTEALER_CULT_TEMPLATES: dict[ThreatLevel, list[dict]] = {
     ThreatLevel.MINION: [
         {"name": "Neophyte", "stats": (2, 1, 2, 0), "abilities": ["Arme_improvisee"], "weakness": "Moral faible", "desc": "Cultiste de bas rang."},
         {"name": "Brood Brother", "stats": (2, 2, 2, 0), "abilities": ["Formation_militaire"], "weakness": "Hierarchie", "desc": "Garde corrompu."},
@@ -111,7 +110,7 @@ GENESTEALER_CULT_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
     ],
 }
 
-IMPERIAL_GUARD_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
+IMPERIAL_GUARD_TEMPLATES: dict[ThreatLevel, list[dict]] = {
     ThreatLevel.MINION: [
         {"name": "Troufion", "stats": (2, 1, 2, 0), "abilities": ["Lasgun"], "weakness": "Panique", "desc": "Soldat de base."},
     ],
@@ -128,7 +127,7 @@ IMPERIAL_GUARD_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
     ],
 }
 
-CIVILIAN_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
+CIVILIAN_TEMPLATES: dict[ThreatLevel, list[dict]] = {
     ThreatLevel.MINION: [
         {"name": "Refugie", "stats": (1, 0, 2, 0), "abilities": [], "weakness": "Terreur", "desc": "Civil en fuite."},
         {"name": "Ouvrier", "stats": (1, 1, 1, 0), "abilities": ["Outil_improvise"], "weakness": "Panique", "desc": "Travailleur de la ruche."},
@@ -146,7 +145,7 @@ CIVILIAN_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
     ],
 }
 
-ARBITES_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
+ARBITES_TEMPLATES: dict[ThreatLevel, list[dict]] = {
     ThreatLevel.MINION: [
         {"name": "Proctor", "stats": (2, 2, 2, 0), "abilities": ["Matraque"], "weakness": "Corruption", "desc": "Recrue des forces de l'ordre."},
     ],
@@ -162,7 +161,7 @@ ARBITES_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
     ],
 }
 
-MECHANICUS_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
+MECHANICUS_TEMPLATES: dict[ThreatLevel, list[dict]] = {
     ThreatLevel.MINION: [
         {"name": "Servitor de combat", "stats": (2, 3, 1, 0), "abilities": ["Programme_martial"], "weakness": "Brouillage", "desc": "Cyber-esclave lobotomise."},
     ],
@@ -179,7 +178,7 @@ MECHANICUS_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
     ],
 }
 
-CHAOS_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
+CHAOS_TEMPLATES: dict[ThreatLevel, list[dict]] = {
     ThreatLevel.MINION: [
         {"name": "Cultiste du Chaos", "stats": (2, 1, 2, 1), "abilities": ["Frenesie", "Marque_impie"], "weakness": "Foi imperiale", "desc": "Fanatique voue aux Puissances de la Ruine."},
     ],
@@ -195,7 +194,7 @@ CHAOS_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
     ],
 }
 
-ECCLESIARCHY_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
+ECCLESIARCHY_TEMPLATES: dict[ThreatLevel, list[dict]] = {
     ThreatLevel.MINION: [
         {"name": "Flagellant", "stats": (3, 0, 2, 2), "abilities": ["Frenesie_martyre", "Fleau"], "weakness": "Sang-froid", "desc": "Penitent fanatique sans peur de la mort."},
     ],
@@ -210,7 +209,7 @@ ECCLESIARCHY_TEMPLATES: Dict[ThreatLevel, List[dict]] = {
     ],
 }
 
-ALL_TEMPLATES: Dict[Faction, Dict[ThreatLevel, List[dict]]] = {
+ALL_TEMPLATES: dict[Faction, dict[ThreatLevel, list[dict]]] = {
     Faction.TYRANID: TYRANID_TEMPLATES,
     Faction.GENESTEALER_CULT: GENESTEALER_CULT_TEMPLATES,
     Faction.IMPERIAL_GUARD: IMPERIAL_GUARD_TEMPLATES,
@@ -223,7 +222,7 @@ ALL_TEMPLATES: Dict[Faction, Dict[ThreatLevel, List[dict]]] = {
 
 
 # Factions hostiles utilisables pour declencher un combat aleatoire varie.
-HOSTILE_FACTIONS: List[Faction] = [
+HOSTILE_FACTIONS: list[Faction] = [
     Faction.TYRANID,
     Faction.GENESTEALER_CULT,
     Faction.CHAOS,
@@ -237,7 +236,7 @@ HOSTILE_FACTIONS: List[Faction] = [
 BODY_TYPES = ("swarm", "beast", "brute", "psyker", "humanoid", "daemon", "machine")
 
 
-def entity_body_type(entity: "Entity") -> str:
+def entity_body_type(entity: Entity) -> str:
     """Determine l'archetype visuel (silhouette) d'une entite.
 
     Sert au rendu pixel art procedural: chaque archetype produit une
@@ -282,8 +281,8 @@ def _apply_variance(base: int, variance: int = 1) -> int:
 def generate_entity(
     faction: Faction,
     threat_level: ThreatLevel,
-    context: Optional[str] = None,
-    name_override: Optional[str] = None,
+    context: str | None = None,
+    name_override: str | None = None,
 ) -> Entity:
     """
     Generate an entity from templates with procedural variance.
@@ -339,8 +338,8 @@ def generate_entity(
 def generate_encounter(
     faction: Faction,
     difficulty: str = "standard",
-    context: Optional[str] = None,
-) -> List[Entity]:
+    context: str | None = None,
+) -> list[Entity]:
     """
     Generate a balanced encounter for the given faction and difficulty.
     
@@ -374,7 +373,7 @@ def generate_npc(
     role: str,
     faction: Faction = Faction.CIVILIAN,
     threat_level: ThreatLevel = ThreatLevel.STANDARD,
-    context: Optional[str] = None,
+    context: str | None = None,
 ) -> Entity:
     """
     Generate a named NPC with a specific role.
@@ -404,7 +403,7 @@ def generate_npc(
 # Utility for prompt injection
 # ---------------------------------------------------------------------------
 
-def encounter_to_prompt(entities: List[Entity]) -> str:
+def encounter_to_prompt(entities: list[Entity]) -> str:
     """Format an encounter for injection into the MJ prompt."""
     blocks = [e.to_prompt_block() for e in entities]
     return "Entites presentes: " + " ".join(blocks)

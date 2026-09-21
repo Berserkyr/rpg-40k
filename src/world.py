@@ -2,10 +2,9 @@
 Systeme de carte et exploration - Zones, deplacements, evenements
 Survivant de Ruche - Warhammer 40K Solo RPG
 """
-from dataclasses import dataclass, field
-from typing import Optional
-from enum import Enum
 import random
+from dataclasses import dataclass, field
+from enum import Enum
 
 
 class ZoneType(Enum):
@@ -49,7 +48,7 @@ class PointOfInterest:
     visited: bool = False
     loot_available: bool = True
     quest_related: bool = False
-    special_event: Optional[str] = None
+    special_event: str | None = None
 
 
 @dataclass
@@ -164,11 +163,11 @@ class WorldMap:
         """Ajoute une zone a la carte."""
         self.zones[zone.id] = zone
     
-    def get_zone(self, zone_id: str) -> Optional[Zone]:
+    def get_zone(self, zone_id: str) -> Zone | None:
         """Recupere une zone par son ID."""
         return self.zones.get(zone_id)
     
-    def get_current_zone(self) -> Optional[Zone]:
+    def get_current_zone(self) -> Zone | None:
         """Retourne la zone actuelle."""
         return self.zones.get(self.current_zone_id)
     
@@ -197,7 +196,7 @@ class WorldMap:
         
         return True, "OK"
     
-    def travel_to(self, target_zone_id: str, current_scene: int) -> tuple[bool, str, Optional[str]]:
+    def travel_to(self, target_zone_id: str, current_scene: int) -> tuple[bool, str, str | None]:
         """
         Effectue le deplacement vers une zone.
         Retourne (succes, message, evenement_aleatoire).
@@ -218,9 +217,7 @@ class WorldMap:
             target.status = ZoneStatus.EXPLORE
         
         self.current_zone_id = target_zone_id
-        if not self.travel_history:
-            self.travel_history.append(target_zone_id)
-        elif self.travel_history[-1] != target_zone_id:
+        if not self.travel_history or self.travel_history[-1] != target_zone_id:
             self.travel_history.append(target_zone_id)
         
         # Evenement aleatoire base sur le danger
@@ -228,7 +225,7 @@ class WorldMap:
         
         return True, f"Arrive a {target.name}", event
     
-    def _roll_travel_event(self, zone: Zone) -> Optional[str]:
+    def _roll_travel_event(self, zone: Zone) -> str | None:
         """Determine si un evenement se produit pendant le voyage."""
         # Plus la zone est dangereuse, plus les evenements sont probables
         event_chance = zone.threat_level.value * 15  # 15%, 30%, 45%, 60%, 75%

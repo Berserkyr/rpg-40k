@@ -9,11 +9,10 @@ Module volontairement pur (aucune dependance FastAPI) pour rester testable.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional
 
-from .dice import roll_2d6, DiceResult
+from .dice import DiceResult, roll_2d6
 
 
 class NegotiationApproach(Enum):
@@ -26,7 +25,7 @@ class NegotiationApproach(Enum):
 # Toutes les factions ne peuvent pas negocier. L'esprit-ruche tyranide est un
 # organisme collectif sans conscience individuelle: aucun dialogue possible.
 # Les cultistes genestealer restent humains (corrompus) et peuvent hesiter.
-FACTION_NEGOTIABLE: Dict[str, bool] = {
+FACTION_NEGOTIABLE: dict[str, bool] = {
     "tyranide": False,
     "culte_genestealer": True,
     "culte": True,
@@ -34,7 +33,7 @@ FACTION_NEGOTIABLE: Dict[str, bool] = {
 
 
 # Difficulte de base selon le niveau de menace de l'adversaire.
-THREAT_DIFFICULTY: Dict[str, int] = {
+THREAT_DIFFICULTY: dict[str, int] = {
     "sbire": 6,
     "minion": 6,
     "standard": 8,
@@ -45,7 +44,7 @@ THREAT_DIFFICULTY: Dict[str, int] = {
 
 # Ajustement de difficulte selon l'approche et le niveau de menace.
 # L'intimidation fonctionne bien sur les sbires mais se retourne contre un boss.
-APPROACH_MODIFIER: Dict[NegotiationApproach, Dict[str, int]] = {
+APPROACH_MODIFIER: dict[NegotiationApproach, dict[str, int]] = {
     NegotiationApproach.INTIMIDATION: {"sbire": -2, "minion": -2, "boss": +2},
     NegotiationApproach.PERSUASION: {},
     NegotiationApproach.MARCHANDAGE: {"elite": -1, "boss": -1},
@@ -61,13 +60,13 @@ class NegotiationOutcome:
     total: int = 0
     difficulty: int = 0
     margin: int = 0
-    roll: Optional[DiceResult] = None
+    roll: DiceResult | None = None
     # Effet a appliquer par l'appelant (api.py):
     #   ends_combat  : les ennemis se retirent, combat gagne sans effusion
     #   condition    : condition a appliquer aux ennemis ("aveugle", "enrage"...)
     #   condition_turns : duree de la condition
     ends_combat: bool = False
-    condition: Optional[str] = None
+    condition: str | None = None
     condition_turns: int = 0
     can_recruit: bool = False
 
@@ -152,7 +151,7 @@ def attempt_negotiation(
     )
 
 
-def approach_from_str(value: str) -> Optional[NegotiationApproach]:
+def approach_from_str(value: str) -> NegotiationApproach | None:
     """Convertit une chaine en NegotiationApproach (ou None si invalide)."""
     try:
         return NegotiationApproach(value)

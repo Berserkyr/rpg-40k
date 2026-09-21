@@ -3,7 +3,6 @@ Systeme de progression - XP, niveaux et arbre de competences
 Survivant de Ruche - Warhammer 40K Solo RPG
 """
 from dataclasses import dataclass, field
-from typing import Optional
 from enum import Enum
 
 
@@ -29,7 +28,7 @@ class Skill:
     prerequisites: list[str] = field(default_factory=list)
     # Bonus accordes
     attribute_bonus: dict[str, int] = field(default_factory=dict)
-    special_ability: Optional[str] = None
+    special_ability: str | None = None
     passive: bool = False
 
 

@@ -9,7 +9,6 @@ Module volontairement independant de FastAPI et de l'UI pour rester testable.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List
 
 
 @dataclass
@@ -39,7 +38,7 @@ class Companion:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Companion":
+    def from_dict(cls, data: dict) -> Companion:
         return cls(
             id=data["id"],
             name=data.get("name", data["id"]),
@@ -55,7 +54,7 @@ class Companion:
 
 # Archetypes recrutables. Chaque template definit les stats de base et le
 # niveau requis pour l'enroler (progression du joueur).
-COMPANION_TEMPLATES: Dict[str, dict] = {
+COMPANION_TEMPLATES: dict[str, dict] = {
     "milicien": {
         "name": "Milicien de la Ruche",
         "archetype": "milicien",
@@ -86,7 +85,7 @@ COMPANION_TEMPLATES: Dict[str, dict] = {
 @dataclass
 class Team:
     """Roster d'equipe persistant."""
-    members: List[Companion] = field(default_factory=list)
+    members: list[Companion] = field(default_factory=list)
     max_size: int = 3
 
     def is_full(self) -> bool:
@@ -117,7 +116,7 @@ class Team:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Team":
+    def from_dict(cls, data: dict) -> Team:
         team = cls(max_size=int(data.get("max_size", 3)))
         team.members = [Companion.from_dict(m) for m in data.get("members", [])]
         return team
@@ -144,7 +143,7 @@ def create_companion(template_id: str, level: int) -> tuple[Companion | None, st
     return companion, f"{companion.name} est pret a combattre."
 
 
-def available_templates(level: int) -> List[dict]:
+def available_templates(level: int) -> list[dict]:
     """Liste les archetypes recrutables au niveau donne."""
     result = []
     for tid, tpl in COMPANION_TEMPLATES.items():

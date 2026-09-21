@@ -29,6 +29,7 @@ def main() -> int:
     if existing and existing.get("password_hash"):
         # Compte déjà existant : on force le rôle admin en réécrivant le hash.
         import sqlite3
+
         from backend.database import DATABASE_PATH
 
         with sqlite3.connect(DATABASE_PATH) as conn:

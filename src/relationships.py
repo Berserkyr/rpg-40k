@@ -3,7 +3,6 @@ Systeme de reputation et relations - Factions, PNJ, consequences
 Survivant de Ruche - Warhammer 40K Solo RPG
 """
 from dataclasses import dataclass, field
-from typing import Optional
 from enum import Enum
 
 
@@ -83,7 +82,7 @@ class Faction:
         """Retourne le niveau de reputation."""
         return ReputationLevel.from_value(self.reputation)
     
-    def modify_reputation(self, amount: int) -> tuple[int, Optional[str]]:
+    def modify_reputation(self, amount: int) -> tuple[int, str | None]:
         """
         Modifie la reputation et retourne (nouvelle_valeur, message_si_changement_niveau).
         """
@@ -160,7 +159,7 @@ class NPC:
     id: str
     name: str
     description: str
-    faction_id: Optional[str] = None
+    faction_id: str | None = None
     
     # Disposition envers le joueur
     disposition: NPCDisposition = NPCDisposition.NEUTRE
@@ -168,7 +167,7 @@ class NPC:
     
     # Caracteristiques
     role: str = ""  # Marchand, garde, refugie, etc.
-    zone_id: Optional[str] = None
+    zone_id: str | None = None
     
     # Etat
     alive: bool = True
@@ -187,7 +186,7 @@ class NPC:
     personality_traits: list[str] = field(default_factory=list)
     known_info: list[str] = field(default_factory=list)
     
-    def modify_relationship(self, amount: int) -> tuple[int, Optional[str]]:
+    def modify_relationship(self, amount: int) -> tuple[int, str | None]:
         """Modifie la relation avec ce PNJ."""
         old_disposition = self.disposition
         self.relationship_score = max(-100, min(100, self.relationship_score + amount))
@@ -289,11 +288,11 @@ class RelationshipManager:
         """Ajoute un PNJ."""
         self.npcs[npc.id] = npc
     
-    def get_faction(self, faction_id: str) -> Optional[Faction]:
+    def get_faction(self, faction_id: str) -> Faction | None:
         """Recupere une faction."""
         return self.factions.get(faction_id)
     
-    def get_npc(self, npc_id: str) -> Optional[NPC]:
+    def get_npc(self, npc_id: str) -> NPC | None:
         """Recupere un PNJ."""
         return self.npcs.get(npc_id)
     

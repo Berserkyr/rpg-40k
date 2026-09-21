@@ -1,13 +1,13 @@
 """Tests du bestiaire etendu et des archetypes visuels (src/entities.py)."""
 
 from src.entities import (
+    ALL_TEMPLATES,
+    BODY_TYPES,
+    HOSTILE_FACTIONS,
     Faction,
     ThreatLevel,
-    ALL_TEMPLATES,
-    HOSTILE_FACTIONS,
-    BODY_TYPES,
-    generate_entity,
     entity_body_type,
+    generate_entity,
 )
 
 

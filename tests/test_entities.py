@@ -1,8 +1,13 @@
-import pytest
 from src.entities import (
-    Faction, ThreatLevel, EntityStats, Entity,
-    generate_entity, generate_encounter, generate_npc,
-    encounter_to_prompt, entity_difficulty_for_player,
+    Entity,
+    EntityStats,
+    Faction,
+    ThreatLevel,
+    encounter_to_prompt,
+    entity_difficulty_for_player,
+    generate_encounter,
+    generate_entity,
+    generate_npc,
 )
 
 

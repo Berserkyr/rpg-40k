@@ -16,7 +16,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-import backend.api as api
+from backend import api
 from src.state import CharacterState
 
 FICHE = Path("character_sheet.yaml")

@@ -46,7 +46,8 @@ def _percentile(valeurs: list[float], centile: float) -> float:
 def mesurer_latence_api(iterations: int = 60) -> dict:
     """Mesure la latence des routes en sollicitant l'application en direct."""
     from fastapi.testclient import TestClient
-    import backend.api as api
+
+    from backend import api
 
     client = TestClient(api.app)
     identifiants = {"username": "benchmark-perf", "password": "motdepasse1"}
@@ -112,8 +113,8 @@ def mesurer_bundles() -> dict:
 # ---------------------------------------------------------------------------
 def mesurer_contexte_llm(scenes: int = 30) -> dict:
     """Projette le coût d'une partie, l'historique n'étant jamais tronqué."""
-    from src.state import CharacterState
     from src.prompt_builder import build_system_prompt
+    from src.state import CharacterState
 
     personnage = CharacterState.from_file(REPO / "character_sheet.yaml")
     prompt_systeme = build_system_prompt(REPO / "prompt_survivant.md", personnage)

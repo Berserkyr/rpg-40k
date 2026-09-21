@@ -2,7 +2,7 @@ import random
 
 from fastapi.testclient import TestClient
 
-import backend.api as api
+from backend import api
 
 
 def _auth_headers(client, username=None, password="secret42"):

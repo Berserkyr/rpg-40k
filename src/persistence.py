@@ -3,10 +3,10 @@ Systeme de monde persistant - Etat global, memoire, coherence
 Survivant de Ruche - Warhammer 40K Solo RPG
 """
 from dataclasses import dataclass, field
-from typing import Optional, Any
 from datetime import datetime
 from pathlib import Path
-import json
+from typing import Any, Optional
+
 import yaml
 
 

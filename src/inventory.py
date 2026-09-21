@@ -5,7 +5,6 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional, Dict
 
 
 class ItemType(Enum):
@@ -49,7 +48,7 @@ class Item:
     quantity: int = 1
     max_stack: int = 1
     
-    def as_dict(self) -> Dict:
+    def as_dict(self) -> dict:
         return {
             "id": self.id,
             "name": self.name,
@@ -69,10 +68,10 @@ class Weapon(Item):
     damage: int = 2
     accuracy: int = 0
     range_type: WeaponRange = WeaponRange.MELEE
-    ammo_type: Optional[str] = None
+    ammo_type: str | None = None
     ammo_capacity: int = 0
     current_ammo: int = 0
-    special_abilities: List[str] = field(default_factory=list)
+    special_abilities: list[str] = field(default_factory=list)
     two_handed: bool = False
     
     def __post_init__(self):
@@ -91,7 +90,7 @@ class Weapon(Item):
         self.current_ammo += consumed
         return consumed
 
-    def as_dict(self) -> Dict:
+    def as_dict(self) -> dict:
         data = super().as_dict()
         data.update({
             "damage": self.damage,
@@ -115,7 +114,7 @@ class Armor(Item):
     durability: int = 100
     max_durability: int = 100
     coverage: str = "torse"  # torse, tete, jambes, complet
-    special_properties: List[str] = field(default_factory=list)
+    special_properties: list[str] = field(default_factory=list)
     
     def __post_init__(self):
         self.item_type = ItemType.ARMOR
@@ -128,7 +127,7 @@ class Armor(Item):
         effectiveness = self.durability / self.max_durability
         return int(self.defense_bonus * effectiveness)
 
-    def as_dict(self) -> Dict:
+    def as_dict(self) -> dict:
         data = super().as_dict()
         data.update({
             "defense_bonus": self.defense_bonus,
@@ -155,7 +154,7 @@ class Consumable(Item):
         self.stackable = True
         self.max_stack = 10
 
-    def as_dict(self) -> Dict:
+    def as_dict(self) -> dict:
         data = super().as_dict()
         data.update({
             "effect_type": self.effect_type,
@@ -170,15 +169,15 @@ class Consumable(Item):
 class Inventory:
     """Player inventory management."""
     
-    items: List[Item] = field(default_factory=list)
+    items: list[Item] = field(default_factory=list)
     max_weight: float = 20.0
     credits: int = 0
     
     # Equipment slots
-    weapon_main: Optional[Weapon] = None
-    weapon_secondary: Optional[Weapon] = None
-    armor_body: Optional[Armor] = None
-    armor_head: Optional[Armor] = None
+    weapon_main: Weapon | None = None
+    weapon_secondary: Weapon | None = None
+    armor_body: Armor | None = None
+    armor_head: Armor | None = None
     
     def current_weight(self) -> float:
         return sum(item.weight * item.quantity for item in self.items)
@@ -206,7 +205,7 @@ class Inventory:
             self.items.append(item)
         return True
     
-    def remove_item(self, item_id: str, quantity: int = 1) -> Optional[Item]:
+    def remove_item(self, item_id: str, quantity: int = 1) -> Item | None:
         """Remove item from inventory."""
         for i, item in enumerate(self.items):
             if item.id == item_id:
@@ -224,14 +223,14 @@ class Inventory:
                     return self.items.pop(i)
         return None
     
-    def get_item(self, item_id: str) -> Optional[Item]:
+    def get_item(self, item_id: str) -> Item | None:
         """Find item by ID."""
         for item in self.items:
             if item.id == item_id:
                 return item
         return None
     
-    def equip_weapon(self, weapon: Weapon, slot: str = "main") -> Optional[Weapon]:
+    def equip_weapon(self, weapon: Weapon, slot: str = "main") -> Weapon | None:
         """Equip weapon, return previously equipped."""
         if slot == "main":
             old = self.weapon_main
@@ -249,7 +248,7 @@ class Inventory:
         
         return old
     
-    def equip_armor(self, armor: Armor) -> Optional[Armor]:
+    def equip_armor(self, armor: Armor) -> Armor | None:
         """Equip armor, return previously equipped."""
         if armor.coverage in ("torse", "complet"):
             old = self.armor_body
@@ -303,7 +302,7 @@ class Inventory:
         
         return "\n".join(lines)
     
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Serialize inventory."""
         return {
             "items": [i.as_dict() for i in self.items],
@@ -316,7 +315,7 @@ class Inventory:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Inventory":
+    def from_dict(cls, data: dict) -> Inventory:
         """Deserialize inventory data saved by to_dict()."""
         inv = cls(
             max_weight=data.get("max_weight", 20.0),
@@ -540,7 +539,7 @@ CONSUMABLE_TEMPLATES = {
 }
 
 
-def create_weapon(template_id: str) -> Optional[Weapon]:
+def create_weapon(template_id: str) -> Weapon | None:
     """Create a weapon from template."""
     template = WEAPON_TEMPLATES.get(template_id)
     if not template:
@@ -565,7 +564,7 @@ def create_weapon(template_id: str) -> Optional[Weapon]:
     )
 
 
-def create_armor(template_id: str) -> Optional[Armor]:
+def create_armor(template_id: str) -> Armor | None:
     """Create armor from template."""
     template = ARMOR_TEMPLATES.get(template_id)
     if not template:
@@ -588,7 +587,7 @@ def create_armor(template_id: str) -> Optional[Armor]:
     )
 
 
-def create_consumable(template_id: str, quantity: int = 1) -> Optional[Consumable]:
+def create_consumable(template_id: str, quantity: int = 1) -> Consumable | None:
     """Create consumable from template."""
     template = CONSUMABLE_TEMPLATES.get(template_id)
     if not template:
@@ -612,7 +611,7 @@ def create_consumable(template_id: str, quantity: int = 1) -> Optional[Consumabl
     )
 
 
-def item_from_dict(data: Optional[Dict]) -> Optional[Item]:
+def item_from_dict(data: dict | None) -> Item | None:
     """Rebuild an Item/Weapon/Armor/Consumable from serialized data."""
     if not data:
         return None
@@ -680,7 +679,7 @@ def item_from_dict(data: Optional[Dict]) -> Optional[Item]:
     )
 
 
-def generate_loot(threat_level: str, context: str = "") -> List[Item]:
+def generate_loot(threat_level: str, context: str = "") -> list[Item]:
     """Generate random loot based on threat level."""
     loot = []
     

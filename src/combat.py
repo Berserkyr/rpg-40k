@@ -5,13 +5,10 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional, Dict, Tuple
-
 from random import randint
 
-from .dice import roll_2d6, DiceResult
-from .entities import Entity, EntityStats, ThreatLevel
-
+from .dice import DiceResult, roll_2d6
+from .entities import Entity, ThreatLevel
 
 # ---------------------------------------------------------------------------
 # Conditions (bonus / malus temporaires)
@@ -23,7 +20,7 @@ from .entities import Entity, EntityStats, ThreatLevel
 #   incoming : degats supplementaires subis par le porteur quand il est touche
 #   dot      : degats infliges au porteur en debut de tour (poison/saignement)
 #   skip     : le porteur perd son tour (etourdi)
-CONDITION_DEFS: Dict[str, Dict] = {
+CONDITION_DEFS: dict[str, dict] = {
     "saignement": {"label": "Saignement", "dot": 2, "icon": "🩸"},
     "etourdi": {"label": "Étourdi", "skip": True, "icon": "💫"},
     "supprime": {"label": "Supprimé", "attack": -3, "icon": "🔻"},
@@ -80,7 +77,7 @@ class ActionType(Enum):
 @dataclass
 class CombatAction:
     action_type: ActionType
-    target: Optional[str] = None
+    target: str | None = None
     details: str = ""
     
     def describe(self) -> str:
@@ -118,15 +115,15 @@ class Combatant:
     is_dead: bool = False
     
     # Abilities & conditions
-    abilities: List[str] = field(default_factory=list)
-    conditions: List[str] = field(default_factory=list)  # stunned, bleeding, etc.
+    abilities: list[str] = field(default_factory=list)
+    conditions: list[str] = field(default_factory=list)  # stunned, bleeding, etc.
     # Conditions temporisees: nom -> nombre de tours restants
-    status_effects: Dict[str, int] = field(default_factory=dict)
+    status_effects: dict[str, int] = field(default_factory=dict)
     # Compteur d'utilisation des capacites (pour les "une fois par combat")
-    ability_uses: Dict[str, int] = field(default_factory=dict)
+    ability_uses: dict[str, int] = field(default_factory=dict)
     
     @classmethod
-    def from_entity(cls, entity: Entity) -> "Combatant":
+    def from_entity(cls, entity: Entity) -> Combatant:
         """Create a combatant from an Entity."""
         # Health based on threat level
         health_map = {
@@ -150,7 +147,7 @@ class Combatant:
         )
     
     @classmethod
-    def from_player_state(cls, state) -> "Combatant":
+    def from_player_state(cls, state) -> Combatant:
         """Create a combatant from CharacterState."""
         # Map player attributes to combat stats
         combat = state.attributes.get("robustesse", 2) + state.attributes.get("discretion", 2)
@@ -238,13 +235,13 @@ class Combatant:
             if self.status_effects[name] > 0
         )
 
-    def tick_conditions(self) -> List[str]:
+    def tick_conditions(self) -> list[str]:
         """Applique les degats sur la duree et decremente les conditions.
 
         Retourne les messages a journaliser (saignements, expirations).
         """
-        messages: List[str] = []
-        remaining: Dict[str, int] = {}
+        messages: list[str] = []
+        remaining: dict[str, int] = {}
         for name, turns in self.status_effects.items():
             if turns <= 0:
                 continue
@@ -258,7 +255,7 @@ class Combatant:
         self.status_effects = remaining
         return messages
 
-    def active_conditions(self) -> List[dict]:
+    def active_conditions(self) -> list[dict]:
         """Liste serialisable des conditions actives (pour l'UI)."""
         out = []
         for name, turns in self.status_effects.items():
@@ -273,7 +270,7 @@ class Combatant:
             })
         return out
     
-    def take_damage(self, amount: int) -> Tuple[int, bool]:
+    def take_damage(self, amount: int) -> tuple[int, bool]:
         """Apply damage, return (actual_damage, is_dead)."""
         actual = max(0, amount)
         self.health = max(0, self.health - actual)
@@ -293,29 +290,29 @@ class CombatState:
     """Tracks the state of an ongoing combat encounter."""
     
     player: Combatant
-    enemies: List[Combatant]
-    allies: List[Combatant] = field(default_factory=list)
+    enemies: list[Combatant]
+    allies: list[Combatant] = field(default_factory=list)
     
     turn_number: int = 1
     current_phase: str = "player"  # "player", "enemy", "ally"
     is_active: bool = True
-    combat_log: List[str] = field(default_factory=list)
+    combat_log: list[str] = field(default_factory=list)
     
     # Environment
     environment: str = "couloir_ruche"
     lighting: str = "faible"
-    hazards: List[str] = field(default_factory=list)
+    hazards: list[str] = field(default_factory=list)
     
     def add_log(self, message: str) -> None:
         self.combat_log.append(f"[Tour {self.turn_number}] {message}")
     
-    def get_all_combatants(self) -> List[Combatant]:
+    def get_all_combatants(self) -> list[Combatant]:
         return [self.player] + self.enemies + self.allies
     
-    def get_living_enemies(self) -> List[Combatant]:
+    def get_living_enemies(self) -> list[Combatant]:
         return [e for e in self.enemies if not e.is_dead]
     
-    def is_combat_over(self) -> Tuple[bool, str]:
+    def is_combat_over(self) -> tuple[bool, str]:
         """Check if combat is over, return (is_over, reason)."""
         if self.player.is_dead:
             return True, "defaite"
@@ -337,7 +334,7 @@ class CombatState:
 # Combat resolution
 # ---------------------------------------------------------------------------
 
-def calculate_initiative(combatants: List[Combatant]) -> List[Combatant]:
+def calculate_initiative(combatants: list[Combatant]) -> list[Combatant]:
     """Sort combatants by initiative (speed + 2d6)."""
     initiatives = []
     for c in combatants:
@@ -353,7 +350,7 @@ def calculate_initiative(combatants: List[Combatant]) -> List[Combatant]:
 
 def resolve_attack(attacker: Combatant, defender: Combatant,
                    range_penalty: int = 0, advantage: int = 0,
-                   bonus_damage: int = 0) -> Dict:
+                   bonus_damage: int = 0) -> dict:
     """
     Resolve an attack action.
 
@@ -420,7 +417,7 @@ def resolve_attack(attacker: Combatant, defender: Combatant,
     return result
 
 
-def resolve_flee(fleeing: Combatant, pursuers: List[Combatant]) -> Dict:
+def resolve_flee(fleeing: Combatant, pursuers: list[Combatant]) -> dict:
     """
     Resolve a flee attempt.
     
@@ -480,7 +477,7 @@ class AbilitySpec:
 # Registre des capacites actives. Les identifiants correspondent aux
 # special_ability de l'arbre de competences (progression.py) et aux traits
 # d'armes, afin que debloquer une competence rende sa capacite jouable.
-COMBAT_ABILITIES: Dict[str, AbilitySpec] = {
+COMBAT_ABILITIES: dict[str, AbilitySpec] = {
     "frappe_puissante": AbilitySpec(
         "frappe_puissante", "Frappe puissante", 2, "enemy",
         "Attaque avec avantage et +2 degats.", "💥"),
@@ -514,7 +511,7 @@ COMBAT_ABILITIES: Dict[str, AbilitySpec] = {
 BASIC_ABILITIES = ["parade"]
 
 
-def get_available_abilities(ability_ids: List[str]) -> List[dict]:
+def get_available_abilities(ability_ids: list[str]) -> list[dict]:
     """Retourne les specs serialisables des capacites connues + basiques."""
     seen = set()
     out = []
@@ -535,7 +532,7 @@ def get_available_abilities(ability_ids: List[str]) -> List[dict]:
 
 
 def compute_tactical_advantage(attacker: Combatant, defender: Combatant,
-                               combat: "CombatState") -> int:
+                               combat: CombatState) -> int:
     """Calcule le niveau d'avantage tactique net d'une attaque (borne +/-2)."""
     level = 0
     if attacker.is_aiming:
@@ -555,8 +552,8 @@ def compute_tactical_advantage(attacker: Combatant, defender: Combatant,
 
 
 def use_combat_ability(user: Combatant, ability_id: str,
-                       target: Optional[Combatant],
-                       combat: "CombatState") -> Dict:
+                       target: Combatant | None,
+                       combat: CombatState) -> dict:
     """Execute une capacite active. Retourne {log, hit, damage, ...}."""
     spec = COMBAT_ABILITIES.get(ability_id)
     result = {"log": [], "success": False, "hit": False, "damage": 0}

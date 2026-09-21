@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Dict, List
-
 import json
 import logging
+from dataclasses import dataclass, field
+from pathlib import Path
+
 import yaml
 
 _logger = logging.getLogger("rpg40k.state")
@@ -19,17 +18,17 @@ class CharacterState:
     role: str
     origin: str
     objective: str
-    attributes: Dict[str, int]
-    resources: Dict[str, int]
-    tracks: Dict[str, str | int]
-    notes: List[str] = field(default_factory=list)
+    attributes: dict[str, int]
+    resources: dict[str, int]
+    tracks: dict[str, str | int]
+    notes: list[str] = field(default_factory=list)
     source_path: Path | None = None
     # Marqueurs d'etat rejetes lors du dernier parsing (valeur non exploitable).
     # Consultes par la couche API pour alimenter la sonde de supervision.
-    rejected_updates: List[str] = field(default_factory=list)
+    rejected_updates: list[str] = field(default_factory=list)
 
     @classmethod
-    def from_file(cls, path: str | Path) -> "CharacterState":
+    def from_file(cls, path: str | Path) -> CharacterState:
         file_path = Path(path)
         data = yaml.safe_load(file_path.read_text(encoding="utf-8"))
         return cls(
@@ -76,7 +75,7 @@ class CharacterState:
     # Persistence helpers -------------------------------------------------
 
     @classmethod
-    def from_dict(cls, data: Dict[str, object]) -> "CharacterState":
+    def from_dict(cls, data: dict[str, object]) -> CharacterState:
         """Reconstruit une fiche depuis une sauvegarde (anomalie ANO-2026-002).
 
         Complement de :meth:`to_dict`. Sans cette methode, l'etat du personnage
@@ -95,7 +94,7 @@ class CharacterState:
             notes=list(modele.get("notes") or []),
         )
 
-    def to_dict(self) -> Dict[str, object]:
+    def to_dict(self) -> dict[str, object]:
         """Return raw data structure for serialization."""
         return {
             "name": self.name,
@@ -149,7 +148,7 @@ class CharacterState:
         """Set a resource to an absolute value."""
         self.resources[resource_name] = max(0, value)
 
-    def apply_updates_from_text(self, text: str) -> List[str]:
+    def apply_updates_from_text(self, text: str) -> list[str]:
         """
         Parse MJ response for state update markers and apply them.
         

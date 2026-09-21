@@ -1,11 +1,10 @@
 """Tests du systeme de gestion d'equipe (src/team.py)."""
 
 from src.team import (
-    Team,
-    Companion,
-    create_companion,
-    available_templates,
     COMPANION_TEMPLATES,
+    Team,
+    available_templates,
+    create_companion,
 )
 
 

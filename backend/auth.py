@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 import bcrypt
 import jwt
@@ -87,7 +86,7 @@ def decode_access_token(token: str) -> dict:
 # ---------------------------------------------------------------------------
 # Dépendances FastAPI
 # ---------------------------------------------------------------------------
-def _extract_bearer(authorization: Optional[str]) -> str:
+def _extract_bearer(authorization: str | None) -> str:
     """Extrait le jeton d'un en-tête Authorization: Bearer <token>."""
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(
@@ -109,7 +108,7 @@ class CurrentUser:
         return self.role == ROLE_ADMIN
 
 
-def get_current_user(authorization: Optional[str] = Header(default=None)) -> CurrentUser:
+def get_current_user(authorization: str | None = Header(default=None)) -> CurrentUser:
     """Dépendance : exige un JWT valide et retourne l'utilisateur courant."""
     token = _extract_bearer(authorization)
     payload = decode_access_token(token)

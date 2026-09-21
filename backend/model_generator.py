@@ -2,12 +2,11 @@
 Générateur de modèles 3D voxel via LLM.
 Crée dynamiquement du code JavaScript pour des modèles procéduraux.
 """
-import json
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any, List
-import openai
+from typing import Any
 
+import openai
 
 GENERATED_MODELS_FILE = Path(__file__).parent.parent / "frontend" / "src" / "engine3d" / "GeneratedModels.js"
 
@@ -74,11 +73,11 @@ Retourne UNIQUEMENT le code JavaScript valide, sans texte additionnel ni balises
 
 
 def generate_models_with_llm(
-    model_types: List[str],
+    model_types: list[str],
     faction: str = "Imperial",
     count: int = 5,
     complexity: str = "medium"
-) -> Optional[str]:
+) -> str | None:
     """
     Génère du code JavaScript pour des modèles 3D voxel via OpenAI API.
     
@@ -188,11 +187,11 @@ import { createVoxel, PALETTES } from './VoxelEngine.js';
 
 
 def generate_and_save_models(
-    model_types: List[str],
+    model_types: list[str],
     faction: str = "Imperial",
     count: int = 5,
     complexity: str = "medium"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Génère des modèles et les sauvegarde directement dans le projet.
     

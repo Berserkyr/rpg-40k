@@ -8,7 +8,6 @@ from __future__ import annotations
 import os
 import random
 from pathlib import Path
-from typing import List, Optional
 
 import typer
 from openai import OpenAI
@@ -22,19 +21,48 @@ except ModuleNotFoundError:
     pass
 
 # Imports des systemes de base
-from src.dice import format_roll, roll_2d6
-from src.prompt_builder import build_system_prompt
-from src.state import CharacterState
-from src.entities import Faction, ThreatLevel, generate_entity, generate_encounter
-
 # Imports des nouveaux systemes
-from src.combat import CombatState, Combatant, CombatAction, ActionType, resolve_attack, resolve_flee
-from src.inventory import Inventory, generate_loot, WEAPON_TEMPLATES, ARMOR_TEMPLATES
-from src.progression import ProgressionState, SKILL_TREE, award_xp, format_skill_tree, get_available_skills
-from src.world import WorldMap, create_starting_map, format_zone_info, format_map_overview
-from src.quests import QuestLog, create_starting_quests, format_quest_log, format_quest_info
-from src.relationships import RelationshipManager, create_starting_relationships, format_relationships_overview
-from src.persistence import GameWorld, create_new_game_world, format_world_status, generate_gm_context
+from src.combat import (
+    Combatant,
+    CombatState,
+    resolve_attack,
+    resolve_flee,
+)
+from src.dice import format_roll, roll_2d6
+from src.entities import Faction, ThreatLevel, generate_entity
+from src.inventory import ARMOR_TEMPLATES, WEAPON_TEMPLATES, Inventory, generate_loot
+from src.persistence import (
+    GameWorld,
+    create_new_game_world,
+    format_world_status,
+    generate_gm_context,
+)
+from src.progression import (
+    SKILL_TREE,
+    ProgressionState,
+    award_xp,
+    format_skill_tree,
+    get_available_skills,
+)
+from src.prompt_builder import build_system_prompt
+from src.quests import (
+    QuestLog,
+    create_starting_quests,
+    format_quest_info,
+    format_quest_log,
+)
+from src.relationships import (
+    RelationshipManager,
+    create_starting_relationships,
+    format_relationships_overview,
+)
+from src.state import CharacterState
+from src.world import (
+    WorldMap,
+    create_starting_map,
+    format_map_overview,
+    format_zone_info,
+)
 
 app = typer.Typer(help="Survivant de Ruche - RPG solo Warhammer 40K")
 console = Console()
@@ -110,7 +138,7 @@ class GameSession:
         self.prompt_file = prompt_file
         
         # Combat actif
-        self.combat: Optional[CombatState] = None
+        self.combat: CombatState | None = None
     
     def _init_subsystems(self) -> None:
         """Initialise les sous-systemes."""
@@ -189,7 +217,7 @@ class GameSession:
         zone_ctx = f"\nZone actuelle: {zone.name}\n{zone.description}" if zone else ""
         return f"{base_prompt}\n\n{world_context}\n{zone_ctx}"
     
-    def handle_command(self, cmd: str) -> Optional[str]:
+    def handle_command(self, cmd: str) -> str | None:
         """Gere une commande utilisateur."""
         if not cmd.startswith("!"):
             return None
@@ -402,7 +430,7 @@ def play(
     
     # Construire le prompt systeme complet
     system_prompt = session.build_full_prompt()
-    messages: List[dict[str, str]] = [{"role": "system", "content": system_prompt}]
+    messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
 
     console.print("[bold cyan]SURVIVANT DE RUCHE[/bold cyan]")
     console.print(f"[dim]Campagne: {campaign} | Scene: {session.world.global_state.current_scene}[/dim]")
@@ -461,7 +489,7 @@ def play(
         session.save_all()
 
 
-def _request_completion(client: OpenAI, model: str, messages: List[dict[str, str]]) -> str:
+def _request_completion(client: OpenAI, model: str, messages: list[dict[str, str]]) -> str:
     """Send conversation to OpenAI and capture the assistant reply."""
 
     response = client.chat.completions.create(model=model, messages=messages)

@@ -3,7 +3,6 @@ Systeme de quetes - Missions, objectifs et recompenses
 Survivant de Ruche - Warhammer 40K Solo RPG
 """
 from dataclasses import dataclass, field
-from typing import Optional
 from enum import Enum
 
 
@@ -36,9 +35,9 @@ class QuestObjective:
     hidden: bool = False  # Revele quand atteint
     
     # Conditions de completion
-    target_zone: Optional[str] = None
-    target_npc: Optional[str] = None
-    target_item: Optional[str] = None
+    target_zone: str | None = None
+    target_npc: str | None = None
+    target_item: str | None = None
     target_kill_count: int = 0
     current_kill_count: int = 0
     
@@ -68,7 +67,7 @@ class QuestReward:
     reputation_changes: dict[str, int] = field(default_factory=dict)
     unlock_zones: list[str] = field(default_factory=list)
     unlock_quests: list[str] = field(default_factory=list)
-    special: Optional[str] = None
+    special: str | None = None
 
 
 @dataclass
@@ -85,19 +84,19 @@ class Quest:
     
     # Recompenses
     reward: QuestReward = field(default_factory=QuestReward)
-    failure_penalty: Optional[QuestReward] = None  # Consequences d'echec
+    failure_penalty: QuestReward | None = None  # Consequences d'echec
     
     # Conditions
     level_required: int = 1
     prerequisite_quests: list[str] = field(default_factory=list)
-    zone_required: Optional[str] = None
+    zone_required: str | None = None
     
     # Limite de temps (en scenes)
     time_limit: int = 0  # 0 = pas de limite
     scenes_elapsed: int = 0
     
     # Narratif
-    giver_npc: Optional[str] = None
+    giver_npc: str | None = None
     completion_text: str = ""
     failure_text: str = ""
     
@@ -242,7 +241,7 @@ class QuestLog:
         """Ajoute une quete au journal."""
         self.quests[quest.id] = quest
     
-    def get_quest(self, quest_id: str) -> Optional[Quest]:
+    def get_quest(self, quest_id: str) -> Quest | None:
         """Recupere une quete par ID."""
         return self.quests.get(quest_id)
     
@@ -292,7 +291,7 @@ class QuestLog:
         
         return False, "Objectif inconnu"
     
-    def complete_quest(self, quest_id: str) -> tuple[bool, str, Optional[QuestReward]]:
+    def complete_quest(self, quest_id: str) -> tuple[bool, str, QuestReward | None]:
         """Complete une quete et retourne les recompenses."""
         quest = self.quests.get(quest_id)
         if not quest:

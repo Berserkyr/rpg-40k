@@ -2,9 +2,9 @@
 
 from src.negotiation import (
     NegotiationApproach,
+    approach_from_str,
     attempt_negotiation,
     is_negotiable,
-    approach_from_str,
 )
 
 

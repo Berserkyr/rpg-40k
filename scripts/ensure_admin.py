@@ -1,5 +1,5 @@
-from backend.database import init_db, get_account, connect
 from backend.auth import hash_password
+from backend.database import connect, get_account, init_db
 
 init_db()
 conn = connect()

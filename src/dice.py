@@ -2,13 +2,12 @@
 
 from dataclasses import dataclass
 from random import randint
-from typing import Tuple
 
 
 @dataclass(frozen=True)
 class DiceResult:
     total: int
-    values: Tuple[int, int]
+    values: tuple[int, int]
 
     def is_double(self) -> bool:
         """Return True when both dice rolled the same value."""

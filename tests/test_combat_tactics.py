@@ -1,9 +1,14 @@
 """Tests du systeme de combat tactique (Phase A)."""
 
 from src.combat import (
-    Combatant, CombatState, CoverType,
-    roll_with_advantage, compute_tactical_advantage,
-    use_combat_ability, get_available_abilities, resolve_attack,
+    Combatant,
+    CombatState,
+    CoverType,
+    compute_tactical_advantage,
+    get_available_abilities,
+    resolve_attack,
+    roll_with_advantage,
+    use_combat_ability,
 )
 
 

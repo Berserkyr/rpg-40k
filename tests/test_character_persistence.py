@@ -17,7 +17,7 @@ import shutil
 
 import pytest
 
-import backend.api as api
+from backend import api
 from src.state import CharacterState
 
 UTILISATEUR = "test-persistance-fiche"

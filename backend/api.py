@@ -9,25 +9,37 @@ import json
 import os
 import random
 import time
+from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import AsyncIterator, Optional
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, Header, HTTPException, Response
+from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from backend.auth import (
+    ROLE_PLAYER,
+    CurrentUser,
+    create_access_token,
+    get_current_user,
+    hash_password,
+    require_admin,
+    verify_password,
+)
 from backend.database import (
-    DATABASE_PATH, create_account, ensure_user, get_account, init_db,
-    list_users, normalize_user_id, record_event, touch_last_seen,
+    DATABASE_PATH,
+    create_account,
+    ensure_user,
+    get_account,
+    init_db,
+    list_users,
+    normalize_user_id,
+    record_event,
+    touch_last_seen,
 )
 from backend.version import get_version
-from backend.auth import (
-    CurrentUser, ROLE_ADMIN, ROLE_PLAYER, create_access_token,
-    get_current_user, hash_password, require_admin, verify_password,
-)
 
 load_dotenv()
 
@@ -35,51 +47,96 @@ load_dotenv()
 # Imports des systemes
 # ---------------------------------------------------------------------------
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.state import CharacterState
-from src.prompt_builder import build_system_prompt
-from src.dice import format_roll, roll_2d6
-from src.entities import (
-    Faction, ThreatLevel, generate_entity, generate_encounter,
-    entity_body_type, HOSTILE_FACTIONS,
-)
-from src.combat import (
-    Combatant, CombatState, resolve_attack, resolve_flee,
-    CoverType, CombatRange, use_combat_ability, compute_tactical_advantage,
-    get_available_abilities, enemy_ai_action, ActionType,
-)
-from src.negotiation import (
-    NegotiationApproach, attempt_negotiation, approach_from_str, is_negotiable,
-)
-from src.team import (
-    Team, Companion, create_companion, available_templates,
-)
-from src.inventory import (
-    Inventory, generate_loot, WEAPON_TEMPLATES, ARMOR_TEMPLATES,
-    create_weapon, create_armor,
-)
-from src.progression import (
-    ProgressionState, SKILL_TREE, award_xp,
-    format_skill_tree, get_available_skills, get_unlocked_skills,
-    calculate_total_bonuses, get_special_abilities, serialize_skill_tree,
-)
-from src.world import WorldMap, create_starting_map, format_zone_info, format_map_overview
-from src.quests import QuestLog, create_starting_quests, format_quest_log, format_quest_info
-from src.relationships import (
-    RelationshipManager, create_starting_relationships,
-    format_relationships_overview,
-)
-from src.persistence import GameWorld, create_new_game_world, format_world_status, generate_gm_context
 from backend.animation_generator import (
-    get_or_generate_animation, get_cached_animation, list_cached_animations,
-    clear_animation_cache, get_default_animation,
+    clear_animation_cache,
+    get_cached_animation,
+    get_default_animation,
+    get_or_generate_animation,
+    list_cached_animations,
 )
 from backend.monitoring import (
-    ACTIVE_SESSIONS, AUTH_ATTEMPTS, BUILD_INFO, COMBATS_STARTED,
-    GM_CONTEXT_MESSAGES, GM_DURATION, GM_ERRORS, GM_GENERATIONS,
-    SSE_STREAMS_ACTIVE, STATE_MARKERS_REJECTED, STATE_PARSE_FAILURES,
-    configure_logging, metrics_middleware, probe_dependencies, render_metrics,
+    ACTIVE_SESSIONS,
+    AUTH_ATTEMPTS,
+    BUILD_INFO,
+    COMBATS_STARTED,
+    GM_CONTEXT_MESSAGES,
+    GM_DURATION,
+    GM_ERRORS,
+    GM_GENERATIONS,
+    SSE_STREAMS_ACTIVE,
+    STATE_MARKERS_REJECTED,
+    STATE_PARSE_FAILURES,
+    configure_logging,
+    metrics_middleware,
+    probe_dependencies,
+    render_metrics,
+)
+from src.combat import (
+    Combatant,
+    CombatState,
+    CoverType,
+    compute_tactical_advantage,
+    get_available_abilities,
+    resolve_attack,
+    resolve_flee,
+    use_combat_ability,
+)
+from src.dice import format_roll, roll_2d6
+from src.entities import (
+    HOSTILE_FACTIONS,
+    Faction,
+    ThreatLevel,
+    entity_body_type,
+    generate_entity,
+)
+from src.inventory import (
+    Inventory,
+    create_armor,
+    create_weapon,
+    generate_loot,
+)
+from src.negotiation import (
+    NegotiationApproach,
+    approach_from_str,
+    attempt_negotiation,
+    is_negotiable,
+)
+from src.persistence import (
+    GameWorld,
+    create_new_game_world,
+    generate_gm_context,
+)
+from src.progression import (
+    SKILL_TREE,
+    ProgressionState,
+    award_xp,
+    calculate_total_bonuses,
+    get_available_skills,
+    get_special_abilities,
+    get_unlocked_skills,
+    serialize_skill_tree,
+)
+from src.prompt_builder import build_system_prompt
+from src.quests import (
+    QuestLog,
+    create_starting_quests,
+)
+from src.relationships import (
+    RelationshipManager,
+    create_starting_relationships,
+)
+from src.state import CharacterState
+from src.team import (
+    Team,
+    available_templates,
+    create_companion,
+)
+from src.world import (
+    WorldMap,
+    create_starting_map,
 )
 
 # ---------------------------------------------------------------------------
@@ -145,7 +202,7 @@ class Session:
         self.character = self._load_character(save_dir)
         self.world = GameWorld.load(save_dir) or create_new_game_world(CAMPAIGN)
         self._load_subsystems(save_dir)
-        self.combat: Optional[CombatState] = None
+        self.combat: CombatState | None = None
         self.messages: list[dict] = [
             {"role": "system", "content": self._build_prompt()}
         ]
@@ -283,7 +340,7 @@ def _init_inventory() -> Inventory:
     return inv
 
 
-def _combat_state(combat: Optional[CombatState]) -> Optional[dict]:
+def _combat_state(combat: CombatState | None) -> dict | None:
     if not combat:
         return None
     living = combat.get_living_enemies()
@@ -438,7 +495,7 @@ def _character_build(session: Session) -> dict:
 
 
 # Sessions en memoire
-_session: Optional[Session] = None
+_session: Session | None = None
 _sessions: dict[str, Session] = {}
 
 
@@ -631,7 +688,7 @@ class TravelRequest(BaseModel):
 class SpawnRequest(BaseModel):
     faction: str = "tyranide"
     level: str = "standard"
-    count: Optional[int] = None  # nombre total d'ennemis (None = auto varie)
+    count: int | None = None  # nombre total d'ennemis (None = auto varie)
 
 
 class EquipRequest(BaseModel):
@@ -655,7 +712,7 @@ class ConsumableRequest(BaseModel):
 class CombatActionRequest(BaseModel):
     command: str                     # attack|aim|cover|defend|flee|ability
     target: int = 0                  # index de l'ennemi cible
-    ability_id: Optional[str] = None  # capacite a utiliser (command == "ability")
+    ability_id: str | None = None  # capacite a utiliser (command == "ability")
 
 
 class NegotiateRequest(BaseModel):
@@ -985,7 +1042,7 @@ def _make_enemy(faction: Faction, level: ThreatLevel) -> Combatant:
     return enemy
 
 
-def _spawn_enemy_group(faction: Faction, level: ThreatLevel, count: Optional[int]) -> list:
+def _spawn_enemy_group(faction: Faction, level: ThreatLevel, count: int | None) -> list:
     """Construit un groupe d'ennemis varie selon le niveau de menace.
 
     Un chef du niveau demande est toujours present; des sbires l'accompagnent

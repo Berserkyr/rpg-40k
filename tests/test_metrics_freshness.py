@@ -15,8 +15,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-import backend.api as api
-from backend import monitoring
+from backend import api, monitoring
 
 
 def _valeur(payload: str, metrique: str, **labels: str) -> float | None:
