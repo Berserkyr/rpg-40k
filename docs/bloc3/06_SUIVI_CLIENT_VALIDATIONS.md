@@ -1,75 +1,88 @@
 # C3.4.1 — Comptes rendus, validations et satisfaction
 
 **Révision :** 20 septembre 2026.  
-**Statut :** compte rendu de revue documentaire rédigé et protocole client préparé ; échanges et validations client non attestés.
+**Statut :** compte rendu rétrospectif de mon projet complet et supports des prochains points de réception ; pas de réunion client passée reconstituée. Signature, réception et satisfaction non obtenues.
 
-## 1. Compte rendu CR-00 — Revue de préparation, 20 septembre 2026
+## 1. Compte rendu CR-00 — Bilan rétrospectif du parcours complet, 20 septembre 2026
 
-**Nature :** synthèse écrite issue de l'examen du dépôt, destinée à préparer une décision. Ce n'est pas une réunion client tenue.  
-**Périmètre examiné :** dépôt local `6119aab`, version déclarée 1.3.0, avec modifications locales. Aucun contrôle du VPS ni nouvelle exécution des tests dans cette revue.  
+**Auteur et réalisation :** j'ai conçu et réalisé personnellement le projet de bout en bout.
+
+**Nature :** bilan écrit de cette réalisation, destiné à expliquer le parcours et à préparer une réception. Ce n'est ni une réunion client tenue ni une relation client simulée passée.
+
+**Périmètre :** jeu complet, douze lots communs aux Blocs 1 et 3 ; référence Git `e116b88`, copie locale non propre. Les suppressions locales sont conservées.
+
+**Résultats techniques courants :** voir l'[état de référence commun](../ETAT_PROJET_REFERENCE.md) et le [rapport des vérifications locales](../preuves/VERIFICATION_LOCALE_REFERENCE.md) : 138 tests backend, 30 frontend et build Vite réussi. Ces vérifications complètent le bilan ; aucun état de production n'est déduit du dépôt et aucun contrôle courant du VPS n'est établi ici.
+
 **Diffusion au commanditaire :** non attestée ; interlocuteur à confirmer.  
 **Décision du commanditaire :** non recueillie.
 
-### Évolutions et améliorations vérifiables
+### Parcours de réalisation et bénéfices recherchés
 
-| Évolution dans le dépôt | Bénéfice attendu pour le joueur / exploitant | Limite de la preuve |
-|---|---|---|
-| `4ec094c`, 19/08 : protection du traitement des marqueurs narratifs. | Éviter qu'une valeur invalide interrompe la sauvegarde et la fin du flux. | Correction dans Git et essais historiques documentés ; dernière version à retester. |
-| `68f0495`, 19/08 : persistance de la fiche personnage. | Conserver davantage d'état lors de la reprise. | Ne prouve pas une restauration complète après incident. |
-| `9f98298`, 19/08 : test de fin d'animation rendu déterministe. | Réduire un résultat instable de test. | Pas de résultat actuel de toute la suite. |
-| `82a5aba`, 20/08 : supervision des ressources et tableau de bord infrastructure. | Observer CPU, mémoire et ressources du service. | Déploiement effectif et réception des alertes non vérifiés ici. |
+| Étape et repères | Ce que j'ai réalisé / bénéfice pour le joueur ou l'exploitant | Limite de la preuve |
+| --- | --- | --- |
+| Étude et conception : [cadrage](../module/DOCUMENT_CADRAGE.md), [maquettes](../module/WIREFRAMES.md), [modèle de données](../module/MCD_MLD.md), pièces historiques. | Définir un jeu web narratif, ses parcours, sa structure et sa persistance. | Ces supports expliquent les choix ; ils ne constituent pas des validations client datées. |
+| `64f51d1`, 02/06 : socle web déjà présent. | Rendre le jeu accessible par une interface et une API. | Ce repère ne démontre pas le début réel du travail, qui n'est pas daté ici. |
+| `def2fec`, 04/06 ; `c1327d5` et `3c4a5c8`, 05/06. | Ajouter base multiutilisateur et E2E, tests frontend et configuration VPS. | Qualification et livraison préparées ; pas preuve du fonctionnement public courant. |
+| `7da31cf`, 10/07 ; `d7c1bd0`, 11/07. | Faire évoluer les accès JWT, leur documentation et la configuration de déploiement automatique. | Configuration et réception sont deux choses différentes. |
+| `b565b39`, `7d9bf12`, `19df4a2`, 12/07 ; `b623142`, 13/07 ; `d419b7f`, 14/07. | Enrichir le gameplay V1–V3, le bestiaire et le générateur 3D expérimental. | Incréments réels, sans effort historique mesuré ni acceptation de chaque lot. |
+| `4ec094c` et `68f0495`, 19/08. | Protéger la progression face aux marqueurs invalides et améliorer la sauvegarde de fiche personnage. | [Arbitrage réel analysé](03_CAS_ARBITRAGE.md) ; une correction ciblée ne garantit pas toute la reprise après incident. |
+| `2bab2f0`, 19/08 ; `82a5aba` et `6119aab`, 20/08. | Ajouter supervision, observation d'infrastructure et documentation. | Les [pièces historiques du Bloc 4](../bloc4/README.md) ne valent pas contrôle courant des alertes ou du VPS. |
+| `0d1af02` et `e116b88`, 20/09. | Formaliser les dossiers Bloc 3 et Bloc 1 autour de la même réalisation. | Restitution rétrospective, pas approbation client ni preuve de production. |
 
-### Situation et décisions demandées
+### Bilan et décisions restant à obtenir
 
-| Sujet | Fait / conséquence | Proposition soumise à décision |
-|---|---|---|
-| Livraison | Des fichiers nécessaires à la construction sont supprimés localement. | Clarifier la référence avant reconstruction, sans écraser le travail local. |
-| Continuité | Le workflow capture la version précédente après la mise à jour. | Vérifier/corriger le rollback et démontrer une restauration isolée. |
-| Qualité publique | Audits informatifs, TLS externe et capacité non vérifiés. | Refuser un nouveau GO public sans preuves sur la version retenue. |
-| Budget | Estimations initiales et récurrentes désormais distinctes. | Autoriser d'abord le diagnostic P01 de 2–3 j.h, inclus dans la stabilisation. |
-| Délai | Proposition centrale : 21 j.h + 20 % de réserve, 4 j/semaine. | Confirmer disponibilité et dates ; aucune échéance ferme n'est acquise. |
-| Service après livraison | Maintenance, évolutions et frais fournisseurs ne sont pas gratuits après ouverture. | Choisir séparément capacité de maintenance, backlog évolutif et limite IA. |
+| Sujet | Bilan de mon projet | Décision ou vérification complémentaire |
+| --- | --- | --- |
+| Périmètre | Le jeu est réalisé et les livrables couvrent les douze lots ; critères de réception non approuvés. | Convenir du périmètre effectivement présenté, des réserves et des exclusions, sans recommencer fictivement le projet. |
+| Qualité et livraison | Incréments, tests et correctifs existent ; copie locale modifiée. | Relier les résultats de la référence commune à la version montrée, conserver le travail local et qualifier la reconstruction. |
+| Continuité et exploitation | Sauvegardes, automatisation et supervision préparées. | Qualifier restauration, rollback, accès publics, notifications, capacité et coût IA avant autorisation d'exploitation. |
+| Coût de construction | Référence comparable depuis zéro : 100–168 j.h, 54 000–90 720 € HT réserve incluse. | Utiliser ce montant pour expliquer le périmètre, pas comme facture rétroactive ni charge restante. |
+| Délai historique | Incréments datés, mais début réel, temps passé et planning approuvé non établis. | Ne pas conclure à une dérive en comparant dates Git et capacité théorique. |
+| Stabilisation complémentaire | Option de 15–27 j.h ; 8 100–14 580 € HT réserve incluse. | Selon les contrôles, autoriser ou non un diagnostic puis des compléments bornés. Aucun engagement acquis. |
+| Vie du produit | Maintenance + évolutions + services : provision de 21 015–52 410 € HT/an. | Choisir séparément service attendu, capacité, évolutions et frais ; pas de maintenance illimitée implicite. |
 
-Les variantes de budget et leurs exclusions sont détaillées dans [C1.6](../bloc1/C1_6_PRECONISATIONS_CLIENT.md) et le [budget du cycle de vie](../bloc1/C1_4_CHARGE_BUDGET_CYCLE_VIE.md). Une provision ne constitue pas un engagement fournisseur.
+Les variantes et exclusions restent celles du [budget du cycle de vie](../bloc1/C1_4_CHARGE_BUDGET_CYCLE_VIE.md) et de [C1.6](../bloc1/C1_6_PRECONISATIONS_CLIENT.md). Le centre de stabilisation **21 + 4,2 = 25,2 j.h**, soit **11 340 € HT**, est seulement un scénario complémentaire non engagé. Je ne l'ajoute pas à la reconstruction complète et je ne lui attribue pas de dates fictives.
 
-### Actions proposées après cette revue
+### Actions proposées à la suite du bilan
 
 | Action | Responsable proposé | Échéance / condition | État |
-|---|---|---|---|
-| Confirmer interlocuteur, contexte réel/simulé et critères d'acceptation. | Candidat + commanditaire à identifier | J0 | À organiser |
-| Revoir l'estimation et autoriser diagnostic ou réviser le périmètre. | Commanditaire | J0 | Accord non obtenu |
-| Qualifier la référence technique et produire le relevé initial. | Candidat | J1, après autorisation | Non exécuté dans cette revue |
-| Désigner un testeur et réserver une démonstration. | Candidat + interlocuteur | Avant J3 | Participation non confirmée |
+| --- | --- | --- | --- |
+| Identifier l'interlocuteur habilité à recevoir le produit et convenir des critères. | Moi + interlocuteur à confirmer | Avant réception ; date à convenir | Accord non obtenu |
+| Relier la version montrée aux résultats courants et aux limites. | Moi | Avant démonstration | Se reporter à la référence commune |
+| Organiser les observations utilisateur et recueillir les retours. | Moi + participants volontaires | Selon disponibilités confirmées | Participation non confirmée |
+| Décider des réserves et, séparément, d'un éventuel complément. | Interlocuteur habilité | Après examen des preuves | Ni signature ni autorisation obtenue |
 
-## 2. Points de validation planifiés
+## 2. Supports des prochains points de réception et d'options complémentaires
 
-Les dates reprennent le [planning indicatif](01_METHODOLOGIE_PLANNING_RESSOURCES.md). Ce sont des propositions, pas des invitations acceptées. Chaque point comporte un ordre du jour, un support transmis et une réponse écrite ; l'absence de réponse n'est jamais une acceptation tacite.
+Je ne reconstruis pas des réunions de cadrage qui auraient précédé les travaux. Les points suivants portent sur **le produit déjà réalisé**, sa réception et les éventuels compléments. Leur date sera convenue avec les participants, pas déduite du planning de référence. Aucun de ces points n'est présenté comme tenu ou accepté.
 
-| Point | Date cible indicative | Question de décision | Support / preuve attendue | État actuel |
-|---|---|---|---|---|
-| J0 — cadrage de phase | 28/09/2026 | Que finance-t-on, à quelles conditions et avec quelle capacité ? | Périmètre, budget, charge cible, service attendu et participants. | À confirmer |
-| J1 — référence et estimation | S1, après T03 et avant T04 | Peut-on autoriser les lots suivants sur cette baseline ? | Build/tests identifiés, anomalies, nouvelle prévision ; sans accord, suite suspendue. | Non tenu |
-| J2 — exploitation | Fin S4 | Les protections et procédures sont-elles démontrées ? | Sécurité, restauration, rollback et notification. | Non tenu |
-| J3 — recette | 06/11/2026, à réviser si besoin | Les parcours attendus sont-ils satisfaits ? | Rapport de recette, réserves et résultats d'observation. | Non tenu |
-| J4 — démonstration / réception | 12/11/2026, à confirmer | Acceptation, acceptation limitée ou refus ? | Dernière version identifiée, démonstration, limites et PV. | Non tenu |
+| Point proposé | Condition / ordre logique | Question de décision | Support / preuve attendue | État actuel |
+| --- | --- | --- | --- | --- |
+| V1 — préparation de réception | Interlocuteur et périmètre identifiés | Quels parcours et limites seront examinés ? | CR-00, [tableau de bord](02_TABLEAU_DE_BORD.md), référence commune. | À organiser |
+| V2 — démonstration et observations | Après accord sur V1 | Quels critères sont observés et quelles réserves restent ouvertes ? | [Conducteur](07_DEMONSTRATION_RECETTE_CLIENT.md) à synchroniser avec la version, observations et questionnaire. | Résultats de séance non recueillis |
+| V3 — décision de réception | Après examen des résultats et réserves | Acceptation du périmètre, acceptation limitée ou report ? | PV, périmètre exact, réserves et actions acceptées. | Décision et signature non obtenues |
+| O1 — option de stabilisation | Uniquement si un besoin complémentaire est retenu | Quel diagnostic puis quels travaux autoriser, pour quelle charge ? | Scénario secondaire, impacts, capacité et devis/accord éventuel. | Non engagé |
+| O2 — option d'exploitation et de maintenance | Avant tout engagement de service | Les preuves d'exploitation et le service proposé sont-ils suffisants ? | Restauration, sécurité, notifications, objectifs et budget annuel. | Autorisation non obtenue |
 
-Ces jalons doivent contrôler l'adéquation fonctionnalités/besoin, mais aussi budget et calendrier. Un écart entraîne une décision explicite : corriger, limiter le périmètre, décaler ou arrêter. Un rendez-vous reporté reste visible dans l'historique.
+La réception du périmètre démontré et l'autorisation de production sont deux décisions différentes. L'absence de réponse n'est pas une acceptation tacite. Toute option retenue aura sa propre référence de charge et de délai ; un report sera conservé, pas effacé du suivi.
 
 ## 3. Compte rendu à utiliser après chaque échange réel
 
-Consigner immédiatement : référence du point, date et durée réelles, participants et rôles, contexte réel ou simulation, version présentée, besoins rappelés, faits nouveaux, écarts, options, décision, réserves, actions, responsables et échéances. Faire relire la synthèse ; conserver l'accord ou les corrections avec la pièce.
+Je consignerai : référence du point, date et durée réelles, participants et rôles, version présentée, besoins rappelés, faits nouveaux, écarts, options, décision, réserves, actions, responsables et échéances. La synthèse sera relue et l'accord ou les corrections conservés. Un éventuel exercice pédagogique sera identifié séparément ; il ne remplacera pas une réception réelle et ne changera pas le statut du projet réalisé.
 
 **Ne pas recopier CR-00 comme preuve de réunion.** Les rubriques suivantes doivent être renseignées à partir de la séance :
 
 | Élément de validation | Valeur au 20/09 |
-|---|---|
-| Commanditaire / rôle / contexte | Non confirmé |
+| --- | --- |
+| Interlocuteur habilité à la réception / rôle | Non confirmé |
 | Date réelle et participants | Aucun échange client attesté par cette pièce |
 | Version effectivement présentée | Non présentée dans cette revue |
 | Décision sur périmètre et budget | Non recueillie |
 | Demandes et réserves exprimées | Non recueillies ; ne pas attribuer les constats techniques au client |
 | Actions acceptées et échéances | À établir pendant l'échange |
 | Preuve d'accord ou de correction du CR | Non disponible |
+| Signature de réception | Non obtenue |
+| Satisfaction recueillie | NR : réponses non obtenues |
 
 Si les échanges ont eu lieu hors du dépôt, ajouter leur trace autorisée, anonymisée si nécessaire, en conservant date et contexte. Ne pas exposer de données personnelles ou de secrets dans le dossier jury.
 
@@ -88,7 +101,7 @@ Après les parcours, poser sans suggérer la réponse :
 Le testeur peut répondre à l'oral, à l'écrit ou avec un support adapté. Noter les aides nécessaires, sans transformer un besoin d'aménagement en défaut de l'utilisateur. Une note de satisfaction n'autorise pas à ignorer une faille de sécurité.
 
 | Indicateur | Définition | Cible proposée | Résultat actuel / action |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Couverture d'observation | Sessions complètes / sessions prévues | 3 sessions ciblées, objectif à confirmer | 0 session documentée ici ; pas d'exécution revendiquée. |
 | Satisfaction globale | Réponses 4 ou 5 à Q4 / réponses valides à Q4 | ≥ 80 %, à négocier | NR : aucune réponse. Avec 3 répondants, publier aussi le nombre brut ; 2/3 n'atteint pas 80 %. |
 | Clarté des parcours | Moyenne Q1–Q3, séparée par question ; exclure NA | ≥ 4/5, à négocier | NR ; une moyenne ne remplace pas les commentaires. |
@@ -102,4 +115,4 @@ Pour chaque session : identifiant pseudonymisé, date, rôle, version, environne
 
 Qualifier un commentaire en défaut, incompréhension, demande d'évolution ou hors périmètre. Reformuler avec l'interlocuteur, créer une action liée à la version, puis indiquer priorité, charge, responsable et échéance. Restituer ce qui est retenu, différé ou refusé, avec la raison ; mesurer à nouveau après correction si le point est important.
 
-**Limite actuelle C3.4.1 :** le compte rendu de revue, les jalons et les instruments de collecte sont produits. Les échanges, validations réalisées et réponses de satisfaction doivent encore être recueillis ; ils ne peuvent pas être attestés par une rédaction seule.
+**Limite actuelle C3.4.1 :** je présente le bilan rétrospectif de ma réalisation complète et les supports de réception. Le produit n'est pas une simulation ; en revanche, ce document n'atteste pas une relation client passée. Les échanges, signatures, décisions et réponses de satisfaction restent à recueillir, sans les déduire des résultats techniques locaux.

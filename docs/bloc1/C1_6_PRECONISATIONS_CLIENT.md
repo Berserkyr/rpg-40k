@@ -3,11 +3,15 @@
 **Projet :** RPG 40K Survivor — Survivant de Ruche  
 **Auteur :** REBIAI Nehjmehdine Karim  
 **Date :** 20 septembre 2026  
-**Statut :** proposition pour la simulation de présentation client ; accord non obtenu.
+**Statut :** restitution des choix du projet individuel réalisé et recommandations complémentaires ; accord d'un commanditaire distinct non attesté. Une éventuelle simulation concerne l'échange de décision, pas la réalité du développement.
 
 > **Compétence transmise dans la grille :** « Proposer les décisions et les axes de solutions préconisées auprès du client en développant un argumentaire adapté afin d'obtenir son adhésion et sa validation. »
 
 ## 1. Décision proposée et besoin auquel elle répond
+
+Le candidat confirme avoir conçu et réalisé le jeu depuis son origine. Le présent Bloc 1 et le [Bloc 3](../bloc3/README.md) portent sur ce même projet complet : cadrage et justification des choix ici, organisation et conduite de la réalisation dans le Bloc 3. La [référence commune](../ETAT_PROJET_REFERENCE.md) donne l'état actuel et les résultats techniques locaux.
+
+**Choix déjà matérialisés :** backend Python/FastAPI, interface React/Vite, comptes JWT/bcrypt, persistance SQLite/YAML, narration avec repli local, tests et configurations de livraison/supervision. Ils ne sont pas présentés comme des développements à démarrer. **Préconisations ci-dessous :** conserver ce socle, compléter les vérifications et arbitrer les suites. Le lot P01–P05 n'est qu'un scénario complémentaire et non le planning de construction du jeu.
 
 Je recommande de poursuivre le projet en conservant React et le backend modulaire FastAPI, puis de consacrer la prochaine étape à la fiabilité du service plutôt qu'à une réécriture. L'objectif est de permettre au joueur de se connecter, jouer, sauvegarder et reprendre une partie depuis son navigateur, tout en maîtrisant le coût d'exploitation et la dépendance au fournisseur IA.
 
@@ -17,7 +21,7 @@ Le besoin est repris du cadrage du projet, pas d'un nouvel entretien client. Dan
 
 ## 2. Sur quelles preuves repose la recommandation ?
 
-Je m'appuie sur [l'étude comparative C1.3.2](C1_3_2_ETUDE_COMPARATIVE_ARCHITECTURES.md) et [la veille C1.3.1](C1_3_1_VEILLE_TECHNOLOGIQUE.md), établies à partir du dépôt local au commit `6119aab` et de ses modifications locales.
+Je m'appuie sur [l'étude comparative C1.3.2](C1_3_2_ETUDE_COMPARATIVE_ARCHITECTURES.md) et [la veille C1.3.1](C1_3_1_VEILLE_TECHNOLOGIQUE.md), initialement revues sur `6119aab`, puis sur [l'état commun actualisé](../ETAT_PROJET_REFERENCE.md) à `e116b88` avec changements locaux. La [vérification locale](../preuves/VERIFICATION_LOCALE_REFERENCE.md) confirme 138 tests backend, 30 frontend et un build Vite réussi, sans conclure à la réception ou au déploiement.
 
 | Constat | Conséquence pour le client |
 |---|---|
@@ -59,7 +63,7 @@ Le périmètre proposé ne comprend ni réécriture, ni garantie de haute dispon
 
 ## 5. Charge et enveloppe de décision — hypothèses à valider
 
-Les documents budgétaires ont été complétés par le [chiffrage du cycle de vie](C1_4_CHARGE_BUDGET_CYCLE_VIE.md). L'estimation ci-dessous reste une **proposition indicative pour le seul lot de stabilisation**, et non un devis, un temps réellement passé ou le coût total du développement initial. Sa déclinaison opérationnelle proposée figure dans le [planning du Bloc 3](../bloc3/01_METHODOLOGIE_PLANNING_RESSOURCES.md).
+Les documents budgétaires ont été complétés par le [chiffrage du cycle de vie](C1_4_CHARGE_BUDGET_CYCLE_VIE.md). L'estimation ci-dessous reste une **proposition indicative pour le seul lot complémentaire de stabilisation**, et non un devis, un temps réellement passé ou le coût total du développement initial. Le [planning principal du Bloc 3](../bloc3/01_METHODOLOGIE_PLANNING_RESSOURCES.md) retrace désormais le projet complet ; la stabilisation y figure séparément comme perspective non engagée. Les résultats de tests déjà disponibles alimentent un futur diagnostic mais ne clôturent pas automatiquement tout le périmètre P01–P05.
 
 ### 5.1 Révision de l'estimation
 

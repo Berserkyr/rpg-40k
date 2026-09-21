@@ -1,9 +1,11 @@
 # Manuel d'utilisation — Survivant de Ruche
 
+> **Guide opérationnel non vérifié — qualification documentaire le 20/09/2026.** Les parcours restent à répéter sur la version et l'environnement retenus ; ce guide n'atteste ni fonctionnement actuel, ni conformité d'accessibilité, ni validation RNCP/client. Voir l'[état de référence](../ETAT_PROJET_REFERENCE.md) (création prévue par l'utilisateur), le [suivi actuel](../bloc3/02_TABLEAU_DE_BORD.md) et le [conducteur de recette préparé, non exécuté](../bloc3/07_DEMONSTRATION_RECETTE_CLIENT.md).
+
 **Public visé :** joueur / utilisateur final.
 **Compétence RNCP :** C2.4.1 — Documentation technique d'exploitation (manuel d'utilisation).
 **Application :** RPG 40K Survivor (« Survivant de Ruche »).
-**Accès en ligne :** `http://89.116.111.166:8081/`
+**Adresse du déploiement historique déclaré :** `http://89.116.111.166:8081/` — état du VPS non vérifié ; confirmer l'environnement avant utilisation.
 
 ---
 
@@ -41,8 +43,7 @@ Aucune installation n'est nécessaire pour jouer à la version en ligne.
 4. Validez : votre compte est créé et vous êtes automatiquement connecté.
 5. Lors des prochaines visites, utilisez **Connexion** avec vos identifiants.
 
-> Votre progression est **sauvegardée par compte**. Deux joueurs différents ne
-> partagent jamais la même partie.
+> La sauvegarde est prévue **par compte côté serveur**. L'isolation entre comptes doit être vérifiée par un contrôle distinct ; la simple connexion ne la prouve pas. Pour une reprise, utiliser un compte nommé dont les identifiants sont conservés, pas le compte aux identifiants générés du bouton « LANCER LA DÉMO IMMÉDIATE ».
 
 Pour quitter la session, cliquez sur **⏻ DÉCONNEXION** en haut à droite.
 
@@ -87,8 +88,8 @@ Pour quitter la session, cliquez sur **⏻ DÉCONNEXION** en haut à droite.
 | **FOUILLER** | Cherche du butin dans la zone courante. |
 | **RENCONTRE** | Déclenche un combat contre une menace de la zone. |
 | **Se déplacer** | Cliquez une zone accessible pour voyager (voir §7). |
-| **SAUVER** | Enregistre votre progression. |
-| **RESET** | Recommence une nouvelle partie (attention : réinitialise l'état). |
+| **SAUVER** | Demande l'enregistrement côté serveur ; vérifier le retour et la reprise selon §12. |
+| **RESET** | Retire la session mémoire selon le conducteur ; ne garantit pas l'effacement des sauvegardes ni une remise à zéro complète. À éviter pendant la recette. |
 
 ---
 
@@ -155,17 +156,19 @@ les animations et effets visuels pour un meilleur confort de lecture. Ce choix e
 mémorisé et respecte aussi le réglage système *« réduire les animations »*
 (`prefers-reduced-motion`).
 
-L'interface propose une navigation clavier, des libellés accessibles (ARIA) et des
-contrastes conformes (voir [MESURES_SECURITE_ACCESSIBILITE.md](MESURES_SECURITE_ACCESSIBILITE.md)).
+Des dispositifs de navigation clavier, de libellés ARIA et d'effets réduits sont décrits, mais la conformité des contrastes et l'accessibilité globale ne sont pas prouvées. Vérifier le focus, la lisibilité et le parcours clavier sur l'environnement retenu, puis consigner résultats et obstacles dans le [conducteur de démonstration et de recette](../bloc3/07_DEMONSTRATION_RECETTE_CLIENT.md). Le contrôle D07 y est préparé, non exécuté ; il ne remplace pas un audit complet.
 
 ---
 
 ## 12. Sauvegarde et reprise
 
-- Cliquez **SAUVER** à tout moment pour enregistrer la partie.
-- La progression est liée à votre compte : à la reconnexion, votre partie est
-  rechargée automatiquement.
-- **RESET** démarre une nouvelle partie et réinitialise l'état courant.
+- **Navigateur :** le stockage local conserve notamment le jeton de connexion, des informations de compte et le choix d'effets réduits. Ce stockage n'est pas une sauvegarde serveur de la progression ; effacer les données du navigateur ou se déconnecter ne garantit pas l'effacement des données serveur.
+- **Serveur :** **SAUVER** demande l'écriture de la progression du compte. Attendre la fin de l'action, vérifier le retour, puis noter zone, ressources et équipement pour comparaison. Le narrateur local nécessite lui aussi un backend disponible ; ce n'est pas un mode hors ligne autonome.
+- **Reprise limitée à vérifier :** se reconnecter avec le même compte nommé et comparer les valeurs convenues **avant** de relancer la narration. Si l'écran-titre apparaît, utiliser ensuite « INITIALISER LA CONNEXION » pour poursuivre le parcours.
+- Une reconnexion réussie peut retrouver une session encore en mémoire : elle ne prouve pas une restauration depuis le disque après redémarrage serveur. Ce contrôle doit être réalisé séparément sur une copie isolée. La reprise intégrale du terminal narratif ou d'un combat en cours n'est pas démontrée.
+- **RESET** retire la session mémoire selon le [conducteur](../bloc3/07_DEMONSTRATION_RECETTE_CLIENT.md), sans établir l'effacement des sauvegardes ; ne pas l'utiliser comme suppression de compte ou garantie de nouvelle partie vierge. Ne pas l'utiliser dans le parcours de recette préparé.
+
+Ces vérifications suivent le [conducteur de recette](../bloc3/07_DEMONSTRATION_RECETTE_CLIENT.md), notamment D05 et les contrôles de livraison distincts ; aucun résultat n'est acquis par la seule lecture du manuel.
 
 ---
 

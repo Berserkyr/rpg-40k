@@ -5,6 +5,8 @@
 **Usage :** estimation de cadrage, support à C1.4.1 et aux arbitrages C1.6.  
 **Statut :** hypothèses à valider ; ni devis fournisseur, ni relevé de temps historique.
 
+**Lecture commune aux deux soutenances :** le candidat a déjà réalisé le projet depuis son origine. Ce budget valorise la construction complète d'un périmètre comparable et ses suites, sans annoncer que le jeu reste à développer. Le [planning global du Bloc 3](../bloc3/01_METHODOLOGIE_PLANNING_RESSOURCES.md) reprend les mêmes douze lots ; les 21 jours de stabilisation sont une perspective complémentaire, pas son sujet principal. Voir [l'état commun du projet](../ETAT_PROJET_REFERENCE.md).
+
 ## 1. Trois périmètres à ne pas confondre
 
 1. **Réalisation complète depuis zéro :** estimer ce que demanderait la construction d'un jeu de périmètre comparable à celui du projet, avec livraison exploitable.

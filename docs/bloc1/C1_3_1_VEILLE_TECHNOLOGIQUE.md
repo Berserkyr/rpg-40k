@@ -1,4 +1,6 @@
-# C1.3.1 — Veille technologique et recherche d'informations
+# C1.3.1 — Veille technologique et recherche d’informations
+
+> Cette veille documente le même projet individuel déjà réalisé que le Bloc 3. Les consultations ci-dessous conservent leur date et leur portée ; la [référence commune](../ETAT_PROJET_REFERENCE.md) précise l'état technique actualisé et ne transforme pas ces consultations en étude antérieure au développement.
 
 **Projet :** RPG 40K Survivor — Survivant de Ruche  
 **Revue documentaire :** 20 septembre 2026  

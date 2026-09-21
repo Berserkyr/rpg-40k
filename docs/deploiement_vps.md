@@ -58,16 +58,16 @@ Cette solution est utile pour une démonstration. Pour une mise en production pr
 
 ## Fichiers ajoutés
 
-| Fichier | Rôle |
-|---|---|
-| [Dockerfile.backend](../Dockerfile.backend) | Image backend FastAPI |
-| [frontend/Dockerfile](../frontend/Dockerfile) | Build React + Nginx |
-| [frontend/nginx.conf](../frontend/nginx.conf) | Reverse proxy `/api` vers le backend |
-| [docker-compose.yml](../docker-compose.yml) | Orchestration VPS |
-| [.dockerignore](../.dockerignore) | Exclusion secrets/caches |
-| [.env.example](../.env.example) | Variables d’environnement |
-| [scripts/deploy_vps.sh](../scripts/deploy_vps.sh) | Script de déploiement Ubuntu |
-| [scripts/backup_vps.sh](../scripts/backup_vps.sh) | Sauvegarde des volumes Docker |
+| Fichier                                          | Rôle                                 |
+| ------------------------------------------------ | ------------------------------------- |
+| [Dockerfile.backend](../Dockerfile.backend)       | Image backend FastAPI                 |
+| [frontend/Dockerfile](../frontend/Dockerfile)     | Build React + Nginx                   |
+| [frontend/nginx.conf](../frontend/nginx.conf)     | Reverse proxy`/api` vers le backend |
+| [docker-compose.yml](../docker-compose.yml)       | Orchestration VPS                     |
+| [.dockerignore](../.dockerignore)                 | Exclusion secrets/caches              |
+| [.env.example](../.env.example)                   | Variables d’environnement            |
+| [scripts/deploy_vps.sh](../scripts/deploy_vps.sh) | Script de déploiement Ubuntu         |
+| [scripts/backup_vps.sh](../scripts/backup_vps.sh) | Sauvegarde des volumes Docker         |
 
 ## Prérequis VPS
 
@@ -165,6 +165,7 @@ Le déploiement VPS est aussi disponible dans les pipelines CI/CD.
 Workflow : [.github/workflows/deploy-vps.yml](../.github/workflows/deploy-vps.yml)
 
 Déclenchement :
+
 - **Automatique (CI/CD)** : à chaque push sur `main`, la pipeline **CI** s'exécute
   (tests backend, build frontend, tests unitaires, E2E). Si elle réussit, le workflow
   **Deploy VPS** se déclenche automatiquement via `workflow_run` et déploie sur le VPS.
@@ -176,13 +177,13 @@ tests ne part pas en production.
 
 Secrets GitHub à configurer dans **Settings → Secrets and variables → Actions** :
 
-| Secret / variable | Exemple | Rôle |
-|---|---|---|
-| `VPS_HOST` | `89.116.111.166` | Adresse du VPS |
-| `VPS_USER` | `debian` | Utilisateur SSH |
-| `VPS_SSH_KEY` | clé privée SSH dédiée | Clé privée utilisée par GitHub Actions |
-| `VPS_PORT` | `22` | Port SSH, optionnel |
-| variable `APP_DIR` | `/opt/rpg-40k` | Dossier de déploiement, optionnel |
+| Secret / variable   | Exemple                   | Rôle                                     |
+| ------------------- | ------------------------- | ----------------------------------------- |
+| `VPS_HOST`        | `89.116.111.166`        | Adresse du VPS                            |
+| `VPS_USER`        | `debian`                | Utilisateur SSH                           |
+| `VPS_SSH_KEY`     | clé privée SSH dédiée | Clé privée utilisée par GitHub Actions |
+| `VPS_PORT`        | `22`                    | Port SSH, optionnel                       |
+| variable`APP_DIR` | `/opt/rpg-40k`          | Dossier de déploiement, optionnel        |
 
 La clé privée ne doit jamais être committée. Créer de préférence une clé dédiée au déploiement et ajouter sa clé publique dans `~/.ssh/authorized_keys` sur le VPS.
 
@@ -190,21 +191,21 @@ La clé privée ne doit jamais être committée. Créer de préférence une clé
 
 Pipeline : [.gitlab-ci.yml](../.gitlab-ci.yml)
 
-Job : `deploy-vps`, **automatique** sur `main` (`when: on_success`), déclenché
+Job : `deploy-vps`, **automatique** sur `main` (`when: on_success`), déclenché j j4FfggfFF4JJjjemeej
 uniquement après la réussite des jobs `test`, `build` et `e2e`. Un push qui casse un
 test ne déclenche pas le déploiement.
 
 Variables GitLab CI/CD à configurer :
 
-| Variable | Exemple | Rôle |
-|---|---|---|
-| `VPS_HOST` | `89.116.111.166` | Adresse du VPS |
-| `VPS_USER` | `debian` | Utilisateur SSH |
-| `SSH_PRIVATE_KEY` | clé privée SSH dédiée | Clé privée utilisée par GitLab |
-| `VPS_PORT` | `22` | Port SSH, optionnel |
-| `APP_DIR` | `/opt/rpg-40k` | Dossier de déploiement, optionnel |
-| `RPG40K_BIND_ADDRESS` | `0.0.0.0` | Exposition publique directe |
-| `RPG40K_HTTP_PORT` | `8081` | Port dédié de l’application |
+| Variable                | Exemple                   | Rôle                              |
+| ----------------------- | ------------------------- | ---------------------------------- |
+| `VPS_HOST`            | `89.116.111.166`        | Adresse du VPS                     |
+| `VPS_USER`            | `debian`                | Utilisateur SSH                    |
+| `SSH_PRIVATE_KEY`     | clé privée SSH dédiée | Clé privée utilisée par GitLab  |
+| `VPS_PORT`            | `22`                    | Port SSH, optionnel                |
+| `APP_DIR`             | `/opt/rpg-40k`          | Dossier de déploiement, optionnel |
+| `RPG40K_BIND_ADDRESS` | `0.0.0.0`               | Exposition publique directe        |
+| `RPG40K_HTTP_PORT`    | `8081`                  | Port dédié de l’application     |
 
 Les deux pipelines lancent la même logique : `git pull`, mise à jour du `.env`, `docker compose -p rpg40k up -d --build`, puis vérification de `/api/health`.
 

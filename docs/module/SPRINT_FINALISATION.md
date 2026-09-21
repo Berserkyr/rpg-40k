@@ -1,5 +1,7 @@
 # Sprint de finalisation et préparation playtest — Activités 7 et 9
 
+> **Archive historique — classement le 20/09/2026.** Période antérieure ; date exacte de la campagne non établie. Les statuts et les chiffres de 39 tests backend / 13 tests frontend sont conservés comme déclarations historiques, pas comme résultats actuels ni validation RNCP/client. Les 26 tâches concernent ce sprint historique, pas une phase future. État du VPS non vérifié. Voir l'[état de référence](../ETAT_PROJET_REFERENCE.md) (création prévue par l'utilisateur) et le [suivi actuel](../bloc3/02_TABLEAU_DE_BORD.md). Les PDF anciens ne sont pas régénérés et ne constituent pas une version actuelle.
+
 Ce document regroupe les preuves attendues pour les activités d'amélioration et de finalisation : état des lieux, priorisation MoSCoW, corrections critiques, stabilité, UI/UX et préparation de démonstration.
 
 ---
@@ -18,7 +20,7 @@ Ce document regroupe les preuves attendues pour les activités d'amélioration e
 | Carte / déplacements | ✅ Terminé | zones accessibles |
 | Tests backend | ✅ Terminé | 39 tests |
 | Tests frontend | ✅ Terminé | 13 tests |
-| Déploiement VPS | ✅ Terminé | `http://89.116.111.166:8081/` |
+| Déploiement VPS | Déploiement historique déclaré | `http://89.116.111.166:8081/` ; état actuel non vérifié |
 
 ## 2. Priorisation MoSCoW
 
@@ -47,7 +49,9 @@ Ce document regroupe les preuves attendues pour les activités d'amélioration e
 
 ## 4. Stabilité et tests
 
-| Type de test | Commande | Résultat attendu |
+Table historique : résultats ou attentes consignés à l'époque, non réexécutés lors du classement. Les contrôles VPS ne prouvent pas la disponibilité actuelle.
+
+| Type de test | Commande | Résultat / attente historique |
 |---|---|---|
 | Backend | `pytest -q` | `39 passed` |
 | Frontend unitaires | `cd frontend; npm test` | `13 passed` |
@@ -88,7 +92,7 @@ Ce document regroupe les preuves attendues pour les activités d'amélioration e
 3. **Sécurité** — montrer `register/login`, JWT, route protégée sans token.
 4. **Flux de données** — action frontend → API → état mis à jour.
 5. **IA** — narration streamée en SSE.
-6. **Tests / qualité** — citer `39 passed`, `13 passed`, build OK.
+6. **Tests / qualité** — citer `39 passed`, `13 passed`, build OK uniquement comme résultats historiques déclarés ; ne pas les attribuer à la version présentée sans nouvelle preuve.
 7. **Limites honnêtes** — billing OpenAI à activer, fallback local, refresh token en backlog.
 
 ## 7. Support de présentation conseillé
@@ -117,6 +121,8 @@ Slides recommandées :
 
 ## 9. Suivi d'avancement du sprint
 
+**Table historique annotée :** les 26 tâches déclarées terminées appartiennent au sprint antérieur. Ce décompte ne décrit ni le reste à faire actuel ni une phase future ; se reporter au [tableau de bord actuel](../bloc3/02_TABLEAU_DE_BORD.md).
+
 | Lot | Tâches | Terminées | Reste |
 |---|---:|---:|---|
 | Sécurité (JWT/bcrypt/rôles) | 6 | 6 | — |
@@ -125,15 +131,18 @@ Slides recommandées :
 | Tests & build | 3 | 3 | — |
 | Déploiement VPS | 2 | 2 | — |
 | Documentation de rendu | 8 | 8 | — |
-| **Total** | **26** | **26** | **0 bloquant** |
+| **Total** | **26** | **26** | **0 bloquant déclaré historiquement, non revérifié** |
 
-Le seul point ouvert n'est pas un blocage de code mais une action externe :
+Le seul point ouvert déclaré dans ce bilan historique était une action externe :
 **activer la facturation OpenAI** (ou fournir une clé liée à un compte actif)
-pour obtenir 100 % de la fonctionnalité IA distante en démonstration.
+pour utiliser l'IA distante en démonstration. Cela ne constitue ni une liste actuelle exhaustive des blocages ni une garantie de fonctionnement.
 
-## 10. Definition of Done (critères de clôture)
+## 10. Definition of Done (critères historiques de clôture)
 
-Une fonctionnalité est considérée **terminée** si :
+Cases historiques conservées, sans revalidation lors du classement. La clôture actuelle exige les preuves, résultats, réserves et décision d'acceptation décrits dans la [DoD de suivi](../gestion_projet/kanban.md#definition-of-done--règle-actuelle-de-clôture).
+
+Une fonctionnalité était déclarée **terminée** si :
+
 - [x] le code est écrit et intégré sur `main` ;
 - [x] les tests associés passent (back et/ou front) ;
 - [x] le build frontend reste vert ;

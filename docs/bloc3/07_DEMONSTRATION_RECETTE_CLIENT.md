@@ -1,14 +1,15 @@
 # C3.4.2 — Démonstration de la version et décision de réception
 
 **Révision :** 20 septembre 2026.  
-**Version déclarée dans le dépôt :** 1.3.0, référence Git `6119aab`, copie de travail modifiée.  
-**Statut :** conducteur prêt à répéter ; aucune démonstration ni validation de fonctionnement actuelle n'est attestée par ce document.
+**Version déclarée dans le dépôt :** 1.3.0, référence Git `e116b88`, copie de travail modifiée.
+
+**Statut :** conducteur du produit déjà réalisé, commun aux Blocs 1 et 3 ; résultats techniques locaux disponibles, séance de démonstration et réception client à consigner séparément.
 
 ## 1. Objectif et règles de présentation
 
 Montrer qu'un joueur peut accéder au jeu, comprendre une action, explorer, gérer son personnage, sauvegarder et affronter une menace. Employer le vocabulaire du joueur : « partie », « progression », « sauvegarde » et « reprise », plutôt que commencer par les frameworks.
 
-Les parcours reprennent les [user stories](../rncp/USER_STORIES.md). La [recette historique](../rncp/05_plan_de_recette.md) et les résultats anciens ne valident pas automatiquement cette version. Les [E2E présents](../../frontend/e2e/game.spec.js) couvrent l'accès, le démarrage, un jet et l'apparition du combat ; pas l'ensemble de la sauvegarde, de la reprise et de l'isolation des comptes.
+Les parcours reprennent les [besoins fonctionnels communs](../PARCOURS_FONCTIONNELS_REFERENCE.md). Le [rapport local](../preuves/VERIFICATION_LOCALE_REFERENCE.md) confirme 138 tests backend, 30 tests frontend et un build réussi ; il ne constitue pas la réalisation des scénarios de séance D01–D08 ci-dessous. Les [E2E présents](../../frontend/e2e/game.spec.js) couvrent l'accès, le démarrage, un jet et l'apparition du combat ; ils n'ont pas été exécutés lors de cette harmonisation et ne couvrent pas toute la sauvegarde, la reprise ou l'isolation des comptes. Les anciennes pièces de recette locales ignorées par Git ne sont plus nécessaires pour lire ce conducteur.
 
 ## 2. Préparation obligatoire avant présentation
 
@@ -42,7 +43,7 @@ Le [lanceur global](../../start_game.bat) tente de libérer les ports, puis atte
 
 ## 4. Fiche de recette liée à la démonstration
 
-États autorisés : non exécuté, réussi, échoué, bloqué, non applicable avec motif. Joindre pour chaque résultat date, version, environnement, observation et preuve. **Tous les scénarios ci-dessous sont non exécutés dans cette préparation.**
+États autorisés : non exécuté, réussi, échoué, bloqué, non applicable avec motif. Joindre pour chaque résultat date, version, environnement, observation et preuve. **Tous les scénarios de séance ci-dessous sont non exécutés dans cette préparation. Cela ne signifie ni que les fonctionnalités restent à développer ni que leurs tests automatisés n'ont pas été exécutés.**
 
 | ID | Critère d'acceptation proposé | Preuve attendue | État initial |
 |---|---|---|---|
@@ -55,7 +56,7 @@ Le [lanceur global](../../start_game.bat) tente de libérer les ports, puis atte
 | D07 | Le parcours clavier préparé et l'option effets réduits sont utilisables. | Étapes, focus et éventuels obstacles décrits. | Non exécuté |
 | D08 | La progression et les prérequis de compétence sont compréhensibles. | Observation de consultation ; acquisition seulement si prévue. | Non exécuté |
 
-**Vérifications de livraison distinctes :** restauration après redémarrage sur copie isolée, accès refusé aux données d'un autre compte, HTTPS public, sauvegarde cohérente, rollback, alertes, charge et limite IA. Elles relèvent de T04–T11 et ne deviennent pas réussies parce que D01–D08 passent.
+**Vérifications de livraison distinctes :** restauration après redémarrage sur copie isolée, accès refusé aux données d'un autre compte, HTTPS public, sauvegarde cohérente, rollback, alertes, charge et limite IA. Elles concernent notamment les lots L04, L06 et L08–L11 du [projet complet](01_METHODOLOGIE_PLANNING_RESSOURCES.md) et ne deviennent pas réussies parce que D01–D08 passent. Un complément éventuel est chiffré séparément dans C1.6, sans remettre le développement du jeu au futur.
 
 ## 5. Plan de repli et gestion d'incident de présentation
 

@@ -1,6 +1,6 @@
 # C1.3.2 — Étude comparative des solutions techniques et choix d’architecture
 
-> Révision documentaire du 20 septembre 2026. Base vérifiée : copie locale du projet, HEAD `6119aab`, avec modifications locales. Cette étude est une réévaluation de l'architecture existante, pas la preuve qu'une étude identique a été menée avant le développement. Les alternatives n'ont pas été prototypées ni soumises à des benchmarks comparatifs. Le VPS et les dernières exécutions GitHub Actions n'ont pas été contrôlés pendant cette revue.
+> Révision documentaire du 20 septembre 2026. Le candidat a réalisé le projet de bout en bout ; cette étude formalise les choix du produit et réévalue leur pertinence. La première revue portait sur `6119aab` ; la référence commune actualisée est `e116b88`, avec modifications locales, dans [l'état du projet](../ETAT_PROJET_REFERENCE.md). Ce n'est pas la preuve qu'une étude identique a été rédigée avant le développement. Les alternatives n'ont pas été prototypées ni soumises à des benchmarks comparatifs. Le VPS et les dernières exécutions GitHub Actions n'ont pas été contrôlés.
 
 ## 1. Contexte de décision
 
@@ -14,7 +14,7 @@ Le besoin du client est de disposer d’une application web RPG :
 
 La décision C1.3.2 porte donc sur la **sélection de l’architecture technique** la plus adaptée, avec un niveau de sécurité cohérent avec le projet.
 
-Le cadrage ancien décrit encore un prototype sans tests frontend ni hébergement. Je ne le prends donc pas comme inventaire actuel. Aujourd'hui, la décision porte sur le maintien du backend Python existant ou sur son remplacement/découpage. L'effort de migration est pertinent pour cette décision actuelle, mais ne doit pas servir à justifier rétrospectivement le choix initial.
+Le cadrage ancien décrit une étape antérieure : il n'est pas l'inventaire actuel. Pour la soutenance, je présente d'abord l'architecture effectivement construite et son adéquation au besoin du jeu complet, puis les alternatives et la décision actuelle de la conserver. L'effort de migration est pertinent pour cette seconde décision, mais ne doit pas servir à justifier rétrospectivement le choix initial. Le [Bloc 3](../bloc3/README.md) décrit la réalisation du même périmètre, pas d'un autre projet limité à la stabilisation.
 
 ### Sources locales vérifiées
 
@@ -28,7 +28,7 @@ Le cadrage ancien décrit encore un prototype sans tests frontend ni hébergemen
 | [backend/monitoring.py](../../backend/monitoring.py), [docker-compose.monitoring.yml](../../docker-compose.monitoring.yml) | Instrumentation, logs structurés et pile optionnelle Prometheus, Alertmanager, Grafana, node-exporter, cAdvisor et blackbox-exporter. Leur présence ne prouve pas leur activation en production. |
 | [.github/workflows/deploy-vps.yml](../../.github/workflows/deploy-vps.yml) | Déploiement automatique conditionné par la CI, déclenchement manuel, contrôle du secret JWT et test de fumée. Le rollback nécessite une correction : `VERSION_PRECEDENTE` est capturée après la mise à jour Git. |
 
-**Écart local à résoudre :** Git signale notamment la suppression locale de [Dockerfile.backend](../../Dockerfile.backend), de [.env.example](../../.env.example) et de [.dockerignore](../../.dockerignore). Je ne peux pas conclure à une reconstruction reproductible depuis cette copie en l'état. Ces suppressions n'ont pas été annulées par la revue documentaire.
+**Écart local à résoudre :** Git signale notamment la suppression locale du fichier de construction backend, du modèle de variables d'environnement et du fichier d'exclusions Docker. Le [relevé de référence](../ETAT_PROJET_REFERENCE.md) distingue ces suppressions de la réussite des tests et du build frontend. Je ne peux pas conclure à une reconstruction Docker reproductible depuis cette copie en l'état. Ces suppressions n'ont pas été annulées par la revue documentaire.
 
 ---
 

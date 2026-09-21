@@ -1,5 +1,7 @@
 # Documentation technique
 
+> **Archive historique — classement le 20/09/2026.** Période antérieure ; date exacte de la campagne non établie. Architecture, versions, exemples et procédures décrivent l'état déclaré à l'époque, non une validation actuelle. Déploiement historique déclaré ; état du VPS non vérifié. Voir l'[état de référence](../ETAT_PROJET_REFERENCE.md) (création prévue par l'utilisateur) et le [suivi actuel](../bloc3/02_TABLEAU_DE_BORD.md). Les PDF anciens ne sont pas régénérés et ne constituent pas une version actuelle.
+
 **Projet :** RPG 40K Survivor
 **Stack :** React (Vite) · FastAPI · SQLite · OpenAI
 
@@ -232,7 +234,7 @@ HTTP/1.1 401 Unauthorized
 
 ## 12. Déploiement (Docker Compose)
 
-Le projet est conteneurisé et déployé sur un VPS via Docker Compose.
+Le bilan historique déclare une conteneurisation et un déploiement sur VPS via Docker Compose. L'état actuel du VPS et l'applicabilité des commandes ci-dessous ne sont pas vérifiés. Des fichiers de déploiement sont supprimés dans la copie de travail : ne pas présumer un dépôt complet ni une procédure directement exécutable.
 
 ```powershell
 # Sur le serveur
@@ -250,7 +252,7 @@ JWT_SECRET=<secret fort généré via /dev/urandom>
 OPENAI_API_KEY=<clé liée à un compte actif>
 ```
 
-Application en production : `http://89.116.111.166:8081/` — voir aussi
+Adresse du déploiement historique déclaré, sans vérification actuelle du VPS : `http://89.116.111.166:8081/` — voir aussi
 [docs/deploiement_vps.md](../deploiement_vps.md).
 
 ## 13. Observabilité et supervision

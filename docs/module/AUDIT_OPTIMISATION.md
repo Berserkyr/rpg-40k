@@ -1,5 +1,7 @@
 # Audit technique et optimisation — Activité 8
 
+> **Archive historique — classement le 20/09/2026.** Période antérieure ; date exacte de la campagne non établie. Les constats, gains et résultats (39 tests backend / 13 tests frontend) sont conservés comme déclarations historiques, sans nouvelle exécution ni validation RNCP/client. Déploiement historique déclaré ; état du VPS non vérifié. Voir l'[état de référence](../ETAT_PROJET_REFERENCE.md) (création prévue par l'utilisateur) et le [suivi actuel](../bloc3/02_TABLEAU_DE_BORD.md). Les PDF anciens ne sont pas régénérés et ne constituent pas une version actuelle.
+
 **Objectif de l'activité :** auditer le projet, identifier au moins deux axes d'optimisation, les prioriser et documenter les gains.
 
 ---
@@ -62,7 +64,7 @@
 
 ### Optimisation 3 — Validation automatique
 
-Tests exécutés après modifications :
+Exécutions déclarées après les modifications de la campagne historique (date exacte non établie), non réexécutées lors du classement :
 
 ```powershell
 pytest -q
@@ -80,13 +82,15 @@ npm run build
 
 ## 4. Mesures et validation
 
-| Validation | Résultat |
+**Table historique :** résultats déclarés à l'époque ; ni preuve d'exécution actuelle ni recette client acquise.
+
+| Validation historique | Résultat historique déclaré |
 |---|---:|
 | Tests backend | 39 passed |
 | Tests frontend unitaires | 13 passed |
 | Build frontend | OK |
-| Déploiement VPS | OK |
-| Healthcheck prod | `200 OK` |
+| Déploiement VPS | OK déclaré historiquement ; état actuel non vérifié |
+| Healthcheck prod | `200 OK` historique déclaré ; non revérifié |
 | Route protégée sans token | `401` |
 | Route protégée avec token | `200` |
 
@@ -103,7 +107,7 @@ npm run build
 
 | Critère | Avant | Après | Gain |
 |---|---|---|---|
-| Authentification | En-tête `X-User-Id` falsifiable | JWT signé HS256 + bcrypt | Usurpation d'identité éliminée |
+| Authentification | Ancien en-tête `X-User-Id` falsifiable | JWT signé HS256 + bcrypt | Risque lié à l'ancien mécanisme réduit ; ne prouve pas l'élimination de toute usurpation |
 | Accès aux routes de jeu | Ouvert sans contrôle | `401` sans jeton valide | Surface d'attaque réduite |
 | Stockage mot de passe | Potentiellement en clair | Hash bcrypt `$2b$...` | Confidentialité des identifiants |
 | Robustesse IA | Message trompeur si OpenAI KO | Distinction clé absente / service KO + repli | Démo fiable, message clair |
@@ -124,5 +128,5 @@ utilisateur** mesurable en « temps avant premier octet visible » (TTFB narrati
 2. **Détection** des points faibles (sécurité, message d'erreur, complexité).
 3. **Priorisation** P0/P1/P2 selon l'impact sécurité puis maintenabilité.
 4. **Correction** des P0/P1 (sécurisation JWT, clarté fallback).
-5. **Validation** par tests automatisés et vérifications en production.
+5. **Validation historique déclarée** par tests automatisés et vérifications sur le déploiement de l'époque ; état actuel du VPS non vérifié.
 6. **Documentation** des optimisations restantes pour la suite.

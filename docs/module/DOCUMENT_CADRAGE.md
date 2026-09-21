@@ -1,5 +1,7 @@
 # Document de cadrage — Projet Jeu Vidéo Fullstack
 
+> **Archive historique — classement le 20/09/2026.** Période antérieure ; date exacte de la campagne non établie. Périmètre, jalons et statuts décrivent le cadrage de l'époque, pas une validation RNCP/client ni le planning actuel. Déploiement historique déclaré ; état du VPS non vérifié. Voir l'[état de référence](../ETAT_PROJET_REFERENCE.md) (création prévue par l'utilisateur) et le [suivi actuel](../bloc3/02_TABLEAU_DE_BORD.md). Les PDF anciens ne sont pas régénérés et ne constituent pas une version actuelle.
+
 **Module :** Coordination dev Front & Back — M2 Dev Fullstack (Ynov Connect)
 **Auteur :** Projet individuel
 **Type de projet :** Jeu vidéo fullstack web
@@ -98,7 +100,7 @@ Un **mode de repli local** garantit que le jeu reste jouable même sans clé API
 
 | Activité | Livrable | Emplacement |
 |---|---|---|
-| 1, 4 | Doc de cadrage + README + doc technique | ce document, `README.md`, `docs/module/DOC_TECHNIQUE.md` |
+| 1, 4 | Doc de cadrage + README racine attendu + doc technique | ce document et [DOC_TECHNIQUE.md](DOC_TECHNIQUE.md) ; README racine supprimé de la copie de travail, indisponible |
 | 2 | MCD / MLD | `docs/module/MCD_MLD.md` |
 | 3, 5 | API REST sécurisée JWT | `backend/api.py`, `backend/auth.py` |
 | 4, 6 | Wireframes + frontend fonctionnel | `docs/module/WIREFRAMES.md`, `frontend/` |
@@ -106,7 +108,7 @@ Un **mode de repli local** garantit que le jeu reste jouable même sans clé API
 | 8 | Audit et optimisations | `docs/module/AUDIT_OPTIMISATION.md` |
 | 9 | Sprint de finalisation + playtest | `docs/module/SPRINT_FINALISATION.md` |
 | 10 | Analyse critique | `docs/module/ANALYSE_CRITIQUE.md` |
-| 1-10 | Checklist de conformité complète | `docs/module/ACTIVITES_1_A_10_CHECKLIST.md` |
+| 1-10 | Inventaire des livrables, sans validation de conformité | [ACTIVITES_1_A_10_CHECKLIST.md](ACTIVITES_1_A_10_CHECKLIST.md) |
 | — | Fonctionnalité IA | `backend/api.py` (`_gm_stream`) |
 
 ## 9. Critères de réussite
@@ -141,6 +143,8 @@ pour satisfaire les deux : expérience jouable réelle **et** preuves de compét
 
 ## 12. Jalons et planning
 
+**Table historique annotée :** les coches sont les statuts déclarés à l'époque, non une réception actuelle. Le README racine est indisponible et la complétude du dépôt n'est pas attestée.
+
 | Jalon | Contenu | État |
 |---|---|---|
 | J1 — Cadrage | Concept, stack, architecture, MCD/MLD | ✅ |
@@ -149,7 +153,7 @@ pour satisfaire les deux : expérience jouable réelle **et** preuves de compét
 | J4 — Sécurité | Auth JWT, bcrypt, rôles, routes protégées | ✅ |
 | J5 — IA | Intégration OpenAI + streaming + repli local | ✅ |
 | J6 — Qualité | Tests backend/front, build, corrections | ✅ |
-| J7 — Déploiement | Docker Compose sur VPS, healthcheck | ✅ |
+| J7 — Déploiement | Docker Compose sur VPS, healthcheck | Déploiement historique déclaré ; VPS actuel non vérifié |
 | J8 — Finalisation | Audit, analyse critique, doc de rendu | ✅ |
 
 ## 13. Matrice des risques projet
@@ -166,7 +170,7 @@ pour satisfaire les deux : expérience jouable réelle **et** preuves de compét
 
 Le projet est piloté en **mode agile itératif** :
 - backlog et priorisation **MoSCoW** (voir [SPRINT_FINALISATION.md](SPRINT_FINALISATION.md)) ;
-- suivi visuel via [kanban](../gestion_projet/kanban.md) ;
+- suivi historique via l'[ancien kanban](../gestion_projet/kanban.md) ; pilotage actuel dans le [tableau de bord](../bloc3/02_TABLEAU_DE_BORD.md) ;
 - versionnement discipliné selon la [stratégie Git](../gestion_projet/strategie_git.md)
   (commits atomiques, messages explicites, branche `main` stable) ;
 - validation par tests automatisés avant chaque incrément important.

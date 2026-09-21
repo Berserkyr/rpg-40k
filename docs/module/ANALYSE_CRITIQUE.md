@@ -1,5 +1,7 @@
 # Analyse critique — Activité 10
 
+> **Archive historique — classement le 20/09/2026.** Période antérieure ; date exacte de la campagne non établie. Les appréciations, pistes et chiffres (39 tests backend / 13 tests frontend) sont conservés comme bilan historique, pas comme validation actuelle RNCP/client. Déploiement historique déclaré ; état du VPS non vérifié. Voir l'[état de référence](../ETAT_PROJET_REFERENCE.md) (création prévue par l'utilisateur) et le [suivi actuel](../bloc3/02_TABLEAU_DE_BORD.md). Les PDF anciens ne sont pas régénérés et ne constituent pas une version actuelle.
+
 **Projet fil rouge :** RPG 40K Survivor
 **Module :** Coordination Front & Back — M2 INFO (Ynov Connect)
 
@@ -17,7 +19,7 @@ post-module et compte-rendu du plan d'action mis en œuvre.
   domaine métier (`src/`). Le code métier est indépendant du web.
 - **Communication front/back maîtrisée** : REST pour les actions, **SSE** pour la
   narration en flux, ce qui offre une vraie expérience temps réel.
-- **Sécurité conforme aux attendus** : JWT signés, mots de passe hachés bcrypt,
+- **Sécurité implémentée selon le bilan historique, conformité non établie** : JWT signés, mots de passe hachés bcrypt,
   gestion de rôles `player` / `admin`, routes protégées (401/403).
 - **Fonctionnalité IA réelle** : narration générée par OpenAI, avec **repli local**
   déterministe garantissant une démonstration fiable même sans réseau.
@@ -99,15 +101,17 @@ Les tâches **critiques pour le rendu** ont été traitées durant le module :
 | Sécurité JWT + bcrypt + rôles opérationnelle | CORS permissif, secret JWT par défaut si non configuré |
 | IA réelle avec repli local fiable | Dépendance à un service externe payant (OpenAI) |
 | Suite de tests back + front, build reproductible | Complexité élevée de `combat_action` et `streamSSE` |
-| Déploiement conteneurisé fonctionnel (VPS) | Sauvegardes YAML hors base relationnelle |
+| Déploiement conteneurisé historique déclaré (VPS non vérifié actuellement) | Sauvegardes YAML hors base relationnelle |
 
 | Opportunités (externes +) | Menaces (externes −) |
 |---|---|
 | Migration facile vers PostgreSQL/refresh token | Coût / facturation OpenAI (`billing_not_active`) |
 | Extension multijoueur, nouveaux contenus narratifs | Évolution/rupture d'API du modèle IA |
-| Portfolio valorisable (démo publique en ligne) | Exposition de secrets si mauvaise gestion `.env` |
+| Portfolio valorisable (démo publique déclarée à l'époque, disponibilité actuelle non vérifiée) | Exposition de secrets si mauvaise gestion `.env` |
 
 ## 7. Indicateurs qualité (métriques)
+
+**Table historique :** valeurs déclarées à l'époque, sans nouvelle mesure lors du classement. Les garanties formulées dans ce bilan ne valent pas constat actuel.
 
 | Indicateur | Valeur | Commentaire |
 |---|---|---|
@@ -120,12 +124,11 @@ Les tâches **critiques pour le rendu** ont été traitées durant le module :
 | Fonctions à complexité > seuil | 2 | `combat_action`, `streamSSE` (refactoring priorisé) |
 | Disponibilité démo | Repli local garanti | Aucune page blanche même si IA indisponible |
 
-Ces indicateurs servent de **base de référence** : ils permettront de mesurer
-objectivement l'effet des refactorings et durcissements planifiés en section 4.
+Ces indicateurs restent une **base historique déclarée**. Une comparaison nécessite une nouvelle campagne identifiée (version, environnement, résultats et preuves), selon le [suivi actuel](../bloc3/02_TABLEAU_DE_BORD.md) ; la section 4 n'est pas un planning actuel.
 
 ## 8. Conclusion
 
-Le projet atteint les objectifs du module : jeu fullstack jouable, communication
+Le bilan historique déclarait les objectifs du module atteints, sans valoir validation RNCP/client : jeu fullstack jouable, communication
 front/back en REST + SSE, **sécurité JWT opérationnelle**, IA réellement intégrée et
 persistance. Les axes d'amélioration sont identifiés, priorisés et documentés,
 ce qui constitue une base saine pour la suite (refactoring, durcissement production).

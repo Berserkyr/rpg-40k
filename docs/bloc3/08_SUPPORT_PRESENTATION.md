@@ -3,78 +3,108 @@
 **Révision :** 20 septembre 2026. **Format :** trame éditable, pas diaporama exporté.  
 Durée et ordre à adapter aux consignes de l'organisme ; les dix minutes du conducteur de démonstration ne sont pas présentées comme la durée officielle de l'épreuve.
 
-## 1. Projet, rôle et limites
+## 1. Ouverture commune aux Blocs 1 et 3
 
-**À afficher :** jeu web narratif, périmètre existant, projet individuel, version présentée.
+**À afficher :** un même jeu complet, réalisé personnellement ; deux angles de présentation le même jour.
 
-**À dire :** « J'ai réuni les fonctions de développement, qualité, exploitation et pilotage. Je distingue ce que le dépôt démontre de ce qui doit encore être observé avec un interlocuteur. Je ne présente pas une équipe hypothétique comme une équipe encadrée. »
+**Phrase commune exacte à reprendre dans les deux supports :**
 
-Preuve : [matrice du dossier](README.md). Identifier la contribution personnelle et les aides effectivement utilisées.
+> Le produit existe déjà. Le Bloc 1 présente le besoin, les choix d’architecture, le périmètre et le budget du jeu complet. Le Bloc 3 présente l’organisation, la réalisation, le suivi et les arbitrages de ce même projet. Les résultats techniques locaux ne constituent ni une validation client ni une preuve de production.
 
-## 2. Méthode et planification — C3.1
+**Transition personnelle :** « J'ai réalisé le projet de bout en bout, depuis sa conception. Je vais montrer comment j'ai articulé les fonctions de développement, qualité, livraison et documentation. Le projet est réel ; la matrice d'équipe que je présente est seulement une modélisation pédagogique. »
 
-**À afficher :** Kanban limité, tableau versionné, étude → mesure → conception → réalisation → restitution.
+Appuis : [dossier Bloc 3](README.md) et [état de référence commun](../ETAT_PROJET_REFERENCE.md). Pour la version et les résultats courants, utiliser cette référence, pas un ancien total de tests. Référence de rédaction : `e116b88`, copie non propre ; la version effectivement montrée doit être identifiée séparément.
 
-**À dire :** « Le Kanban permet de traiter les anomalies sans figer artificiellement les priorités. Le planning capacitaire donne des engagements discutables et visibles. Une tâche en cours maximum évite de disperser la capacité disponible. »
+## 2. Parcours de réalisation : les repères attestés
 
-Preuve : [planning détaillé](01_METHODOLOGIE_PLANNING_RESSOURCES.md). Montrer les dépendances et les dates comme propositions, pas comme réalisations historiques.
+**À afficher :** une frise factuelle, distincte du planning estimatif.
 
-## 3. Ressources et budget
+| Période / repère | Éléments à montrer |
+| --- | --- |
+| 02–05 juin | Socle web déjà présent (`64f51d1`), base multiutilisateur/E2E (`def2fec`), tests frontend (`c1327d5`), configuration VPS (`3c4a5c8`). |
+| 10–14 juillet | JWT/documentation (`7da31cf`), automatisation (`d7c1bd0`), gameplay V1–V3 (`b565b39`, `7d9bf12`, `19df4a2`), bestiaire (`b623142`), générateur 3D (`d419b7f`). |
+| 19–20 août | Correctif progression (`4ec094c`), sauvegarde de fiche (`68f0495`), supervision (`2bab2f0`), infrastructure (`82a5aba`), documentation (`6119aab`). |
+| 20 septembre | Formalisation des dossiers Bloc 3 et Bloc 1 (`0d1af02`, `e116b88`). |
 
-**À afficher :** 21 j.h de base, 4,2 j.h de réserve, capacité 4 j/semaine ; budget central indicatif 11 340 € HT.
+**À dire :** « Le premier repère Git montre déjà un socle web. Je ne le présente pas comme la date réelle de début du projet. Ces incréments montrent la construction et la consolidation du produit, pas mes heures travaillées ni des validations client. »
 
-**À dire :** « Ce lot concerne la stabilisation, pas toute la construction du jeu. La maintenance et les futures évolutions ont un budget annuel séparé. Les aménagements, formations et disponibilités doivent être intégrés avant d'approuver le calendrier. »
+Appui : [chronologie et planning global](01_METHODOLOGIE_PLANNING_RESSOURCES.md). Les pièces [techniques du module](../module/DOC_TECHNIQUE.md) sont des archives explicatives ; elles ne certifient pas l'état actuel du VPS.
 
-Preuve : [budget du cycle de vie](../bloc1/C1_4_CHARGE_BUDGET_CYCLE_VIE.md). Ne pas additionner une reconstruction complète à la stabilisation de l'existant.
+## 3. Organisation et dépendances — C3.1
 
-## 4. Tableau de bord — C3.2.1
+**À afficher :** étude → mesure → conception → réalisation → restitution, avec retours de mesure ; douze lots communs au Bloc 1.
 
-**À afficher :** tâches, avancement pondéré, consommé/reste à faire, échéances, risques et charge/capacité.
+**À dire :** « Je formalise rétrospectivement mon organisation avec une lecture Kanban légère. Je ne revendique pas un tableau historique dont je n'ai pas conservé la preuve. Le domaine et les contrats API structurent les écrans et la narration ; les incréments sont ensuite qualifiés et corrigés. La livraison et la supervision complètent la réalisation. J'ai assuré ces fonctions seul, sans multiplier artificiellement ma capacité. »
 
-**À dire :** « L'état initial comporte des données non mesurées. Je préfère afficher NR plutôt que zéro dépense ou une progression inventée. Après autorisation, chaque revue doit conserver le réalisé et l'écart à la référence. »
+Montrer les dépendances L01 → conception et modèles → L03–L06 → extension L07 ; contrôles L08–L09 ; livraison L10 et supervision L11 ; documentation L12 transverse. Expliquer que cet ordre est une **reconstitution et estimation de référence, non un planning approuvé historique**. Une limite de travail en cours et des relevés hebdomadaires sont proposés pour améliorer la suite, pas affirmés comme cérémonies passées.
 
-Preuve : [tableau de bord](02_TABLEAU_DE_BORD.md). S'il a été alimenté depuis, montrer les relevés datés ; sinon dire explicitement qu'il est initialisé mais pas encore éprouvé sur plusieurs périodes.
+Appuis : [WBS globale](01_METHODOLOGIE_PLANNING_RESSOURCES.md) et [affectation par fonctions](04_MISSIONS_MANAGEMENT_COMMUNICATION.md).
 
-## 5. Cas d'arbitrage — C3.2.2
+## 4. Charge et budget du jeu complet
 
-**À afficher :** progression perdue → prompt seul / parseur / protection du flux → choix combiné.
+**À afficher en principal :**
 
-**À dire :** « Une consigne à l'IA ne garantit pas un format. Le correctif protège la donnée et la fin du flux, puis rend les rejets visibles. Le commit étaye le choix ; je n'en déduis pas un temps passé ou un accord client. »
+- **100–168 j.h hors réserve**, à **450 € HT/j.h**.
+- Travail : 45 000–75 600 € HT ; réserve de 20 % : 9 000–15 120 € HT.
+- **Construction complète : 54 000–90 720 € HT, réserve incluse.**
+- Maintenance + évolutions + services : **21 015–52 410 € HT/an**, séparément.
 
-Preuve : [cas ANO-2026-001 et logigramme](03_CAS_ARBITRAGE.md). Bien distinguer résultats historiques et nouveaux essais.
+**À dire :** « C'est le même chiffrage de référence que dans le Bloc 1, pour construire un périmètre comparable depuis zéro. Ce n'est pas ma facture ni mon relevé de temps. Je n'ai pas de timesheet historique permettant de calculer un coût réel ou une dérive. »
 
-## 6. Missions et posture — C3.3.1
+Si le point central est demandé : (100 + 168) / 2 = **134 j.h hypothétiques**, puis 134 × 1,20 = 160,8 j.h, soit **72 360 € HT**. À 4 jours projet/semaine, la fourchette avec réserve représente environ **30–51 semaines** : ne pas la reporter sur la frise Git ni en déduire un retard. Les frais et exclusions restent ceux du [budget commun](../bloc1/C1_4_CHARGE_BUDGET_CYCLE_VIE.md).
 
-**À afficher :** fonctions couvertes, RACI proposé, capacité, styles selon situation et partage des ressources.
+## 5. Suivi du produit réalisé — C3.2.1
 
-**À dire :** « Le cumul des rôles facilite les décisions mais limite le contrôle indépendant. Je propose de séparer réalisation, vérification et acceptation. La méthode prévue doit être adaptée à la disponibilité, aux besoins d'accessibilité et à la compréhension de chaque participant. »
+**À afficher :** trois colonnes : livrables présents / preuves et résultats / contrôles et décisions restant à qualifier.
 
-Preuve : [analyse critique et communication](04_MISSIONS_MANAGEMENT_COMMUNICATION.md). Ne pas affirmer une pratique collective non observée ; expliquer le contexte accepté par l'organisme.
+**À dire :** « Le tableau de bord est initialisé après coup. Il montre des réalisations sur les douze lots : je ne repars pas d'un jeu inexistant, mais je ne déclare pas non plus une acceptation globale. Je distingue temps passé inconnu, estimation de référence et reste à qualifier. NR signifie non mesuré ou non renseigné, pas zéro travail. »
 
-## 7. Compétences et formation — C3.3.2
+Montrer un lot fonctionnel, un lot de livraison et un risque. Expliquer pourquoi configuration de supervision ≠ notification reçue, sauvegarde ≠ restauration après incident, résultats locaux ≠ réception client. Pour les contrôles courants, ouvrir la référence commune plutôt que réciter un résultat historique.
 
-**À afficher :** preuves disponibles, niveaux à évaluer, cibles, plan F01–F06.
+Appui : [tableau de bord et risques](02_TABLEAU_DE_BORD.md). Aucun historique de dépenses, de vitesse ou de réunions régulières n'est reconstitué artificiellement.
 
-**À dire :** « Je pars des risques du projet : reprise, sécurité, alertes, qualité et décision. Les formations proposées ont un objectif vérifiable ; leur suivi n'est pas présumé. Les aménagements portent sur les modalités, pas sur une baisse arbitraire de l'exigence. »
+## 6. Arbitrage réel : protéger la progression — C3.2.2
 
-Preuve : [grille et plan de formation](05_COMPETENCES_FORMATION.md). Remplacer les niveaux NE uniquement après évaluation réelle.
+**À afficher :** progression menacée → prompt seul / contrôle du parseur / protection du flux → choix combiné.
 
-## 8. Relation client — C3.4.1
+**À dire :** « Une consigne au narrateur ne garantit pas son format de sortie. J'ai traité la valeur invalide et protégé la poursuite du flux pour préserver la sauvegarde, tout en rendant les rejets visibles. Le commit étaye la réalisation. Le logigramme explique mon choix rétrospectivement ; je n'en déduis ni temps de correction ni accord client. »
 
-**À afficher :** CR-00, jalons J0–J4, décisions attendues, questionnaire et formules.
+Appui : [cas ANO-2026-001](03_CAS_ARBITRAGE.md), commit `4ec094c` du 19 août. Signaler le risque résiduel : un récit peut annoncer une modification que le moteur a rejetée. Les résultats historiques et les résultats de la version courante restent distincts.
 
-**À dire :** « Le compte rendu présente les améliorations, les limites et la décision demandée. Le document préparé aujourd'hui n'est pas une réunion tenue. Les retours et validations doivent être recueillis et reliés aux actions. »
+## 7. Missions, posture et expérience — C3.3.1 et C3.3.2
 
-Preuve : [suivi client](06_SUIVI_CLIENT_VALIDATIONS.md). Si une séance a été tenue depuis, présenter son compte rendu réel avec les informations sensibles masquées.
+**À afficher :** fonctions que j'ai assurées, charge par rôle sans double compte, compétences mobilisées et approfondissements ciblés.
 
-## 9. Démonstration — C3.4.2
+**À dire :** « J'ai assuré la conception, le développement, les contrôles et la documentation. Cette polyvalence facilite l'intégration mais limite la contradiction indépendante. Je peux expliquer les compétences mises en pratique et les erreurs corrigées. Je ne transforme pas ces réalisations en notes d'évaluation et je ne présente pas plusieurs rôles comme plusieurs personnes. »
 
-Basculer vers le [conducteur client](07_DEMONSTRATION_RECETTE_CLIENT.md) : accès, narration, actions, exploration, sauvegarde puis combat. Montrer la version exécutée et annoncer le mode local éventuel.
+Puis : « Le RACI d'équipe est pédagogique. Les formations proposées sont des approfondissements possibles après réalisation : restauration, sécurité, alertes, observation d'usage et suivi. Elles ne signifient pas que tout reste à apprendre avant de construire le jeu. »
 
-Ne pas improviser un redémarrage de production ni utiliser RESET pour garantir un état neuf. Montrer les limites de reprise et consigner un échec au lieu de le dissimuler.
+Appuis : [missions et analyse critique](04_MISSIONS_MANAGEMENT_COMMUNICATION.md), [bilan des compétences](05_COMPETENCES_FORMATION.md). Les styles de management collectif et exercices optionnels ne sont pas des expériences d'encadrement inventées. Expliquer les adaptations possibles : supports structurés, échanges écrits, pauses et accessibilité selon les besoins exprimés.
 
-## 10. Conclusion et décision
+## 8. Bilan, réception et satisfaction — C3.4.1
 
-**À dire :** « Voici les critères observés, les réserves et les actions proposées. Quels points empêchent l'acceptation du périmètre présenté ? »
+**À afficher :** CR-00 rétrospectif du parcours entier ; prochains points V1–V3 de réception ; options O1–O2 distinctes.
 
-Renseigner la décision de la séance. L'acceptation de la démonstration et l'autorisation de production restent deux décisions distinctes. La maîtrise d'un critère est appréciée par le jury, pas déclarée acquise par ce support.
+**À dire :** « Le compte rendu récapitule ma réalisation complète, ses bénéfices et ses limites. Ce n'est pas le compte rendu d'une réunion client passée. La réception, la signature et la satisfaction ne sont pas obtenues. Je propose maintenant de convenir des critères, observer les parcours et recueillir une décision et des retours. »
+
+Appui : [suivi client et questionnaire](06_SUIVI_CLIENT_VALIDATIONS.md). Ne pas présenter un répondant fictif, une date de rendez-vous non convenue ou l'avis du jury comme une réception contractuelle. Un éventuel exercice pédagogique sera identifié séparément du projet réel.
+
+## 9. Démonstration du produit — C3.4.2
+
+Basculer vers le [conducteur de démonstration](07_DEMONSTRATION_RECETTE_CLIENT.md), à synchroniser séparément avec l'[état de référence](../ETAT_PROJET_REFERENCE.md) : accès, narration, actions, exploration, sauvegarde puis combat. Identifier version, environnement et mode narratif. Les mentions historiques du conducteur ne remplacent pas ces informations de séance.
+
+**À dire :** « Je montre maintenant les parcours du produit réalisé. J'annonce ce que cette démonstration permet d'observer et ce qu'elle ne valide pas, notamment la restauration après incident et la production. »
+
+Ne pas improviser un redémarrage de production ni utiliser RESET pour garantir un état neuf. Consigner un échec ou une réserve au lieu de le masquer. Une capture ancienne reste un support daté, pas un succès actuel.
+
+## 10. Conclusion : bilan d'abord, suites optionnelles ensuite
+
+**À dire :** « J'ai présenté l'organisation et la réalisation du même jeu que dans le Bloc 1. Le produit et les incréments sont là ; les résultats observés, les réserves et la réception sont distingués. Les compléments éventuels sont une décision séparée, pas le sujet principal de ce bilan. »
+
+Après une observation réelle, demander quels critères sont satisfaits et quelles réserves empêchent la réception. Consigner la réponse sans présumer une signature. L'autorisation de production et l'appréciation des compétences par le jury restent distinctes.
+
+### Annexe orale uniquement : option de stabilisation
+
+Si la suite est abordée : **15–27 j.h hors réserve**, **8 100–14 580 € HT réserve incluse**. Centre de discussion : **21 + 4,2 = 25,2 j.h ; 25,2 × 450 = 11 340 € HT**. Aucune date ni autorisation acquise. Ce scénario sera ajusté selon les contrôles et ne s'ajoute pas au budget de reconstruction complète. Les formations éventuelles sont décidées séparément sans double compte.
+
+Appuis : [scénario secondaire du planning](01_METHODOLOGIE_PLANNING_RESSOURCES.md) et [budget du cycle de vie](../bloc1/C1_4_CHARGE_BUDGET_CYCLE_VIE.md). Ne pas ouvrir la présentation par ce scénario : il ne raconte pas à lui seul le projet réalisé.

@@ -40,7 +40,7 @@ Ce logigramme formalise aujourd'hui la logique du choix ; il n'est pas présent�
 
 Le choix mis en œuvre combine **B + C**, avec traçabilité des marqueurs rejetés. L'historique Git consulté le 20 septembre montre, dans `4ec094c`, les modifications de [src/state.py](../../src/state.py), [backend/api.py](../../backend/api.py) et l'ajout de [tests/test_state_markers.py](../../tests/test_state_markers.py), ainsi que les formulaires de signalement.
 
-Le document d'anomalie décrit des tests de non-régression, un événement de fin de flux et une sauvegarde atteinte après correction. Ces résultats sont **historiques et rapportés par cette pièce**, non réexécutés lors de la rédaction du Bloc 3. La présence du correctif dans Git ne prouve pas son déploiement sur le VPS ni l'absence de toute autre perte de données.
+Le document d'anomalie décrit des tests de non-régression, un événement de fin de flux et une sauvegarde atteinte après correction. Ces observations avant/après sont **historiques et rapportées par cette pièce**. La [vérification locale de référence](../preuves/VERIFICATION_LOCALE_REFERENCE.md) a depuis exécuté la suite courante : 138 tests backend réussis, dont les tests du parsing présents dans la suite. Elle ne reproduit pas une exécution de la version fautive d'août. La présence du correctif dans Git et les tests locaux ne prouvent pas son déploiement sur le VPS ni l'absence de toute autre perte de données.
 
 Le rejet d'une valeur ne doit pas être présenté comme une mise à jour métier réussie. Le récit peut annoncer un changement non appliqué : c'est un risque résiduel à surveiller, pas une raison pour réintroduire une conversion non contrôlée.
 
@@ -55,7 +55,7 @@ Le rejet d'une valeur ne doit pas être présenté comme une mise à jour métie
 | Décideur | Réalisation dans le projet individuel. Aucun comité, vote ou accord client associé n'a été retrouvé. |
 | Validation | Tests historiques consignés ; recette de la dernière version et acceptation client distinctes. |
 
-Pour une décision similaire dans la phase future, je consignerai l'effort prévu, la tâche interrompue, le reste à faire et la nouvelle date dans le [tableau de bord](02_TABLEAU_DE_BORD.md), puis demanderai un accord si la réserve, le périmètre ou l'échéance sont dépassés.
+Pour une décision similaire dans de prochains travaux, je consignerai l'effort prévu, la tâche interrompue, le reste à faire et la nouvelle date dans le [tableau de bord global](02_TABLEAU_DE_BORD.md), puis demanderai un accord si une réserve, un périmètre ou une échéance approuvés sont dépassés. Cet exemple illustre un arbitrage de la réalisation du jeu, pas uniquement l'option future de stabilisation.
 
 ## 5. Analyse critique et message client
 
