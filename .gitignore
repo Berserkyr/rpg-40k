@@ -44,6 +44,9 @@ logs/
 # RNCP working documents
 docs/rncp/
 
+BLOC_1_RPG40K/BLOC_1_RPG40K/
+BLOC_1_RPG40K.zip
+
 # RNCP / Bloc2 helper scripts
 scripts/*rncp*
 scripts/*bloc2*
@@ -62,3 +65,5 @@ docs/bloc4/latex/*.out
 docs/bloc4/latex/*.toc
 docs/bloc4/latex/*.synctex.gz
 docs/bloc4/latex/bloc4-overleaf.zip
+docs/bloc4/BLOC4_DOSSIER_PREMIERE_VERSION.md
+docs/bloc4/BLOC4_DOSSIER_PREMIERE_VERSION.docx
