@@ -1,0 +1,27 @@
+[
+  {
+    "title": "M1 - Stabilisation API et securite",
+    "description": "Auth, robustesse API, gestion d'erreurs, supervision backend.",
+    "state": "open"
+  },
+  {
+    "title": "M2 - Gameplay et persistance",
+    "description": "Combat, progression, quetes, monde, coherence des sauvegardes.",
+    "state": "open"
+  },
+  {
+    "title": "M3 - Frontend UX et narration",
+    "description": "UI/UX, SSE chat, animation_engine, experience utilisateur.",
+    "state": "open"
+  },
+  {
+    "title": "M4 - Livraison et exploitation",
+    "description": "Docker, CI/CD, monitoring, scripts ops, rollback.",
+    "state": "open"
+  },
+  {
+    "title": "M5 - Documentation et soutenance RNCP",
+    "description": "Bloc 1/3/4, coherence documentaire, supports et preuves.",
+    "state": "open"
+  }
+]

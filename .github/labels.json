@@ -1,0 +1,25 @@
+[
+  {"name":"type:feature","color":"0E8A16","description":"Nouvelle fonctionnalite"},
+  {"name":"type:bug","color":"D73A4A","description":"Defaut fonctionnel ou technique"},
+  {"name":"type:refactor","color":"5319E7","description":"Refonte interne sans changement fonctionnel"},
+  {"name":"type:docs","color":"1D76DB","description":"Documentation"},
+  {"name":"type:chore","color":"FBCA04","description":"Maintenance technique"},
+  {"name":"type:test","color":"BFD4F2","description":"Ajout ou correction de tests"},
+
+  {"name":"prio:P0","color":"B60205","description":"Critique / bloquant"},
+  {"name":"prio:P1","color":"D93F0B","description":"Haute priorite"},
+  {"name":"prio:P2","color":"FBCA04","description":"Priorite normale"},
+  {"name":"prio:P3","color":"0E8A16","description":"Basse priorite"},
+
+  {"name":"domain:backend","color":"0052CC","description":"Python / FastAPI / logique metier"},
+  {"name":"domain:frontend","color":"5319E7","description":"React / Vite / UX"},
+  {"name":"domain:infra","color":"0E8A16","description":"Docker / CI-CD / monitoring"},
+  {"name":"domain:docs","color":"1D76DB","description":"RNCP / guides / README"},
+  {"name":"domain:tests","color":"C2E0C6","description":"Tests unitaires / integration"},
+
+  {"name":"status:ready","color":"EDEDED","description":"Pret a etre pris"},
+  {"name":"status:in-progress","color":"FBCA04","description":"En cours"},
+  {"name":"status:blocked","color":"B60205","description":"Bloque"},
+  {"name":"status:review","color":"5319E7","description":"En revue"},
+  {"name":"status:done","color":"0E8A16","description":"Termine"}
+]
